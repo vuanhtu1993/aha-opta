@@ -11,14 +11,14 @@ export default function Home() {
           Chào mừng đến với <span className="text-blue-600">Aha Tools</span>
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Tập hợp các tiện ích nhỏ gọn (Micro-apps) giúp cuộc sống gia đình trở nên dễ dàng hơn. 
+          Tập hợp các tiện ích nhỏ gọn (Micro-apps) giúp cuộc sống gia đình trở nên dễ dàng hơn.
           Được thiết kế dựa trên tư duy chia để trị, với hiệu suất và trải nghiệm đặt lên hàng đầu.
         </p>
       </section>
 
       {/* Danh sách các ứng dụng (Micro-apps) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
+
         {/* App 1: White Noise */}
         <Card className="hover:shadow-lg transition-shadow duration-300 border-slate-200">
           <CardHeader>
@@ -41,8 +41,8 @@ export default function Home() {
             <div className="text-4xl mb-2">📰</div>
             <CardTitle>Tổng hợp tin tức</CardTitle>
             <CardDescription>
-              Đọc nhanh tin tức mỗi sáng. 
-              <br/><span className="text-xs text-orange-600 font-medium">(Đang phát triển)</span>
+              Đọc nhanh tin tức mỗi sáng.
+              <br /><span className="text-xs text-orange-600 font-medium">(Đang phát triển)</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -57,8 +57,8 @@ export default function Home() {
             <div className="text-4xl mb-2">✅</div>
             <CardTitle>Nhắc việc</CardTitle>
             <CardDescription>
-              Lên danh sách đi chợ, việc nhà. 
-              <br/><span className="text-xs text-orange-600 font-medium">(Đang phát triển)</span>
+              Lên danh sách đi chợ, việc nhà.
+              <br /><span className="text-xs text-orange-600 font-medium">(Đang phát triển)</span>
             </CardDescription>
           </CardHeader>
           <CardContent>

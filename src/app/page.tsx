@@ -35,6 +35,24 @@ export default function Home() {
           </CardContent>
         </Card>
 
+        {/* App 2: aha-opta — World Cup 2026 AI */}
+        <Card className="hover:shadow-lg transition-shadow duration-300 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardHeader>
+            <div className="text-4xl mb-2">⚽</div>
+            <CardTitle className="text-green-800">aha-opta</CardTitle>
+            <CardDescription>
+              Dự đoán kết quả World Cup 2026 bằng AI — phân tích xG, form, và kèo thị trường.
+              <br />
+              <span className="text-xs text-green-600 font-medium">(Đang phát triển — Phase 1)</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+              <Link href="/apps/opta">Khám phá</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Các App Tương Lai (Placeholder) */}
         <Card className="opacity-70 border-dashed border-slate-300 bg-slate-50/50">
           <CardHeader>

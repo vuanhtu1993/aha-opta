@@ -30,6 +30,9 @@ export default function RootLayout({
               <Button variant="ghost" asChild>
                 <Link href="/apps/white-noise">🎵 White Noise</Link>
               </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/apps/opta">⚽ aha-opta</Link>
+              </Button>
               {/* Có thể thêm các app con khác ở đây */}
             </nav>
           </div>

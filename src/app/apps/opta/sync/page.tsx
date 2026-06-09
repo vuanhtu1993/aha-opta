@@ -7,6 +7,7 @@ export default function SyncPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const [season, setSeason] = useState("2026");
 
   const handleSync = async (type: "teams" | "matches" | "all", scrapeXg: boolean) => {
     setLoading(true);
@@ -20,7 +21,7 @@ export default function SyncPage() {
           "Content-Type": "application/json",
           "Authorization": `Bearer opta-2026` // Hardcoded secret từ .env để tiện demo (trong thực tế nên dùng auth context)
         },
-        body: JSON.stringify({ type, scrapeXg })
+        body: JSON.stringify({ type, scrapeXg, season: parseInt(season, 10) })
       });
 
       const data = await res.json();
@@ -55,7 +56,33 @@ export default function SyncPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Season Selector */}
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-bold text-slate-200">Mùa giải World Cup</h3>
+          <p className="text-xs text-slate-400 mt-1">
+            Chọn 2026 cho giải đấu hiện tại hoặc 2022 để kiểm thử mô hình với dữ liệu lịch sử đầy đủ.
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {["2026", "2022"].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSeason(s)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                season === s
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-950"
+                  : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+              }`}
+            >
+              World Cup {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Sync Teams */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
           <div>
@@ -85,10 +112,32 @@ export default function SyncPage() {
           <button
             onClick={() => handleSync("matches", true)}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-emerald-900/50 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />}
             Sync Matches & xG
+          </button>
+        </div>
+
+        {/* Manual Init WC 2026 */}
+        <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 border border-indigo-500/20 p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-indigo-950/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full pointer-events-none" />
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 to-emerald-200">Khởi tạo WC 2026</h3>
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">API Free Bypass</span>
+            </div>
+            <p className="text-sm text-slate-400 mb-6">
+              Tạo thủ công 48 đội tuyển (12 bảng) và sinh lịch thi đấu 72 trận vòng bảng trực tiếp vào Database.
+            </p>
+          </div>
+          <button
+            onClick={() => handleSync("manual-2026", false)}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/50 disabled:opacity-50 animate-pulse"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
+            Khởi tạo WC 2026
           </button>
         </div>
       </div>

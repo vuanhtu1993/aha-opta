@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { syncTeamsETL, syncMatchesETL } from "@/lib/etl/sync";
 import { RateLimitError } from "@/lib/services/football-api/client";
+import { seedWorldCup2026 } from "@/lib/etl/wc2026-seeder";
 
 export async function POST(request: NextRequest) {
   // 1. Kiểm tra Security
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   // 2. Lấy params từ body (fallback nếu không có)
   let type = "all";
-  let season = 2022; // Default WC 2022 (đổi thành 2026 khi API có data)
+  let season = 2026; // Mặc định WC 2026 (trận mở màn 11/06/2026)
   let scrapeXg = false;
 
   try {
@@ -44,6 +45,18 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const results: Record<string, unknown> = {};
+
+    if (type === "manual-2026") {
+      const seedResult = await seedWorldCup2026();
+      return NextResponse.json({
+        success: true,
+        message: "Khởi tạo dữ liệu World Cup 2026 thủ công hoàn tất.",
+        results: {
+          teamsSynced: seedResult.teamsCount,
+          matchesSynced: seedResult.matchesCount,
+        },
+      });
+    }
 
     if (type === "teams" || type === "all") {
       const teamCount = await syncTeamsETL(season);

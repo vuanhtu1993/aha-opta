@@ -30,7 +30,7 @@ export async function predictorNode(state: OptaStateType): Promise<Partial<OptaS
   // Khởi tạo Gemini Model (Flash cho tốc độ)
   const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
   const llm = new ChatGoogleGenerativeAI({
-    modelName: modelName,
+    model: modelName,
     temperature: 0.2, // Temperature thấp để output ổn định, phân tích logic
   });
 

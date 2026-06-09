@@ -1,13 +1,9 @@
-/**
- * Vercel Configuration
- * 
- * Thiết lập Cron Jobs để tự động kích hoạt quá trình ETL hàng ngày.
- */
 {
-  "crons": [
+  "_crons_backup": [
     {
       "path": "/api/opta/sync",
       "schedule": "0 19 * * *"
     }
-  ]
+  ],
+  "crons": []
 }

@@ -50,6 +50,11 @@ export interface ITeam extends Document {
   // Liên đoàn bóng đá khu vực
   confederation: "UEFA" | "CONMEBOL" | "AFC" | "CAF" | "CONCACAF" | "OFC";
   fifaRanking: number;
+  // Hệ số Elo từ eloratings.net (chính xác hơn FIFA Ranking cho head-to-head prediction)
+  eloRating: number;
+  eloRank: number;
+  // Thời điểm crawl Elo lần cuối — giúp biết data có stale không
+  eloLastSynced: Date | null;
   stats: ITeamStats;
   // Điểm AI tổng hợp (0-100), null nếu chưa phân tích
   aiRating: number | null;
@@ -105,6 +110,11 @@ const TeamSchema = new Schema<ITeam>(
       enum: ["UEFA", "CONMEBOL", "AFC", "CAF", "CONCACAF", "OFC"],
     },
     fifaRanking: { type: Number, required: true },
+    // Elo Rating từ eloratings.net
+    // Tại sao default 1500? → Đây là Elo "trung bình" chuẩn, tránh null gây lỗi tính toán
+    eloRating:     { type: Number, default: 1500 },
+    eloRank:       { type: Number, default: 0 },
+    eloLastSynced: { type: Date, default: null },
     stats:       { type: TeamStatsSchema, default: () => ({}) },
     aiRating:    { type: Number, default: null, min: 0, max: 100 },
     lastUpdated: { type: Date, default: Date.now },

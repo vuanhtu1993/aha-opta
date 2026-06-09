@@ -10,8 +10,12 @@
  * khuyến nghị chính thức cho persistent connections.
  */
 
-import "dotenv/config";
 import mongoose from "mongoose";
+
+// Đăng ký toàn bộ các Schema Mongoose để tránh lỗi MissingSchemaError do lazy-loading
+import "./models/Team";
+import "./models/Match";
+import "./models/Prediction";
 
 // Khai báo kiểu dữ liệu cho cache (TypeScript strict mode)
 interface MongooseCache {
@@ -25,14 +29,6 @@ declare global {
   var mongoose: MongooseCache | undefined;
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "❌ Thiếu biến môi trường MONGODB. Kiểm tra file .env"
-  );
-}
-
 // Lấy cache từ global (nếu đã có) hoặc khởi tạo mới
 const cached: MongooseCache = global.mongoose ?? { conn: null, promise: null };
 
@@ -40,6 +36,13 @@ const cached: MongooseCache = global.mongoose ?? { conn: null, promise: null };
 global.mongoose = cached;
 
 export async function connectDB(): Promise<typeof mongoose> {
+  const MONGODB_URI = process.env.MONGODB_URI;
+
+  if (!MONGODB_URI) {
+    throw new Error(
+      "❌ Thiếu biến môi trường MONGODB. Kiểm tra file .env"
+    );
+  }
   // Nếu đã có connection → trả về ngay, không kết nối lại
   if (cached.conn) {
     return cached.conn;

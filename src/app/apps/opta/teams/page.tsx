@@ -13,8 +13,11 @@ export const metadata: Metadata = {
 export default async function TeamsPage() {
   await connectDB();
   
-  // Nạp danh sách đội bóng xếp theo Elo rating giảm dần
-  const teamsDocs = await Team.find({}).sort({ eloRating: -1 }).lean();
+  // Nạp danh sách đội bóng (chỉ chọn các trường cần hiển thị để tối ưu hóa hiệu suất và tránh lỗi tuần tự hóa)
+  const teamsDocs = await Team.find({})
+    .select("_id name shortName slug flag group confederation eloRating eloRank fifaRanking eloLastSynced lastUpdated createdAt updatedAt")
+    .sort({ eloRating: -1 })
+    .lean();
   
   // Chuyển đổi dữ liệu sang dạng plain object để truyền sang Client Component an toàn
   const teams = teamsDocs.map((doc: any) => ({

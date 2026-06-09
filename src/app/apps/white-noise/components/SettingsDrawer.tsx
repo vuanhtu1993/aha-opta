@@ -107,7 +107,7 @@ export function SettingsDrawer({
               </div>
               <Slider 
                 value={[bgVolume]} 
-                onValueChange={(val) => setBgVolume(val[0])} 
+                onValueChange={(val) => setBgVolume(Array.isArray(val) ? val[0] : (val as number))} 
                 max={100} 
                 step={1} 
                 className="w-full cursor-pointer"

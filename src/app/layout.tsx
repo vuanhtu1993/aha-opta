@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,12 +27,12 @@ export default function RootLayout({
             </Link>
             
             <nav className="flex items-center gap-2">
-              <Button variant="ghost" asChild>
-                <Link href="/apps/white-noise">🎵 White Noise</Link>
-              </Button>
-              <Button variant="ghost" asChild>
-                <Link href="/apps/opta">⚽ aha-opta</Link>
-              </Button>
+              <Link href="/apps/white-noise" className={buttonVariants({ variant: "ghost" })}>
+                🎵 White Noise
+              </Link>
+              <Link href="/apps/opta" className={buttonVariants({ variant: "ghost" })}>
+                ⚽ aha-opta
+              </Link>
               {/* Có thể thêm các app con khác ở đây */}
             </nav>
           </div>

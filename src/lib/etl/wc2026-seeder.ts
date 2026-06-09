@@ -166,7 +166,7 @@ export async function seedWorldCup2026(): Promise<{ teamsCount: number; matchesC
 
   // 3. Tự động sinh 72 trận đấu vòng bảng
   // 12 bảng đấu, mỗi bảng 4 đội đấu vòng tròn một lượt = 6 trận/bảng
-  const mockMatches = [];
+  const mockMatches: any[] = [];
   let matchCounter = 0;
 
   // Nhóm các đội tuyển theo bảng đấu

@@ -13,7 +13,7 @@ import { marketSignalNode } from "./nodes/market-signal.node";
 import { predictorNode } from "./nodes/predictor.node";
 
 // 1. Khởi tạo StateGraph
-const graphBuilder = new StateGraph(OptaAgentState);
+const graphBuilder = new StateGraph<typeof OptaAgentState, any, any, string>(OptaAgentState);
 
 // 2. Thêm các Node vào Graph
 graphBuilder.addNode("dataFetcher", dataFetcherNode);

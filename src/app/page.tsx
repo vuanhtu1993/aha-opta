@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   return (
@@ -29,9 +30,12 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
-              <Link href="/apps/white-noise">Mở ứng dụng</Link>
-            </Button>
+            <Link 
+              href="/apps/white-noise" 
+              className={cn(buttonVariants({ variant: "default" }), "w-full bg-blue-600 hover:bg-blue-700 text-white text-center")}
+            >
+              Mở ứng dụng
+            </Link>
           </CardContent>
         </Card>
 
@@ -47,9 +51,12 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full bg-green-600 hover:bg-green-700">
-              <Link href="/apps/opta">Khám phá</Link>
-            </Button>
+            <Link 
+              href="/apps/opta" 
+              className={cn(buttonVariants({ variant: "default" }), "w-full bg-green-600 hover:bg-green-700 text-white text-center")}
+            >
+              Khám phá
+            </Link>
           </CardContent>
         </Card>
 

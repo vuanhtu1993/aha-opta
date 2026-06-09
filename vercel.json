@@ -1,9 +1,3 @@
 {
-  "_crons_backup": [
-    {
-      "path": "/api/opta/sync",
-      "schedule": "0 19 * * *"
-    }
-  ],
   "crons": []
 }

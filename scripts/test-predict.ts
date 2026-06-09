@@ -9,10 +9,10 @@ async function test() {
   await connectDB();
 
   try {
-    // Match ID, Home Team ID, Away Team ID từ South Africa vs Mexico của 2026
-    const matchId = "6a26f6604fa7373ce111595e";
-    const homeTeamId = "6a26f65e4fa7373ce111592e";
-    const awayTeamId = "6a26f65e4fa7373ce111592f";
+    // Match ID, Home Team ID, Away Team ID từ Mexico vs South Africa của 2026
+    const matchId = "6a26fae04fa7373ce1115aa5";
+    const homeTeamId = "6a26fade4fa7373ce1115a75";
+    const awayTeamId = "6a26fade4fa7373ce1115a76";
 
     console.log("Running prediction...");
     const result = await runOptaPrediction(matchId, homeTeamId, awayTeamId);

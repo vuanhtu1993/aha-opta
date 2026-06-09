@@ -104,11 +104,10 @@ export default function SyncPage() {
               key={s}
               type="button"
               onClick={() => setSeason(s)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                season === s
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-950"
-                  : "bg-slate-800 hover:bg-slate-700 text-slate-300"
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${season === s
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-950"
+                : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                }`}
             >
               World Cup {s}
             </button>

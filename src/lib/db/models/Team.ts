@@ -34,6 +34,18 @@ export interface ITeamStats {
   formIndex: number;
 }
 
+export interface IEloMatch {
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  tournament: string;
+  ratingChange: number;
+  ratingAfter: number;
+  rankAfter: number;
+}
+
 export interface ITeam extends Document {
   _id: Types.ObjectId;
   // ID từ API-Football — khóa chính cho ETL upsert
@@ -53,8 +65,9 @@ export interface ITeam extends Document {
   // Hệ số Elo từ eloratings.net (chính xác hơn FIFA Ranking cho head-to-head prediction)
   eloRating: number;
   eloRank: number;
-  // Thời điểm crawl Elo lần cuối — giúp biết data có stale không
+  // Zeit điểm crawl Elo lần cuối — giúp biết data có stale không
   eloLastSynced: Date | null;
+  recentEloMatches: IEloMatch[];
   stats: ITeamStats;
   // Điểm AI tổng hợp (0-100), null nếu chưa phân tích
   aiRating: number | null;
@@ -115,6 +128,22 @@ const TeamSchema = new Schema<ITeam>(
     eloRating:     { type: Number, default: 1500 },
     eloRank:       { type: Number, default: 0 },
     eloLastSynced: { type: Date, default: null },
+    recentEloMatches: {
+      type: [
+        {
+          date: { type: String, required: true },
+          homeTeam: { type: String, required: true },
+          awayTeam: { type: String, required: true },
+          homeScore: { type: Number, required: true },
+          awayScore: { type: Number, required: true },
+          tournament: { type: String, required: true },
+          ratingChange: { type: Number, required: true },
+          ratingAfter: { type: Number, required: true },
+          rankAfter: { type: Number, required: true },
+        }
+      ],
+      default: []
+    },
     stats:       { type: TeamStatsSchema, default: () => ({}) },
     aiRating:    { type: Number, default: null, min: 0, max: 100 },
     lastUpdated: { type: Date, default: Date.now },

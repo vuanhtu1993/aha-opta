@@ -20,8 +20,8 @@ export async function dataFetcherNode(state: OptaStateType): Promise<Partial<Opt
   await connectDB();
 
   // 1. Lấy thông tin Team (chỉ lấy các trường cần thiết để tiết kiệm token)
-  const homeTeam = await Team.findById(state.homeTeamId).select("name shortName country group confederation fifaRanking").lean();
-  const awayTeam = await Team.findById(state.awayTeamId).select("name shortName country group confederation fifaRanking").lean();
+  const homeTeam = await Team.findById(state.homeTeamId).select("name shortName country group confederation fifaRanking eloRating eloRank eloLastSynced recentEloMatches").lean();
+  const awayTeam = await Team.findById(state.awayTeamId).select("name shortName country group confederation fifaRanking eloRating eloRank eloLastSynced recentEloMatches").lean();
 
   if (!homeTeam || !awayTeam) {
     throw new Error("DataFetcher: Không tìm thấy Team trong DB");

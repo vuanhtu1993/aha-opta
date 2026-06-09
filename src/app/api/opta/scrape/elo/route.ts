@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
             $set: {
               eloRating: team.eloRating,
               eloRank: team.eloRank,
+              recentEloMatches: team.recentEloMatches,
               eloLastSynced: now,
               lastUpdated: now,
             },

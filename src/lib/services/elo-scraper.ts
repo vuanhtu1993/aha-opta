@@ -12,7 +12,7 @@
  * Trade-off:
  * → Nếu eloratings.net thay đổi đường dẫn file TSV → scraper bị gãy (cần cập nhật URL)
  */
-
+import { IEloMatch } from "../db/models/Team";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +21,8 @@ export interface EloResult {
   slug: string;          // Slug trong MongoDB (sau khi map)
   eloRating: number;
   eloRank: number;
+  code: string;          // Mã viết tắt (e.g. BR)
+  recentEloMatches: IEloMatch[];
 }
 
 // ─── Team Name Mapping ────────────────────────────────────────────────────────
@@ -114,6 +116,46 @@ export const ELO_TEAM_MAP: Record<string, string> = {
   "panama": "panama",
 };
 
+// ─── Tournament Codes and Page Helpers ────────────────────────────────────────
+
+const TOURNAMENT_CODES: Record<string, string> = {
+  "F": "Giao hữu (Friendly)",
+  "WC": "World Cup",
+  "QC": "Vòng loại World Cup",
+  "SA": "Copa América",
+  "EC": "UEFA Euro",
+  "EQ": "Vòng loại Euro",
+  "CC": "Confederations Cup",
+  "CG": "Asian Games",
+  "C1": "AFC Asian Cup",
+  "CQ": "Vòng loại Asian Cup",
+  "G": "CONCACAF Gold Cup",
+  "GQ": "Vòng loại Gold Cup",
+  "UNL": "UEFA Nations League",
+  "CNL": "CONCACAF Nations League",
+  "ANC": "Africa Cup of Nations",
+  "ANQ": "Vòng loại AFCON",
+  "OC": "OFC Nations Cup",
+};
+
+function translateTournament(code: string): string {
+  return TOURNAMENT_CODES[code] || code;
+}
+
+function getTeamPageName(text: string): string {
+  return text
+    ? text
+        .replace(/ /g, "_")
+        .replace(/[àáâãäå]/g, "a")
+        .replace(/ç/g, "c")
+        .replace(/[èéêë]/g, "e")
+        .replace(/[ìíîï]/g, "i")
+        .replace(/[òóôõö]/g, "o")
+        .replace(/[ùúûü]/g, "u")
+        .replace(/ñ/g, "n")
+    : "";
+}
+
 // ─── Main Scraper Function ────────────────────────────────────────────────────
 
 const ELO_TEAMS_URL = "https://www.eloratings.net/en.teams.tsv";
@@ -196,10 +238,109 @@ export async function scrapeEloRatings(): Promise<EloResult[]> {
       slug,
       eloRating: elo,
       eloRank: rank,
+      code,
+      recentEloMatches: [],
     });
   });
 
-  console.log(`[EloScraper] Tìm thấy ${results.length}/48 đội WC 2026 trong bảng Elo`);
+  // 3. Crawl lịch sử trận đấu (recent matches) cho từng đội tuyển WC 2026
+  console.log(`[EloScraper] Bắt đầu crawl lịch sử trận đấu cho ${results.length} đội WC 2026...`);
+  
+  // Concurrency limit = 8
+  const CONCURRENCY_LIMIT = 8;
+  const batches = [];
+  for (let i = 0; i < results.length; i += CONCURRENCY_LIMIT) {
+    batches.push(results.slice(i, i + CONCURRENCY_LIMIT));
+  }
+
+  for (const batch of batches) {
+    await Promise.all(
+      batch.map(async (team) => {
+        try {
+          const pageName = getTeamPageName(team.teamName);
+          const url = `https://www.eloratings.net/${pageName}.tsv`;
+          
+          const matchResponse = await fetch(url, {
+            headers: {
+              "User-Agent":
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/124.0.0.0 Safari/537.36",
+            },
+            next: { revalidate: 3600 },
+          });
+
+          if (!matchResponse.ok) {
+            console.warn(`[EloScraper] Bỏ qua trận đấu cho ${team.teamName}: HTTP ${matchResponse.status}`);
+            return;
+          }
+
+          const matchTsv = await matchResponse.text();
+          const lines = matchTsv.split("\n").map(l => l.trim()).filter(Boolean);
+          
+          // Lấy tối đa 15 trận đấu gần đây nhất (ở cuối file)
+          const recentLines = lines.slice(-15);
+          const recentMatches: IEloMatch[] = [];
+
+          for (const line of recentLines) {
+            const fields = line.split("\t");
+            if (fields.length < 16) continue;
+
+            const year = fields[0];
+            const month = fields[1];
+            const day = fields[2];
+            const homeCode = fields[3].trim();
+            const awayCode = fields[4].trim();
+            const homeScore = parseInt(fields[5], 10);
+            const awayScore = parseInt(fields[6], 10);
+            const tournamentCode = fields[7].trim();
+            const changeRaw = parseInt(fields[9], 10);
+            const homeRatingAfter = parseInt(fields[10], 10);
+            const awayRatingAfter = parseInt(fields[11], 10);
+            const homeRankAfter = parseInt(fields[14], 10);
+            const awayRankAfter = parseInt(fields[15], 10);
+
+            if (
+              !year || !month || !day || !homeCode || !awayCode ||
+              isNaN(homeScore) || isNaN(awayScore)
+            ) {
+              continue;
+            }
+
+            const homeTeamName = codeToName[homeCode] || homeCode;
+            const awayTeamName = codeToName[awayCode] || awayCode;
+            const dateStr = `${year}-${month}-${day}`;
+            const tournamentName = translateTournament(tournamentCode);
+
+            // Xác định xem đội tuyển hiện tại là Home hay Away để tính chỉ số tương ứng
+            const isHome = homeCode === team.code;
+            const ratingChange = isHome ? changeRaw : -changeRaw;
+            const ratingAfter = isHome ? homeRatingAfter : awayRatingAfter;
+            const rankAfter = isHome ? homeRankAfter : awayRankAfter;
+
+            recentMatches.push({
+              date: dateStr,
+              homeTeam: homeTeamName,
+              awayTeam: awayTeamName,
+              homeScore,
+              awayScore,
+              tournament: tournamentName,
+              ratingChange: isNaN(ratingChange) ? 0 : ratingChange,
+              ratingAfter: isNaN(ratingAfter) ? 1500 : ratingAfter,
+              rankAfter: isNaN(rankAfter) ? 0 : rankAfter,
+            });
+          }
+
+          // Đảo ngược để trận mới nhất lên đầu tiên
+          team.recentEloMatches = recentMatches.reverse();
+        } catch (err) {
+          console.error(`[EloScraper] Lỗi khi crawl lịch sử trận đấu của ${team.teamName}:`, err);
+        }
+      })
+    );
+  }
+
+  console.log(`[EloScraper] Tìm thấy ${results.length}/48 đội WC 2026 trong bảng Elo (đã nạp lịch sử trận đấu)`);
 
   return results;
 }

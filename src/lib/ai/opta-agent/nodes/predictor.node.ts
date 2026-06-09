@@ -49,8 +49,8 @@ Nhiệm vụ của bạn là dự đoán kết quả trận đấu giữa ${home
 Dưới đây là các dữ liệu FACTS (Sự thật):
 
 [THÔNG TIN ĐỘI BÓNG]
-- HOME: ${home.name} (Hạng FIFA: ${home.fifaRanking}, Confederation: ${home.confederation})
-- AWAY: ${away.name} (Hạng FIFA: ${away.fifaRanking}, Confederation: ${away.confederation})
+- HOME: ${home.name} (Hạng FIFA: ${home.fifaRanking}, Elo Rating: ${home.eloRating ?? "N/A"}, Hạng Elo: ${home.eloRank ?? "N/A"}, Confederation: ${home.confederation})
+- AWAY: ${away.name} (Hạng FIFA: ${away.fifaRanking}, Elo Rating: ${away.eloRating ?? "N/A"}, Hạng Elo: ${away.eloRank ?? "N/A"}, Confederation: ${away.confederation})
 
 [PHONG ĐỘ (FORM) - Dựa trên 5 trận gần nhất]
 - HOME Form: ${state.homeFormIndex}/100 

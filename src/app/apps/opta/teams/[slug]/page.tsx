@@ -3,18 +3,21 @@ import { Team } from "@/lib/db/models/Team";
 import { Match } from "@/lib/db/models/Match";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { 
-  ChevronLeft, 
-  Trophy, 
-  TrendingUp, 
-  Activity, 
-  Calendar, 
-  MapPin, 
-  Percent, 
-  Zap, 
-  Target, 
-  ShieldAlert, 
-  Sparkles 
+import {
+  ChevronLeft,
+  Trophy,
+  TrendingUp,
+  Activity,
+  Calendar,
+  MapPin,
+  Percent,
+  Zap,
+  Target,
+  ShieldAlert,
+  Sparkles,
+  History,
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react";
 import { Metadata } from "next";
 
@@ -27,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   await connectDB();
   const { slug } = await params;
   const team = await Team.findOne({ slug }).lean() as any;
-  
+
   if (!team) {
     return {
       title: "Không tìm thấy đội bóng | aha-opta",
@@ -64,6 +67,17 @@ export default async function TeamDetailPage({ params }: PageProps) {
     _id: teamDoc._id.toString(),
     eloLastSynced: teamDoc.eloLastSynced ? teamDoc.eloLastSynced.toISOString() : null,
     lastUpdated: teamDoc.lastUpdated ? teamDoc.lastUpdated.toISOString() : null,
+    recentEloMatches: teamDoc.recentEloMatches ? teamDoc.recentEloMatches.map((m: any) => ({
+      date: m.date,
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      tournament: m.tournament,
+      ratingChange: m.ratingChange,
+      ratingAfter: m.ratingAfter,
+      rankAfter: m.rankAfter,
+    })) : [],
   };
 
   const matches = matchesDocs.map((doc: any) => ({
@@ -125,8 +139,8 @@ export default async function TeamDetailPage({ params }: PageProps) {
     <div className="space-y-8">
       {/* Back to List */}
       <div>
-        <Link 
-          href="/apps/opta/teams" 
+        <Link
+          href="/apps/opta/teams"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-emerald-400 transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
@@ -229,18 +243,18 @@ export default async function TeamDetailPage({ params }: PageProps) {
               <div className="flex h-3.5 rounded-full overflow-hidden bg-slate-950 border border-slate-800 p-0.5">
                 {stats.matchesPlayed > 0 ? (
                   <>
-                    <div 
-                      className="bg-emerald-500 transition-all rounded-l-full" 
+                    <div
+                      className="bg-emerald-500 transition-all rounded-l-full"
                       style={{ width: `${(stats.wins / stats.matchesPlayed) * 100}%` }}
                       title={`Thắng: ${stats.wins}`}
                     />
-                    <div 
-                      className="bg-slate-500 transition-all" 
+                    <div
+                      className="bg-slate-500 transition-all"
                       style={{ width: `${(stats.draws / stats.matchesPlayed) * 100}%` }}
                       title={`Hòa: ${stats.draws}`}
                     />
-                    <div 
-                      className="bg-rose-500 transition-all rounded-r-full" 
+                    <div
+                      className="bg-rose-500 transition-all rounded-r-full"
                       style={{ width: `${(stats.losses / stats.matchesPlayed) * 100}%` }}
                       title={`Thua: ${stats.losses}`}
                     />
@@ -274,16 +288,16 @@ export default async function TeamDetailPage({ params }: PageProps) {
                 <span>Chỉ số xG thực tế</span>
                 <span className="text-[10px] uppercase bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/25">Model xG</span>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-medium">
                   <span className="text-slate-400">xGoals công (xG)</span>
                   <span className="text-white font-mono font-bold">{(stats.xGoalsFor || 0).toFixed(2)}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-slate-950 overflow-hidden">
-                  <div 
-                    className="bg-emerald-500 h-full rounded-full transition-all" 
-                    style={{ width: `${Math.min(((stats.xGoalsFor || 0) / 3) * 100, 100)}%` }} 
+                  <div
+                    className="bg-emerald-500 h-full rounded-full transition-all"
+                    style={{ width: `${Math.min(((stats.xGoalsFor || 0) / 3) * 100, 100)}%` }}
                   />
                 </div>
               </div>
@@ -294,9 +308,9 @@ export default async function TeamDetailPage({ params }: PageProps) {
                   <span className="text-slate-300 font-mono font-bold">{(stats.xGoalsAgainst || 0).toFixed(2)}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-slate-950 overflow-hidden">
-                  <div 
-                    className="bg-rose-500 h-full rounded-full transition-all" 
-                    style={{ width: `${Math.min(((stats.xGoalsAgainst || 0) / 3) * 100, 100)}%` }} 
+                  <div
+                    className="bg-rose-500 h-full rounded-full transition-all"
+                    style={{ width: `${Math.min(((stats.xGoalsAgainst || 0) / 3) * 100, 100)}%` }}
                   />
                 </div>
               </div>
@@ -305,7 +319,7 @@ export default async function TeamDetailPage({ params }: PageProps) {
             {/* Performance Indicators */}
             <div className="space-y-3 pt-4 border-t border-slate-850">
               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-mono">Chỉ số lối chơi trung bình</div>
-              
+
               {/* Possession */}
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 flex items-center gap-1.5"><Percent className="w-3.5 h-3.5 text-blue-400 shrink-0" /> Kiểm soát bóng</span>
@@ -343,8 +357,8 @@ export default async function TeamDetailPage({ params }: PageProps) {
                 const isFinished = match.status === "finished";
 
                 return (
-                  <div 
-                    key={match._id} 
+                  <div
+                    key={match._id}
                     className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-slate-900 border border-slate-850 hover:border-slate-700 transition-colors shadow-lg"
                   >
                     {/* Time & Venue */}
@@ -372,10 +386,10 @@ export default async function TeamDetailPage({ params }: PageProps) {
                         </span>
                         <div className="w-8 h-8 rounded-full bg-slate-950 flex items-center justify-center overflow-hidden border border-white/5 shrink-0 shadow-md">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={isHome ? team.flag : opponent?.flag || "https://flagcdn.com/w320/un.png"} 
-                            alt={isHome ? team.name : opponent?.name} 
-                            className="w-full h-full object-cover" 
+                          <img
+                            src={isHome ? team.flag : opponent?.flag || "https://flagcdn.com/w320/un.png"}
+                            alt={isHome ? team.name : opponent?.name}
+                            className="w-full h-full object-cover"
                           />
                         </div>
                       </div>
@@ -397,10 +411,10 @@ export default async function TeamDetailPage({ params }: PageProps) {
                       <div className="flex items-center gap-2.5 w-[110px]">
                         <div className="w-8 h-8 rounded-full bg-slate-950 flex items-center justify-center overflow-hidden border border-white/5 shrink-0 shadow-md">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={isHome ? opponent?.flag : team.flag || "https://flagcdn.com/w320/un.png"} 
-                            alt={isHome ? opponent?.name : team.name} 
-                            className="w-full h-full object-cover" 
+                          <img
+                            src={isHome ? opponent?.flag : team.flag || "https://flagcdn.com/w320/un.png"}
+                            alt={isHome ? opponent?.name : team.name}
+                            className="w-full h-full object-cover"
                           />
                         </div>
                         <span className="font-extrabold text-sm text-slate-100 line-clamp-1">
@@ -420,8 +434,8 @@ export default async function TeamDetailPage({ params }: PageProps) {
                           <span className="text-[10px] font-bold font-mono px-2.5 py-1 rounded bg-slate-950 text-slate-400 border border-slate-850 uppercase tracking-wide">
                             Chưa đá
                           </span>
-                          <Link 
-                            href="/apps/opta" 
+                          <Link
+                            href="/apps/opta"
                             className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider flex items-center gap-0.5 border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 px-2 py-1 rounded transition-all font-mono"
                           >
                             Dự đoán
@@ -441,7 +455,141 @@ export default async function TeamDetailPage({ params }: PageProps) {
             </div>
           )}
         </div>
+
       </div>
+
+      {/* Lịch sử trận đấu quốc tế (Elo) */}
+      <div className="space-y-6 pt-4">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <History className="w-5 h-5 text-indigo-400" />
+          History matches (Elo)
+        </h2>
+
+          {team.recentEloMatches && team.recentEloMatches.length > 0 ? (
+            <div className="space-y-3">
+              {team.recentEloMatches.map((m: any, idx: number) => {
+                // Kiểm tra chính xác vai trò chủ nhà dựa trên tên hoặc slug
+                const isHome = 
+                  m.homeTeam.toLowerCase() === team.name.toLowerCase() || 
+                  m.homeTeam.toLowerCase() === team.country.toLowerCase() ||
+                  (m.homeTeam.toLowerCase() === "united states" || m.homeTeam.toLowerCase() === "usa") && team.slug === "united-states" ||
+                  (m.homeTeam.toLowerCase() === "cote d'ivoire" || m.homeTeam.toLowerCase() === "ivory coast") && team.slug === "cote-divoire" ||
+                  (m.homeTeam.toLowerCase() === "ir iran" || m.homeTeam.toLowerCase() === "iran") && team.slug === "iran" ||
+                  (m.homeTeam.toLowerCase() === "dr congo" || m.homeTeam.toLowerCase() === "democratic republic of congo") && team.slug === "dr-congo";
+
+                const outcome = m.homeScore === m.awayScore
+                  ? "draw"
+                  : (isHome ? m.homeScore > m.awayScore : m.awayScore > m.homeScore)
+                    ? "win"
+                    : "loss";
+
+                // Màu sắc & ký hiệu biến động Elo
+                const isPositive = m.ratingChange > 0;
+                const isNegative = m.ratingChange < 0;
+                
+                const changeBadge = isPositive
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  : isNegative
+                    ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                    : "bg-slate-800 text-slate-400 border-slate-700";
+
+                const changeSign = isPositive ? `+${m.ratingChange}` : String(m.ratingChange);
+
+                // Màu sắc badge W/D/L viết tắt
+                const outcomeBadge = outcome === "win"
+                  ? "bg-emerald-500 text-emerald-950 font-black"
+                  : outcome === "loss"
+                    ? "bg-rose-500 text-rose-950 font-black"
+                    : "bg-slate-600 text-slate-100 font-bold";
+
+                const outcomeChar = outcome === "win" ? "W" : outcome === "loss" ? "L" : "D";
+
+                return (
+                  <div
+                    key={idx}
+                    className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-850 hover:border-slate-800 hover:bg-slate-900 transition-all shadow-md group relative overflow-hidden"
+                  >
+                    {/* Glow chỉ thị kết quả ở rìa trái */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      outcome === "win" ? "bg-emerald-500" : outcome === "loss" ? "bg-rose-500" : "bg-slate-600"
+                    }`} />
+
+                    {/* Cột 1: Thông tin Ngày & Giải đấu (3/12 cols) */}
+                    <div className="md:col-span-3 space-y-1 pl-2">
+                      <div className="text-xs font-semibold text-slate-400 font-mono flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                        {m.date}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium truncate max-w-[200px]" title={m.tournament}>
+                        {m.tournament}
+                      </div>
+                    </div>
+
+                    {/* Cột 2: Trận đấu & Tỷ số (5/12 cols) */}
+                    <div className="md:col-span-5 flex items-center justify-between sm:justify-start gap-4">
+                      {/* Kết quả W/D/L Badge */}
+                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs shadow-sm select-none shrink-0 ${outcomeBadge}`}>
+                        {outcomeChar}
+                      </span>
+
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <span className={`text-sm tracking-tight truncate max-w-[110px] ${
+                          isHome ? "text-white font-extrabold" : "text-slate-400 font-medium"
+                        }`}>
+                          {m.homeTeam}
+                        </span>
+                        
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-950/80 border border-slate-800 text-slate-300 tracking-wider">
+                          {m.homeScore} - {m.awayScore}
+                        </span>
+
+                        <span className={`text-sm tracking-tight truncate max-w-[110px] ${
+                          !isHome ? "text-white font-extrabold" : "text-slate-400 font-medium"
+                        }`}>
+                          {m.awayTeam}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Cột 3: Chỉ số Elo & Biến động (4/12 cols) */}
+                    <div className="md:col-span-4 flex items-center justify-between md:justify-end gap-6 border-t border-slate-850 md:border-0 pt-3 md:pt-0">
+                      {/* Biến động Elo */}
+                      <div className="flex flex-col items-start md:items-end">
+                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold font-mono">Biến động</span>
+                        <span className={`inline-flex items-center gap-0.5 text-xs px-2.5 py-0.5 rounded-full border mt-0.5 font-mono font-bold ${changeBadge}`}>
+                          {changeSign}
+                          {isPositive && <ArrowUpRight className="w-3 h-3" />}
+                          {isNegative && <ArrowDownRight className="w-3 h-3" />}
+                        </span>
+                      </div>
+
+                      {/* Elo hiện tại */}
+                      <div className="flex flex-col items-start md:items-end font-mono">
+                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Elo sau trận</span>
+                        <span className="text-white font-bold text-sm mt-0.5">{m.ratingAfter}</span>
+                      </div>
+
+                      {/* Hạng Elo */}
+                      {m.rankAfter > 0 ? (
+                        <div className="flex flex-col items-start md:items-end font-mono">
+                          <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Hạng Elo</span>
+                          <span className="text-slate-300 font-semibold text-sm mt-0.5">#{m.rankAfter}</span>
+                        </div>
+                      ) : (
+                        <div className="hidden md:block w-12" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl bg-slate-900/40">
+              <p className="text-slate-500 mb-1">Chưa có lịch sử đấu Elo được đồng bộ.</p>
+              <p className="text-xs text-slate-600 font-mono">Vui lòng bấm nút đồng bộ Elo ở trang Data Pipeline.</p>
+            </div>
+          )}
+        </div>
     </div>
   );
 }

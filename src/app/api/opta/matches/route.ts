@@ -6,11 +6,18 @@
  *  - status: "scheduled", "live", "finished"
  *  - teamId: ObjectId của đội
  *  - limit: Số lượng trả về
+ *
+ * PUT /api/opta/matches
+ *
+ * Cập nhật kết quả trận đấu thủ công (Self-Managed Pipeline).
+ * Sau khi lưu kết quả, tự động kích hoạt recalculateTeamStats() cho cả 2 đội
+ * để cập nhật W/D/L, xG avg, Form Index... ngay lập tức.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { Match } from "@/lib/db/models/Match";
+import { recalculateTeamStats } from "@/lib/etl/stats-calculator";
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,7 +71,10 @@ export async function PUT(request: NextRequest) {
       homeSOT,
       awaySOT,
       homeXG,
-      awayXG
+      awayXG,
+      // Trường mới: Pass Accuracy do admin tự nhập (thay vì hard-code)
+      homePassAccuracy,
+      awayPassAccuracy,
     } = body;
 
     if (!matchId) {
@@ -83,34 +93,53 @@ export async function PUT(request: NextRequest) {
             shots: parseInt(homeShots, 10),
             shotsOnTarget: parseInt(homeSOT, 10),
             xGoals: parseFloat(homeXG),
-            passAccuracy: 82, // Mặc định tỉ lệ chuyền bóng hợp lý
+            // Dùng giá trị admin nhập, fallback về 82 nếu không có
+            passAccuracy: homePassAccuracy ? parseInt(homePassAccuracy, 10) : 82,
             corners: 5,
             fouls: 11,
             yellowCards: 1,
-            redCards: 0
+            redCards: 0,
           },
           awayStats: {
             possession: 100 - parseInt(homePossession, 10),
             shots: parseInt(awayShots, 10),
             shotsOnTarget: parseInt(awaySOT, 10),
             xGoals: parseFloat(awayXG),
-            passAccuracy: 80,
+            // Dùng giá trị admin nhập, fallback về 80 nếu không có
+            passAccuracy: awayPassAccuracy ? parseInt(awayPassAccuracy, 10) : 80,
             corners: 4,
             fouls: 13,
             yellowCards: 2,
-            redCards: 0
+            redCards: 0,
           },
-          xgSource: "statsbomb",
-          lastUpdated: new Date()
-        }
+          xgSource: "manual",
+          lastUpdated: new Date(),
+        },
       },
       { new: true }
     )
-      .populate("homeTeamId", "name shortName slug flag fifaRanking")
-      .populate("awayTeamId", "name shortName slug flag fifaRanking");
+      .populate("homeTeamId", "name shortName slug flag fifaRanking _id")
+      .populate("awayTeamId", "name shortName slug flag fifaRanking _id");
 
     if (!updatedMatch) {
       return NextResponse.json({ success: false, error: "Match not found" }, { status: 404 });
+    }
+
+    // ── Tự động tính lại chỉ số thống kê cho cả 2 đội ─────────────────────────
+    // Chạy song song bằng Promise.all để tiết kiệm thời gian (~2x nhanh hơn tuần tự)
+    // Không await lỗi để không block response trả về client
+    try {
+      const homeTeamId = (updatedMatch.homeTeamId as any)._id.toString();
+      const awayTeamId = (updatedMatch.awayTeamId as any)._id.toString();
+
+      await Promise.all([
+        recalculateTeamStats(homeTeamId),
+        recalculateTeamStats(awayTeamId),
+      ]);
+    } catch (calcError) {
+      // Ghi log lỗi nhưng KHÔNG fail toàn bộ request
+      // Lý do: kết quả trận đấu đã được lưu thành công — đây là bước enrichment phụ
+      console.error("[API] PUT /api/opta/matches - recalculateTeamStats thất bại:", calcError);
     }
 
     return NextResponse.json({ success: true, data: updatedMatch });

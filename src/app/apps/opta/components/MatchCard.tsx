@@ -28,6 +28,9 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
   const [formAwaySOT, setFormAwaySOT] = useState(match.awayStats?.shotsOnTarget ? String(match.awayStats.shotsOnTarget) : "4");
   const [formHomeXG, setFormHomeXG] = useState(match.homeStats?.xGoals ? String(match.homeStats.xGoals) : "1.0");
   const [formAwayXG, setFormAwayXG] = useState(match.awayStats?.xGoals ? String(match.awayStats.xGoals) : "1.0");
+  // Pass Accuracy — thay thế giá trị hard-code 82/80 trong API route
+  const [formHomePassAcc, setFormHomePassAcc] = useState(match.homeStats?.passAccuracy ? String(match.homeStats.passAccuracy) : "82");
+  const [formAwayPassAcc, setFormAwayPassAcc] = useState(match.awayStats?.passAccuracy ? String(match.awayStats.passAccuracy) : "80");
 
   const home = match.homeTeamId;
   const away = match.awayTeamId;
@@ -75,6 +78,8 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           awaySOT: formAwaySOT,
           homeXG: formHomeXG,
           awayXG: formAwayXG,
+          homePassAccuracy: formHomePassAcc,
+          awayPassAccuracy: formAwayPassAcc,
         }),
       });
 
@@ -228,6 +233,35 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                 className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
                 required
               />
+            </div>
+          </div>
+
+          {/* Độ chính xác chuyền bóng (Pass Accuracy) */}
+          <div>
+            <div className="text-xs font-semibold text-[#121C42]/60 mb-2">% Chuyền bóng chính xác</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] text-[#121C42]/50 mb-1">{home.name} (%)</label>
+                <input
+                  type="number"
+                  min="50"
+                  max="100"
+                  value={formHomePassAcc}
+                  onChange={e => setFormHomePassAcc(e.target.value)}
+                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#121C42]/50 mb-1">{away.name} (%)</label>
+                <input
+                  type="number"
+                  min="50"
+                  max="100"
+                  value={formAwayPassAcc}
+                  onChange={e => setFormAwayPassAcc(e.target.value)}
+                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
+                />
+              </div>
             </div>
           </div>
 

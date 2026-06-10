@@ -229,8 +229,7 @@ export default async function TeamDetailPage({ params }: PageProps) {
         {/* Left Side: Stats and analytics */}
         <div className="lg:col-span-1 space-y-6">
           <h2 className="text-xl font-bold text-[#121C42] flex items-center gap-2">
-            <Activity className="w-5 h-5 text-[#3B5BDB]" />
-            Thống kê Phong độ
+            Phong độ
           </h2>
 
           <div className="bg-white border border-[#121C42]/10 p-6 rounded-2xl space-y-6 shadow-sm">
@@ -465,131 +464,128 @@ export default async function TeamDetailPage({ params }: PageProps) {
           History matches (Elo)
         </h2>
 
-          {team.recentEloMatches && team.recentEloMatches.length > 0 ? (
-            <div className="space-y-3">
-              {team.recentEloMatches.map((m: any, idx: number) => {
-                // Kiểm tra chính xác vai trò chủ nhà dựa trên tên hoặc slug
-                const isHome = 
-                  m.homeTeam.toLowerCase() === team.name.toLowerCase() || 
-                  m.homeTeam.toLowerCase() === team.country.toLowerCase() ||
-                  (m.homeTeam.toLowerCase() === "united states" || m.homeTeam.toLowerCase() === "usa") && team.slug === "united-states" ||
-                  (m.homeTeam.toLowerCase() === "cote d'ivoire" || m.homeTeam.toLowerCase() === "ivory coast") && team.slug === "cote-divoire" ||
-                  (m.homeTeam.toLowerCase() === "ir iran" || m.homeTeam.toLowerCase() === "iran") && team.slug === "iran" ||
-                  (m.homeTeam.toLowerCase() === "dr congo" || m.homeTeam.toLowerCase() === "democratic republic of congo") && team.slug === "dr-congo";
+        {team.recentEloMatches && team.recentEloMatches.length > 0 ? (
+          <div className="space-y-3">
+            {team.recentEloMatches.map((m: any, idx: number) => {
+              // Kiểm tra chính xác vai trò chủ nhà dựa trên tên hoặc slug
+              const isHome =
+                m.homeTeam.toLowerCase() === team.name.toLowerCase() ||
+                m.homeTeam.toLowerCase() === team.country.toLowerCase() ||
+                (m.homeTeam.toLowerCase() === "united states" || m.homeTeam.toLowerCase() === "usa") && team.slug === "united-states" ||
+                (m.homeTeam.toLowerCase() === "cote d'ivoire" || m.homeTeam.toLowerCase() === "ivory coast") && team.slug === "cote-divoire" ||
+                (m.homeTeam.toLowerCase() === "ir iran" || m.homeTeam.toLowerCase() === "iran") && team.slug === "iran" ||
+                (m.homeTeam.toLowerCase() === "dr congo" || m.homeTeam.toLowerCase() === "democratic republic of congo") && team.slug === "dr-congo";
 
-                const outcome = m.homeScore === m.awayScore
-                  ? "draw"
-                  : (isHome ? m.homeScore > m.awayScore : m.awayScore > m.homeScore)
-                    ? "win"
-                    : "loss";
+              const outcome = m.homeScore === m.awayScore
+                ? "draw"
+                : (isHome ? m.homeScore > m.awayScore : m.awayScore > m.homeScore)
+                  ? "win"
+                  : "loss";
 
-                // Màu sắc & ký hiệu biến động Elo
-                const isPositive = m.ratingChange > 0;
-                const isNegative = m.ratingChange < 0;
-                
-                const changeBadge = isPositive
-                  ? "bg-[#10b981]/10 text-[#10b981] border-[#10b981]/20"
-                  : isNegative
-                    ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                    : "bg-[#f8fafc] text-[#121C42]/60 border-[#121C42]/10";
+              // Màu sắc & ký hiệu biến động Elo
+              const isPositive = m.ratingChange > 0;
+              const isNegative = m.ratingChange < 0;
 
-                const changeSign = isPositive ? `+${m.ratingChange}` : String(m.ratingChange);
+              const changeBadge = isPositive
+                ? "bg-[#10b981]/10 text-[#10b981] border-[#10b981]/20"
+                : isNegative
+                  ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                  : "bg-[#f8fafc] text-[#121C42]/60 border-[#121C42]/10";
 
-                // Màu sắc badge W/D/L viết tắt
-                const outcomeBadge = outcome === "win"
-                  ? "bg-[#10b981] text-white font-black"
-                  : outcome === "loss"
-                    ? "bg-rose-500 text-[#121C42] font-black"
-                    : "bg-[#121C42]/20 text-[#121C42] font-bold";
+              const changeSign = isPositive ? `+${m.ratingChange}` : String(m.ratingChange);
 
-                const outcomeChar = outcome === "win" ? "W" : outcome === "loss" ? "L" : "D";
+              // Màu sắc badge W/D/L viết tắt
+              const outcomeBadge = outcome === "win"
+                ? "bg-[#10b981] text-white font-black"
+                : outcome === "loss"
+                  ? "bg-rose-500 text-[#121C42] font-black"
+                  : "bg-[#121C42]/20 text-[#121C42] font-bold";
 
-                return (
-                  <div
-                    key={idx}
-                    className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 p-4 rounded-2xl bg-white border border-[#121C42]/10 hover:border-[#3B5BDB]/50 hover:bg-[#f8fafc] transition-all shadow-sm group relative overflow-hidden"
-                  >
-                    {/* Glow chỉ thị kết quả ở rìa trái */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                      outcome === "win" ? "bg-[#10b981]" : outcome === "loss" ? "bg-rose-500" : "bg-[#121C42]/20"
+              const outcomeChar = outcome === "win" ? "W" : outcome === "loss" ? "L" : "D";
+
+              return (
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 p-4 rounded-2xl bg-white border border-[#121C42]/10 hover:border-[#3B5BDB]/50 hover:bg-[#f8fafc] transition-all shadow-sm group relative overflow-hidden"
+                >
+                  {/* Glow chỉ thị kết quả ở rìa trái */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${outcome === "win" ? "bg-[#10b981]" : outcome === "loss" ? "bg-rose-500" : "bg-[#121C42]/20"
                     }`} />
 
-                    {/* Cột 1: Thông tin Ngày & Giải đấu (3/12 cols) */}
-                    <div className="md:col-span-3 space-y-1 pl-2">
-                      <div className="text-xs font-semibold text-[#121C42]/60 font-mono flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#121C42]/40" />
-                        {m.date}
-                      </div>
-                      <div className="text-[11px] text-[#121C42]/40 font-medium truncate max-w-[200px]" title={m.tournament}>
-                        {m.tournament}
-                      </div>
+                  {/* Cột 1: Thông tin Ngày & Giải đấu (3/12 cols) */}
+                  <div className="md:col-span-3 space-y-1 pl-2">
+                    <div className="text-xs font-semibold text-[#121C42]/60 font-mono flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#121C42]/40" />
+                      {m.date}
                     </div>
-
-                    {/* Cột 2: Trận đấu & Tỷ số (5/12 cols) */}
-                    <div className="md:col-span-5 flex items-center justify-between sm:justify-start gap-4">
-                      {/* Kết quả W/D/L Badge */}
-                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs shadow-sm select-none shrink-0 ${outcomeBadge}`}>
-                        {outcomeChar}
-                      </span>
-
-                      <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <span className={`text-sm tracking-tight truncate max-w-[110px] ${
-                          isHome ? "text-[#121C42] font-extrabold" : "text-[#121C42]/60 font-medium"
-                        }`}>
-                          {m.homeTeam}
-                        </span>
-                        
-                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#f8fafc]/80 border border-[#121C42]/10 text-[#121C42]/80 tracking-wider">
-                          {m.homeScore} - {m.awayScore}
-                        </span>
-
-                        <span className={`text-sm tracking-tight truncate max-w-[110px] ${
-                          !isHome ? "text-[#121C42] font-extrabold" : "text-[#121C42]/60 font-medium"
-                        }`}>
-                          {m.awayTeam}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Cột 3: Chỉ số Elo & Biến động (4/12 cols) */}
-                    <div className="md:col-span-4 flex items-center justify-between md:justify-end gap-6 border-t border-[#121C42]/10 md:border-0 pt-3 md:pt-0">
-                      {/* Biến động Elo */}
-                      <div className="flex flex-col items-start md:items-end">
-                        <span className="text-[9px] text-[#121C42]/40 uppercase tracking-widest font-bold font-mono">Biến động</span>
-                        <span className={`inline-flex items-center gap-0.5 text-xs px-2.5 py-0.5 rounded-full border mt-0.5 font-mono font-bold ${changeBadge}`}>
-                          {changeSign}
-                          {isPositive && <ArrowUpRight className="w-3 h-3" />}
-                          {isNegative && <ArrowDownRight className="w-3 h-3" />}
-                        </span>
-                      </div>
-
-                      {/* Elo hiện tại */}
-                      <div className="flex flex-col items-start md:items-end font-mono">
-                        <span className="text-[9px] text-[#121C42]/40 uppercase tracking-widest font-bold">Elo sau trận</span>
-                        <span className="text-[#121C42] font-bold text-sm mt-0.5">{m.ratingAfter}</span>
-                      </div>
-
-                      {/* Hạng Elo */}
-                      {m.rankAfter > 0 ? (
-                        <div className="flex flex-col items-start md:items-end font-mono">
-                          <span className="text-[9px] text-[#121C42]/40 uppercase tracking-widest font-bold">Hạng Elo</span>
-                          <span className="text-[#121C42]/80 font-semibold text-sm mt-0.5">#{m.rankAfter}</span>
-                        </div>
-                      ) : (
-                        <div className="hidden md:block w-12" />
-                      )}
+                    <div className="text-[11px] text-[#121C42]/40 font-medium truncate max-w-[200px]" title={m.tournament}>
+                      {m.tournament}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12 border border-dashed border-[#121C42]/20 rounded-2xl bg-white shadow-sm">
-              <p className="text-[#121C42]/40 mb-1">Chưa có lịch sử đấu Elo được đồng bộ.</p>
-              <p className="text-xs text-[#121C42]/30 font-mono">Vui lòng bấm nút đồng bộ Elo ở trang Data Pipeline.</p>
-            </div>
-          )}
-        </div>
+
+                  {/* Cột 2: Trận đấu & Tỷ số (5/12 cols) */}
+                  <div className="md:col-span-5 flex items-center justify-between sm:justify-start gap-4">
+                    {/* Kết quả W/D/L Badge */}
+                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs shadow-sm select-none shrink-0 ${outcomeBadge}`}>
+                      {outcomeChar}
+                    </span>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <span className={`text-sm tracking-tight truncate max-w-[110px] ${isHome ? "text-[#121C42] font-extrabold" : "text-[#121C42]/60 font-medium"
+                        }`}>
+                        {m.homeTeam}
+                      </span>
+
+                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#f8fafc]/80 border border-[#121C42]/10 text-[#121C42]/80 tracking-wider">
+                        {m.homeScore} - {m.awayScore}
+                      </span>
+
+                      <span className={`text-sm tracking-tight truncate max-w-[110px] ${!isHome ? "text-[#121C42] font-extrabold" : "text-[#121C42]/60 font-medium"
+                        }`}>
+                        {m.awayTeam}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cột 3: Chỉ số Elo & Biến động (4/12 cols) */}
+                  <div className="md:col-span-4 flex items-center justify-between md:justify-end gap-6 border-t border-[#121C42]/10 md:border-0 pt-3 md:pt-0">
+                    {/* Biến động Elo */}
+                    <div className="flex flex-col items-start md:items-end">
+                      <span className="text-[9px] text-[#121C42]/40 uppercase tracking-widest font-bold font-mono">Biến động</span>
+                      <span className={`inline-flex items-center gap-0.5 text-xs px-2.5 py-0.5 rounded-full border mt-0.5 font-mono font-bold ${changeBadge}`}>
+                        {changeSign}
+                        {isPositive && <ArrowUpRight className="w-3 h-3" />}
+                        {isNegative && <ArrowDownRight className="w-3 h-3" />}
+                      </span>
+                    </div>
+
+                    {/* Elo hiện tại */}
+                    <div className="flex flex-col items-start md:items-end font-mono">
+                      <span className="text-[9px] text-[#121C42]/40 uppercase tracking-widest font-bold">Elo sau trận</span>
+                      <span className="text-[#121C42] font-bold text-sm mt-0.5">{m.ratingAfter}</span>
+                    </div>
+
+                    {/* Hạng Elo */}
+                    {m.rankAfter > 0 ? (
+                      <div className="flex flex-col items-start md:items-end font-mono">
+                        <span className="text-[9px] text-[#121C42]/40 uppercase tracking-widest font-bold">Hạng Elo</span>
+                        <span className="text-[#121C42]/80 font-semibold text-sm mt-0.5">#{m.rankAfter}</span>
+                      </div>
+                    ) : (
+                      <div className="hidden md:block w-12" />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12 border border-dashed border-[#121C42]/20 rounded-2xl bg-white shadow-sm">
+            <p className="text-[#121C42]/40 mb-1">Chưa có lịch sử đấu Elo được đồng bộ.</p>
+            <p className="text-xs text-[#121C42]/30 font-mono">Vui lòng bấm nút đồng bộ Elo ở trang Data Pipeline.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

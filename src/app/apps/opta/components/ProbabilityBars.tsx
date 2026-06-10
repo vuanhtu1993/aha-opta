@@ -24,7 +24,7 @@ export function ProbabilityBars({ homeName, awayName, homeProb, drawProb, awayPr
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex justify-between text-xs font-medium text-slate-400">
-        <span className="text-emerald-400 truncate max-w-[30%]">{homeName}</span>
+        <span className="text-[#04952e] truncate max-w-[30%]">{homeName}</span>
         <span className="text-slate-500">Hòa</span>
         <span className="text-rose-400 truncate max-w-[30%] text-right">{awayName}</span>
       </div>
@@ -32,7 +32,7 @@ export function ProbabilityBars({ homeName, awayName, homeProb, drawProb, awayPr
       {/* Bar container */}
       <div className="h-2.5 flex w-full rounded-full overflow-hidden bg-slate-800">
         <div 
-          className="bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-1000 ease-out"
+          className="bg-gradient-to-r from-[#04952e] to-[#037a25] transition-all duration-1000 ease-out"
           style={{ width: `${h}%` }}
         />
         <div 
@@ -47,7 +47,7 @@ export function ProbabilityBars({ homeName, awayName, homeProb, drawProb, awayPr
       
       {/* Numbers */}
       <div className="flex justify-between text-sm font-bold">
-        <span className="text-emerald-400">{h.toFixed(1)}%</span>
+        <span className="text-[#04952e]">{h.toFixed(1)}%</span>
         <span className="text-slate-400">{d.toFixed(1)}%</span>
         <span className="text-rose-400">{a.toFixed(1)}%</span>
       </div>

@@ -82,19 +82,19 @@ export default function SyncPage() {
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Database className="text-emerald-500 w-8 h-8" />
+          <Database className="text-[#3B5BDB] w-8 h-8" />
           Data Pipeline
         </h1>
-        <p className="text-slate-400 mt-2">
+        <p className="text-[#121C42]/60 mt-2">
           Quản lý luồng dữ liệu ETL (Extract, Transform, Load) từ API-Football, eloratings.net, và FBref.
         </p>
       </div>
 
       {/* Season Selector */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#121C42]/10 shadow-sm p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-200">Mùa giải World Cup</h3>
-          <p className="text-xs text-slate-400 mt-1">
+          <h3 className="text-lg font-bold text-[#121C42]">Mùa giải World Cup</h3>
+          <p className="text-xs text-[#121C42]/60 mt-1">
             Chọn 2026 cho giải đấu hiện tại hoặc 2022 để kiểm thử mô hình với dữ liệu lịch sử đầy đủ.
           </p>
         </div>
@@ -105,8 +105,8 @@ export default function SyncPage() {
               type="button"
               onClick={() => setSeason(s)}
               className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${season === s
-                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-950"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                ? "bg-[#3B5BDB] text-white shadow-md shadow-[#3B5BDB]/20"
+                : "bg-[#f8fafc] hover:bg-[#3B5BDB]/10 text-[#121C42]/70 hover:text-[#3B5BDB] border border-[#121C42]/10"
                 }`}
             >
               World Cup {s}
@@ -118,10 +118,10 @@ export default function SyncPage() {
       {/* Row 1: API-Football actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Sync Teams */}
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+        <div className="bg-white border border-[#121C42]/10 shadow-sm p-6 rounded-2xl flex flex-col justify-between">
           <div>
             <h3 className="text-xl font-bold text-slate-200 mb-2">Đồng bộ Đội bóng</h3>
-            <p className="text-sm text-slate-400 mb-6">
+            <p className="text-sm text-[#121C42]/70 mb-6">
               Lấy danh sách 48 đội bóng tham gia, thông tin quốc gia, logo, và bảng đấu. (API-Football)
             </p>
           </div>
@@ -129,7 +129,7 @@ export default function SyncPage() {
             id="btn-sync-teams"
             onClick={() => handleSync("teams", false)}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] hover:bg-[#3B5BDB] hover:text-white text-[#121C42] border border-[#121C42]/10 font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
           >
             {loading === "teams" ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />}
             Sync Teams
@@ -137,10 +137,10 @@ export default function SyncPage() {
         </div>
 
         {/* Sync Matches */}
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+        <div className="bg-white border border-[#121C42]/10 shadow-sm p-6 rounded-2xl flex flex-col justify-between">
           <div>
             <h3 className="text-xl font-bold text-slate-200 mb-2">Đồng bộ Trận đấu</h3>
-            <p className="text-sm text-slate-400 mb-6">
+            <p className="text-sm text-[#121C42]/70 mb-6">
               Lấy lịch thi đấu, kết quả, thống kê (shots, possession) và tự động cào xG từ FBref.
             </p>
           </div>
@@ -148,7 +148,7 @@ export default function SyncPage() {
             id="btn-sync-matches"
             onClick={() => handleSync("matches", true)}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] hover:bg-[#3B5BDB] hover:text-white text-[#121C42] border border-[#121C42]/10 font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
           >
             {loading === "matches" ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />}
             Sync Matches & xG
@@ -156,14 +156,14 @@ export default function SyncPage() {
         </div>
 
         {/* Manual Init WC 2026 */}
-        <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 border border-indigo-500/20 p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-indigo-950/20 relative overflow-hidden">
+        <div className="bg-gradient-to-b from-white to-[#8DB7F4]/10 border border-[#3B5BDB]/20 p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-indigo-950/20 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full pointer-events-none" />
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 to-emerald-200">Khởi tạo WC 2026</h3>
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">API Free Bypass</span>
+              <h3 className="text-xl font-bold text-[#3B5BDB]">Khởi tạo WC 2026</h3>
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#3B5BDB]/10 text-[#3B5BDB] border border-[#3B5BDB]/20">API Free Bypass</span>
             </div>
-            <p className="text-sm text-slate-400 mb-6">
+            <p className="text-sm text-[#121C42]/70 mb-6">
               Tạo thủ công 48 đội tuyển (12 bảng) và sinh lịch thi đấu 72 trận vòng bảng trực tiếp vào Database.
             </p>
           </div>
@@ -171,7 +171,7 @@ export default function SyncPage() {
             id="btn-init-wc2026"
             onClick={() => handleSync("manual-2026", false)}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/50 disabled:opacity-50 animate-pulse"
+            className="w-full flex items-center justify-center gap-2 bg-[#3B5BDB] hover:bg-[#264de4] text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-[#3B5BDB]/20 disabled:opacity-50 animate-pulse"
           >
             {loading === "manual-2026" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
             Khởi tạo WC 2026
@@ -182,26 +182,26 @@ export default function SyncPage() {
       {/* Row 2: Web Scraper Agent */}
       <div>
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-px flex-1 bg-slate-800" />
-          <span className="text-xs uppercase font-mono text-slate-500 tracking-widest">Web Scraper Agent</span>
-          <div className="h-px flex-1 bg-slate-800" />
+          <div className="h-px flex-1 bg-[#121C42]/10" />
+          <span className="text-xs uppercase font-mono text-[#121C42]/40 tracking-widest font-bold">Web Scraper Agent</span>
+          <div className="h-px flex-1 bg-[#121C42]/10" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Sync Elo Ratings */}
-          <div className="bg-gradient-to-b from-slate-900 to-emerald-950/30 border border-emerald-500/20 p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-emerald-950/20 relative overflow-hidden">
+          <div className="bg-gradient-to-b from-white to-[#3B5BDB]/5 border border-[#3B5BDB]/20 p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-emerald-950/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-teal-200">Sync Elo Ratings</h3>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Vercel Native</span>
+                <h3 className="text-xl font-bold text-[#3B5BDB]">Sync Elo Ratings</h3>
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#3B5BDB]/10 text-[#3B5BDB] border border-[#3B5BDB]/20">Vercel Native</span>
               </div>
-              <p className="text-sm text-slate-400 mb-1">
-                Crawl hệ số <strong className="text-emerald-400">Elo</strong> từ{" "}
-                <a href="https://eloratings.net" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">eloratings.net</a>{" "}
+              <p className="text-sm text-[#121C42]/70 mb-1">
+                Crawl hệ số <strong className="text-[#3B5BDB] font-bold">Elo</strong> từ{" "}
+                <a href="https://eloratings.net" target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] font-bold hover:underline">eloratings.net</a>{" "}
                 — chính xác hơn FIFA Ranking cho AI prediction.
               </p>
-              <p className="text-xs text-slate-500 mb-6">
+              <p className="text-xs text-[#121C42]/60 mb-6">
                 Không cần browser, chạy trực tiếp trên Vercel serverless bằng fetch + cheerio.
               </p>
             </div>
@@ -209,7 +209,7 @@ export default function SyncPage() {
               id="btn-sync-elo"
               onClick={handleSyncElo}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-emerald-900/50 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-[#3B5BDB] hover:bg-[#264de4] text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-[#3B5BDB]/20 disabled:opacity-50"
             >
               {loading === "elo" ? <Loader2 className="w-5 h-5 animate-spin" /> : <TrendingUp className="w-5 h-5" />}
               {loading === "elo" ? "Đang crawl eloratings.net..." : "Sync Elo Ratings"}
@@ -217,17 +217,17 @@ export default function SyncPage() {
           </div>
 
           {/* Crawl FBref — Local Script (Phase 2) */}
-          <div className="bg-slate-900/50 border border-slate-700/50 border-dashed p-6 rounded-2xl flex flex-col justify-between opacity-60">
+          <div className="bg-[#f8fafc] border border-[#121C42]/10 border-dashed p-6 rounded-2xl flex flex-col justify-between opacity-60">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-bold text-slate-400">Crawl xG từ FBref</h3>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-slate-700 text-slate-400 border border-slate-600">Local Script</span>
+                <h3 className="text-xl font-bold text-[#121C42]/70">Crawl xG từ FBref</h3>
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#121C42]/5 text-[#121C42]/60 border border-[#121C42]/10">Local Script</span>
               </div>
               <p className="text-sm text-slate-500 mb-3">
-                Crawl xG thực từ <strong className="text-slate-400">fbref.com</strong> bằng Playwright sau mỗi matchday.
+                Crawl xG thực từ <strong className="text-[#121C42]/70">fbref.com</strong> bằng Playwright sau mỗi matchday.
                 Cần Chromium browser — chạy local, không deploy lên Vercel.
               </p>
-              <div className="bg-slate-800/80 rounded-lg p-3 font-mono text-xs text-emerald-400/80">
+              <div className="bg-[#121C42]/10/80 rounded-lg p-3 font-mono text-xs text-[#3B5BDB] font-bold/80">
                 $ pnpm crawl:fbref
               </div>
             </div>
@@ -241,21 +241,21 @@ export default function SyncPage() {
 
       {/* Result Area */}
       {error && (
-        <div className="bg-rose-950/50 border border-rose-900/50 p-6 rounded-2xl flex items-start gap-4">
+        <div className="bg-rose-50 border border-rose-200 p-6 rounded-2xl flex items-start gap-4">
           <AlertCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-rose-400 font-bold mb-1">Thất bại</h4>
-            <p className="text-rose-300/80 text-sm">{error}</p>
+            <h4 className="text-rose-700 font-bold mb-1">Thất bại</h4>
+            <p className="text-rose-600 text-sm">{error}</p>
           </div>
         </div>
       )}
 
       {result && (
-        <div className="bg-emerald-950/30 border border-emerald-900/50 p-6 rounded-2xl flex items-start gap-4">
+        <div className="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl flex items-start gap-4">
           <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
           <div className="w-full">
-            <h4 className="text-emerald-400 font-bold mb-2">{result.message}</h4>
-            <pre className="text-xs text-emerald-300/70 bg-black/30 p-4 rounded-lg overflow-x-auto">
+            <h4 className="text-[#3B5BDB] font-bold font-bold mb-2">{result.message}</h4>
+            <pre className="text-xs text-emerald-800 bg-white border border-emerald-100 p-4 rounded-lg overflow-x-auto">
               {JSON.stringify(result.results, null, 2)}
             </pre>
           </div>

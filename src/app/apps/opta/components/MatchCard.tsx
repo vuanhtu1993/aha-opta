@@ -97,14 +97,14 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
 
   if (isEditing) {
     return (
-      <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl overflow-hidden shadow-lg shadow-black/50">
+      <div className="bg-white border border-[#121C42]/10 rounded-2xl overflow-hidden shadow-xl shadow-[#121C42]/5">
         {/* Header */}
-        <div className="px-5 py-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center text-xs font-medium text-slate-400">
-          <span className="font-semibold text-indigo-300">Cập nhật: {home.name} vs {away.name}</span>
+        <div className="px-5 py-3 border-b border-[#121C42]/10 bg-[#f8fafc] flex justify-between items-center text-xs font-medium text-[#121C42]/60">
+          <span className="font-semibold text-[#121C42]">Cập nhật: {home.name} vs {away.name}</span>
           <button 
             type="button" 
             onClick={() => setIsEditing(false)} 
-            className="text-slate-500 hover:text-white font-bold"
+            className="text-[#121C42]/50 hover:text-[#121C42] font-bold"
           >
             Hủy
           </button>
@@ -114,24 +114,24 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           {/* Tỉ số */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">{home.name} (Bàn thắng)</label>
+              <label className="block text-xs font-semibold text-[#121C42]/60 mb-1">{home.name} (Bàn thắng)</label>
               <input 
                 type="number" 
                 min="0" 
                 value={formHomeScore}
                 onChange={e => setFormHomeScore(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-bold text-center focus:border-indigo-500 outline-none"
+                className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-bold text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">{away.name} (Bàn thắng)</label>
+              <label className="block text-xs font-semibold text-[#121C42]/60 mb-1">{away.name} (Bàn thắng)</label>
               <input 
                 type="number" 
                 min="0" 
                 value={formAwayScore}
                 onChange={e => setFormAwayScore(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-bold text-center focus:border-indigo-500 outline-none"
+                className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-bold text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
                 required
               />
             </div>
@@ -139,7 +139,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
 
           {/* Kiểm soát bóng */}
           <div>
-            <div className="flex justify-between text-xs font-semibold text-slate-400 mb-1">
+            <div className="flex justify-between text-xs font-semibold text-[#121C42]/60 mb-1">
               <span>Kiểm soát: {home.name} ({formPossession}%)</span>
               <span>{away.name} ({100 - parseInt(formPossession || "50", 10)}%)</span>
             </div>
@@ -149,14 +149,14 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
               max="90" 
               value={formPossession}
               onChange={e => setFormPossession(e.target.value)}
-              className="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+              className="w-full accent-[#3B5BDB] bg-slate-200 h-1.5 rounded-lg appearance-none cursor-pointer"
             />
           </div>
 
           {/* Cú sút */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">{home.name} (Tổng sút / Trúng đích)</label>
+              <label className="block text-xs font-semibold text-[#121C42]/60 mb-1">{home.name} (Tổng sút / Trúng đích)</label>
               <div className="grid grid-cols-2 gap-2">
                 <input 
                   type="number" 
@@ -164,7 +164,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   placeholder="Sút"
                   value={formHomeShots}
                   onChange={e => setFormHomeShots(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-center text-xs text-white focus:border-indigo-500 outline-none"
+                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
                   required
                 />
                 <input 
@@ -173,13 +173,13 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   placeholder="Trúng"
                   value={formHomeSOT}
                   onChange={e => setFormHomeSOT(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-center text-xs text-white focus:border-indigo-500 outline-none"
+                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
                   required
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">{away.name} (Tổng sút / Trúng đích)</label>
+              <label className="block text-xs font-semibold text-[#121C42]/60 mb-1">{away.name} (Tổng sút / Trúng đích)</label>
               <div className="grid grid-cols-2 gap-2">
                 <input 
                   type="number" 
@@ -187,7 +187,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   placeholder="Sút"
                   value={formAwayShots}
                   onChange={e => setFormAwayShots(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-center text-xs text-white focus:border-indigo-500 outline-none"
+                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
                   required
                 />
                 <input 
@@ -196,7 +196,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   placeholder="Trúng"
                   value={formAwaySOT}
                   onChange={e => setFormAwaySOT(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-center text-xs text-white focus:border-indigo-500 outline-none"
+                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
                   required
                 />
               </div>
@@ -206,45 +206,45 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           {/* Bàn thắng kỳ vọng xG */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">{home.name} xG thực</label>
+              <label className="block text-xs font-semibold text-[#121C42]/60 mb-1">{home.name} xG thực</label>
               <input 
                 type="number" 
                 step="0.01"
                 min="0"
                 value={formHomeXG}
                 onChange={e => setFormHomeXG(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-center focus:border-indigo-500 outline-none"
+                className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">{away.name} xG thực</label>
+              <label className="block text-xs font-semibold text-[#121C42]/60 mb-1">{away.name} xG thực</label>
               <input 
                 type="number" 
                 step="0.01"
                 min="0"
                 value={formAwayXG}
                 onChange={e => setFormAwayXG(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-center focus:border-indigo-500 outline-none"
+                className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
                 required
               />
             </div>
           </div>
 
-          {formError && <p className="text-rose-400 text-xs">{formError}</p>}
+          {formError && <p className="text-rose-500 text-xs">{formError}</p>}
 
           <div className="flex gap-2 pt-2">
             <button 
               type="button" 
               onClick={() => setIsEditing(false)}
-              className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2 rounded-xl text-center"
+              className="w-1/2 bg-[#f8fafc] border border-[#121C42]/10 hover:bg-slate-100 text-[#121C42]/70 font-medium py-2 rounded-xl text-center"
             >
               Hủy
             </button>
             <button 
               type="submit" 
               disabled={formLoading}
-              className="w-1/2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium py-2 rounded-xl flex items-center justify-center gap-1.5"
+              className="w-1/2 bg-[#3B5BDB] hover:bg-[#264de4] disabled:opacity-50 text-white font-medium py-2 rounded-xl flex items-center justify-center gap-1.5"
             >
               {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               Lưu kết quả
@@ -256,15 +256,15 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-emerald-500/30 transition-all duration-300 shadow-lg shadow-black/50">
+    <div className="bg-white border border-[#121C42]/10 rounded-2xl overflow-hidden hover:border-[#3B5BDB]/50 transition-all duration-300 shadow-xl">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center text-xs font-medium text-slate-400">
+      <div className="px-5 py-3 border-b border-[#121C42]/10 bg-[#f8fafc] flex justify-between items-center text-xs font-medium text-[#121C42]/60">
         <span>{date.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })} - {match.stage}</span>
         <div className="flex items-center gap-2">
-          {match.group && <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">Bảng {match.group}</span>}
+          {match.group && <span className="px-2 py-0.5 rounded-md bg-[#f8fafc] border border-[#121C42]/10 text-[#121C42]">Bảng {match.group}</span>}
           <button
             onClick={() => setIsEditing(true)}
-            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 border border-slate-700 text-[10px]"
+            className="px-2 py-0.5 rounded bg-white hover:bg-[#3B5BDB]/10 text-[#3B5BDB] border border-[#121C42]/10 text-[10px]"
           >
             Cập nhật kết quả
           </button>
@@ -275,21 +275,21 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
       <div className="p-5">
         <div className="flex justify-between items-center mb-6">
           <div className="flex flex-col items-center gap-2 w-1/3">
-            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden border border-[#121C42]/10 shadow-sm">
               {home.flag ? <img src={home.flag} alt={home.name} className="w-full h-full object-cover" /> : <span className="text-xs">{home.shortName}</span>}
             </div>
             <span className="font-bold text-center">{home.name}</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center w-1/3 text-slate-500">
+          <div className="flex flex-col items-center justify-center w-1/3 text-[#121C42]/40">
             <span className="text-xs uppercase tracking-widest font-bold mb-1">VS</span>
-            <span className="text-xl font-bold text-slate-300">
+            <span className="text-xl font-bold text-[#121C42]">
               {match.status === "finished" ? `${match.homeScore} - ${match.awayScore}` : "- : -"}
             </span>
           </div>
 
           <div className="flex flex-col items-center gap-2 w-1/3">
-            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden border border-[#121C42]/10 shadow-sm">
               {away.flag ? <img src={away.flag} alt={away.name} className="w-full h-full object-cover" /> : <span className="text-xs">{away.shortName}</span>}
             </div>
             <span className="font-bold text-center">{away.name}</span>
@@ -297,9 +297,9 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
         </div>
 
         {/* Action / Prediction Result */}
-        <div className="mt-4 pt-4 border-t border-slate-800/50 min-h-[120px] flex flex-col justify-center">
+        <div className="mt-4 pt-4 border-t border-[#121C42]/10 min-h-[120px] flex flex-col justify-center">
           {loading ? (
-            <div className="flex flex-col items-center justify-center text-emerald-400 gap-3 py-4">
+            <div className="flex flex-col items-center justify-center text-[#3B5BDB] gap-3 py-4">
               <Loader2 className="w-6 h-6 animate-spin" />
               <span className="text-sm font-mono animate-pulse">LangGraph Agent đang phân tích...</span>
             </div>
@@ -313,9 +313,9 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                 awayProb={prediction.probabilities.away}
               />
               
-              <div className="bg-slate-950/50 p-3 rounded-lg text-sm text-slate-300 border border-emerald-900/30">
+              <div className="bg-[#f8fafc] p-3 rounded-lg text-sm text-[#121C42]/70 border border-[#3B5BDB]/20">
                 <div className="flex gap-2 items-start">
-                  <BrainCircuit className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                  <BrainCircuit className="w-4 h-4 text-[#3B5BDB] mt-0.5 shrink-0" />
                   <p className="leading-relaxed text-xs">{prediction.reasoning}</p>
                 </div>
               </div>
@@ -325,7 +325,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
               {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
               <button 
                 onClick={handlePredict}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-500 text-white font-medium hover:from-emerald-500 hover:to-green-400 transition-all shadow-lg shadow-emerald-900/50 active:scale-95"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3B5BDB] text-white font-medium hover:bg-[#264de4] transition-all shadow-lg shadow-[#3B5BDB]/30 active:scale-95"
               >
                 <BrainCircuit className="w-4 h-4" />
                 Yêu cầu AI Dự đoán

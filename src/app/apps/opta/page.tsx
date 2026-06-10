@@ -58,42 +58,51 @@ export default function OptaDashboard() {
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-8 sm:p-12">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+      <section className="relative overflow-hidden rounded-[2rem] shadow-xl border border-[#121C42]/10 min-h-[400px]">
+        {/* Background Shapes */}
+        <div className="absolute inset-0 bg-[#3B5BDB] -z-10" />
+        <div className="absolute top-0 left-0 w-[110%] h-[55%] bg-[#8DB7F4] rounded-br-[150%] sm:rounded-br-[800px] -z-10 transform -translate-x-[5%]" />
+        <div className="absolute bottom-0 right-0 w-[60%] h-[60%] bg-[#121C42] rounded-tl-[150%] sm:rounded-tl-[800px] -z-10 transform translate-x-[10%] translate-y-[10%]" />
         
-        <div className="relative z-10 max-w-2xl">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 mb-4 tracking-tight">
-            AI World Cup Predictor
+        <div className="relative z-10 p-8 sm:p-12 md:p-16 h-full flex flex-col justify-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 tracking-tight">
+            FIFA World Cup 2026<span className="opacity-80"> | Mundial</span><br/>
+            <span className="opacity-80">de Fútbol FIFA 2026</span>
           </h1>
-          <p className="text-lg text-slate-400 leading-relaxed mb-6">
-            Hệ thống đánh giá sức mạnh và dự đoán bóng đá dựa trên kiến trúc LangGraph. 
-            Phân tích chuyên sâu phong độ xG thực tế kết hợp chỉ số thứ hạng FIFA và tỷ lệ cược thị trường Châu Âu.
-          </p>
-          <div className="flex gap-4 text-sm font-mono text-emerald-500/80">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Stats</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Market Odds</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> xG Model</span>
+          <h3 className="text-xl sm:text-2xl font-light text-white mb-12 opacity-90">
+            Sistema de Diseño
+          </h3>
+          
+          <div className="flex flex-col gap-1.5 text-base sm:text-lg font-medium text-white/90">
+            <span>Perfiles de Equipos y Tarjetas</span>
+            <span>Grupos</span>
+            <span>Partidos fase de grupos</span>
+            <span>Banderas</span>
           </div>
+        </div>
+
+        {/* Brand Logo placeholder from image */}
+        <div className="absolute bottom-6 right-8 text-white text-2xl font-black italic mix-blend-overlay opacity-50">
+          ux<span className="text-[#8DB7F4]">design</span>
         </div>
       </section>
 
       {/* Date Navigation Slider */}
-      <section className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-md shadow-black/30">
+      <section className="bg-white p-5 rounded-2xl flex items-center justify-between shadow-md border border-[#121C42]/5">
         <button
           onClick={handlePrevDate}
           disabled={dateIndex === 0 || loading}
-          className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 disabled:opacity-20 disabled:hover:bg-slate-850 transition-all active:scale-95 shrink-0"
+          className="p-3 rounded-xl bg-[#f8fafc] hover:bg-[#3B5BDB]/10 text-[#121C42] border border-[#121C42]/10 hover:border-[#3B5BDB] hover:text-[#3B5BDB] disabled:opacity-30 disabled:hover:bg-[#f8fafc] disabled:hover:text-[#121C42] disabled:hover:border-[#121C42]/10 transition-all active:scale-95 shrink-0"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         
         <div className="text-center select-none">
-          <div className="flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wider text-indigo-400 font-bold font-mono">
+          <div className="flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wider text-[#3B5BDB] font-bold font-mono">
             <CalendarDays className="w-3.5 h-3.5" />
             Lịch thi đấu theo ngày
           </div>
-          <h3 className="text-lg sm:text-xl font-extrabold text-white mt-1 sm:min-w-[280px]">
+          <h3 className="text-lg sm:text-xl font-extrabold text-[#121C42] mt-1 sm:min-w-[280px]">
             {new Date(selectedDate + "T00:00:00Z").toLocaleDateString("vi-VN", {
               weekday: "long",
               day: "numeric",
@@ -102,12 +111,12 @@ export default function OptaDashboard() {
             })}
           </h3>
           {matches.length > 0 && (
-            <div className="text-[11px] text-slate-500 mt-1 flex justify-center gap-3">
+            <div className="text-[11px] text-[#121C42]/60 mt-1 flex justify-center gap-3 font-medium">
               <span>{matches.length} trận đấu</span>
               <span>•</span>
-              <span className="text-emerald-500">{finishedCount} đã diễn ra</span>
+              <span className="text-[#3B5BDB]">{finishedCount} đã diễn ra</span>
               <span>•</span>
-              <span className="text-slate-400">{scheduledCount} sắp diễn ra</span>
+              <span className="text-[#121C42]/60">{scheduledCount} sắp diễn ra</span>
             </div>
           )}
         </div>
@@ -115,7 +124,7 @@ export default function OptaDashboard() {
         <button
           onClick={handleNextDate}
           disabled={dateIndex === TOURNAMENT_DATES.length - 1 || loading}
-          className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 disabled:opacity-20 disabled:hover:bg-slate-850 transition-all active:scale-95 shrink-0"
+          className="p-3 rounded-xl bg-[#f8fafc] hover:bg-[#3B5BDB]/10 text-[#121C42] border border-[#121C42]/10 hover:border-[#3B5BDB] hover:text-[#3B5BDB] disabled:opacity-30 disabled:hover:bg-[#f8fafc] disabled:hover:text-[#121C42] disabled:hover:border-[#121C42]/10 transition-all active:scale-95 shrink-0"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -125,7 +134,7 @@ export default function OptaDashboard() {
       <section>
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#3B5BDB] animate-spin" />
           </div>
         ) : matches.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -134,9 +143,9 @@ export default function OptaDashboard() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
-            <p className="text-slate-500 mb-2">Không có trận đấu nào diễn ra trong ngày này.</p>
-            <p className="text-sm text-slate-600">Hãy chuyển sang ngày tiếp theo hoặc trước đó.</p>
+          <div className="text-center py-20 border border-dashed border-[#121C42]/20 rounded-2xl bg-white shadow-sm">
+            <p className="text-[#121C42] mb-2 text-lg font-medium">Không có trận đấu nào diễn ra trong ngày này.</p>
+            <p className="text-[#121C42]/60 text-sm">Hãy chuyển sang ngày tiếp theo hoặc trước đó.</p>
           </div>
         )}
       </section>

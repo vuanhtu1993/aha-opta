@@ -34,12 +34,12 @@ export default async function TeamsPage() {
       {/* Header Section */}
       <div>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/10">
+          <div className="w-10 h-10 rounded-xl bg-[#3B5BDB] flex items-center justify-center shadow-lg shadow-[#3B5BDB]/20 border border-white/20">
             <Trophy className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Đội tuyển & Xếp hạng</h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <h1 className="text-3xl font-extrabold text-[#121C42] tracking-tight">Đội tuyển & Xếp hạng</h1>
+            <p className="text-[#121C42]/60 text-sm mt-1 font-medium">
               Bảng xếp hạng hệ số Elo thực tế của 48 đội bóng tranh tài tại FIFA World Cup 2026.
             </p>
           </div>
@@ -50,13 +50,13 @@ export default async function TeamsPage() {
       {teams.length > 0 ? (
         <TeamList teams={teams} />
       ) : (
-        <div className="border border-dashed border-slate-800 rounded-3xl p-12 text-center bg-slate-900/40 space-y-6 max-w-2xl mx-auto mt-8">
-          <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-500 border border-slate-750">
+        <div className="border border-dashed border-[#121C42]/20 rounded-3xl p-12 text-center bg-white shadow-sm space-y-6 max-w-2xl mx-auto mt-8">
+          <div className="w-16 h-16 rounded-full bg-[#f8fafc] flex items-center justify-center mx-auto text-[#121C42]/40 border border-[#121C42]/10">
             <HelpCircle className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-bold text-slate-200">Chưa có dữ liệu đội tuyển</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <h3 className="text-xl font-bold text-[#121C42]">Chưa có dữ liệu đội tuyển</h3>
+            <p className="text-[#121C42]/60 text-sm leading-relaxed">
               Cơ sở dữ liệu MongoDB hiện đang trống. Vui lòng truy cập trang quản trị dữ liệu (Data Pipeline) 
               để khởi tạo dữ liệu WC 2026 tĩnh và đồng bộ điểm xếp hạng Elo trực tuyến.
             </p>
@@ -64,7 +64,7 @@ export default async function TeamsPage() {
           <div className="pt-2">
             <Link
               href="/apps/opta/sync"
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/40"
+              className="inline-flex items-center gap-2 bg-[#3B5BDB] hover:bg-[#264de4] text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg shadow-[#3B5BDB]/20"
             >
               Đi tới Data Pipeline
             </Link>

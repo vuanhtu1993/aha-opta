@@ -34,11 +34,14 @@ function isCompetitiveMatch(tournament: string): boolean {
 }
 
 /**
- * Trọng số (weights) cho Form Index.
+ * Trọng số (weights) cho Form Index (10 trận gần nhất, Geometric Decay).
  * Trận gần nhất có trọng số cao nhất (index 0 = mới nhất).
- * 5 mức weight cộng lại = 1.0
+ * Dùng cấp số nhân với r = 0.75, tổng cộng lại = 1.0.
  */
-const FORM_WEIGHTS = [0.35, 0.25, 0.20, 0.12, 0.08];
+const FORM_WEIGHTS = [
+  0.2649, 0.1987, 0.1490, 0.1118, 0.0838,
+  0.0629, 0.0471, 0.0354, 0.0265, 0.0199
+];
 
 // ─── Hàm chính ───────────────────────────────────────────────────────────────
 
@@ -161,19 +164,19 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
     .filter((m) => !isNaN(m.dateMs)); // Loại bỏ entry có date không hợp lệ
 
   /**
-   * Merge WC + lịch sử, sort descending (mới nhất trước), lấy top 5.
+   * Merge WC + lịch sử, sort descending (mới nhất trước), lấy top 10.
    * WC matches sẽ tự động được ưu tiên vì ngày tháng mới hơn.
    */
   const allFormData = [...wcFormData, ...historicalFormData]
     .sort((a, b) => b.dateMs - a.dateMs)
-    .slice(0, 5);
+    .slice(0, 10);
 
   // Áp dụng Weighted Average với FORM_WEIGHTS
   let formIndex = 0;
   for (let i = 0; i < allFormData.length; i++) {
     const score =
       allFormData[i].outcome === "win" ? 100 : allFormData[i].outcome === "draw" ? 50 : 0;
-    formIndex += score * (FORM_WEIGHTS[i] ?? 0.08);
+    formIndex += score * (FORM_WEIGHTS[i] ?? 0.02);
   }
   formIndex = Math.round(formIndex);
 
@@ -207,3 +210,123 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
     `${wins}W-${draws}D-${losses}L | Form=${formIndex}`
   );
 }
+
+// ─── Bootstrap từ lịch sử Elo ───────────────────────────────────────────────
+
+/**
+ * Bootstrap stats cho TẤT CẢ đội bóng từ dữ liệu `recentEloMatches` đã có sẵn.
+ *
+ * Dùng khi: WC 2026 chưa diễn ra → không có dữ liệu trong Collection `matches` →
+ * cần lấy 5 trận thi đấu chính thức gần nhất trong lịch sử để hiển thị bảng Phong độ.
+ *
+ * Nguồn dữ liệu: Team.recentEloMatches (từ eloratings.net — đã sync bằng "Sync Elo Ratings")
+ * Điều kiện tiên quyết: Phải chạy "Sync Elo Ratings" trước để có recentEloMatches.
+ *
+ * Chỉ số có thể tính từ Elo history:
+ * ✅ matchesPlayed (5 trận gần nhất chính thức)
+ * ✅ wins, draws, losses
+ * ✅ goalsFor, goalsAgainst
+ * ✅ formIndex (weighted average)
+ * ❌ xGoalsFor/Against, possessionAvg, shotsOnTargetAvg, passAccuracyAvg
+ *    → Sẽ giữ nguyên 0 cho đến khi admin nhập kết quả WC thủ công
+ *
+ * Lưu ý về thiết kế (Trade-off):
+ * → Hàm này KHÔNG ghi đè xG/possession nếu đã có (nhờ conditional $set)
+ * → Khi WC bắt đầu và admin nhập kết quả → recalculateTeamStats() sẽ
+ *   tự động merge WC data vào, thay thế dần dữ liệu bootstrap này.
+ *
+ * @returns Thống kê: số đội đã bootstrap, số đội bị bỏ qua (thiếu data)
+ */
+export async function bootstrapStatsFromEloHistory(): Promise<{
+  bootstrapped: number;
+  skipped: number;
+  details: Array<{ name: string; wins: number; draws: number; losses: number; formIndex: number }>;
+}> {
+  console.log("[StatsCalculator] Bắt đầu bootstrap stats từ lịch sử Elo...");
+
+  // Lấy tất cả teams có recentEloMatches (đã sync Elo)
+  const teams = await Team.find({ "recentEloMatches.0": { $exists: true } })
+    .select("_id name recentEloMatches stats")
+    .lean();
+
+  console.log(`[StatsCalculator] Tìm thấy ${teams.length} đội có dữ liệu Elo history.`);
+
+  let bootstrapped = 0;
+  let skipped = 0;
+  const details: Array<{ name: string; wins: number; draws: number; losses: number; formIndex: number }> = [];
+
+  for (const team of teams) {
+    const teamName = team.name.toLowerCase();
+
+    // ── Lọc 10 trận thi đấu chính thức gần nhất ─────────────────────────────
+    // recentEloMatches đã được scraper đảo ngược (trận mới nhất ở đầu mảng)
+    const competitiveMatches = (team.recentEloMatches || [])
+      .filter((m) => isCompetitiveMatch(m.tournament))
+      .slice(0, 10); // Top 10 gần nhất
+
+    if (competitiveMatches.length === 0) {
+      console.warn(`[StatsCalculator] Bỏ qua ${team.name}: Không có trận đấu chính thức nào.`);
+      skipped++;
+      continue;
+    }
+
+    // ── Tính W/D/L, GF, GA ──────────────────────────────────────────────────
+    let wins = 0, draws = 0, losses = 0;
+    let goalsFor = 0, goalsAgainst = 0;
+
+    for (const m of competitiveMatches) {
+      // Xác định đội đang bootstrap là chủ nhà hay khách dựa trên tên đội
+      const isHome = m.homeTeam.toLowerCase() === teamName;
+      const gf = isHome ? m.homeScore : m.awayScore;
+      const ga = isHome ? m.awayScore : m.homeScore;
+
+      goalsFor += gf;
+      goalsAgainst += ga;
+
+      if (gf > ga) wins++;
+      else if (gf === ga) draws++;
+      else losses++;
+    }
+
+    // ── Tính Form Index (weighted average) ──────────────────────────────────
+    // Dùng cùng logic với recalculateTeamStats để nhất quán
+    let formIndex = 0;
+    for (let i = 0; i < competitiveMatches.length; i++) {
+      const m = competitiveMatches[i];
+      const isHome = m.homeTeam.toLowerCase() === teamName;
+      const gf = isHome ? m.homeScore : m.awayScore;
+      const ga = isHome ? m.awayScore : m.homeScore;
+      const score = gf > ga ? 100 : gf === ga ? 50 : 0;
+      formIndex += score * (FORM_WEIGHTS[i] ?? 0.02);
+    }
+    formIndex = Math.round(formIndex);
+
+    // ── Cập nhật Team document ──────────────────────────────────────────────
+    // Chiến lược update quan trọng:
+    // - Ghi matchesPlayed, W/D/L, GF/GA, formIndex từ Elo history
+    // - KHÔNG ghi đè xGoals/possession/shotsOnTarget/passAccuracy
+    //   vì các chỉ số này sẽ được điền dần khi WC diễn ra
+    await Team.findByIdAndUpdate(team._id, {
+      $set: {
+        "stats.matchesPlayed": competitiveMatches.length,
+        "stats.wins": wins,
+        "stats.draws": draws,
+        "stats.losses": losses,
+        "stats.goalsFor": goalsFor,
+        "stats.goalsAgainst": goalsAgainst,
+        "stats.formIndex": formIndex,
+        lastUpdated: new Date(),
+      },
+    });
+
+    bootstrapped++;
+    details.push({ name: team.name, wins, draws, losses, formIndex });
+  }
+
+  console.log(
+    `[StatsCalculator] Bootstrap hoàn tất: ${bootstrapped} đội cập nhật, ${skipped} đội bỏ qua.`
+  );
+
+  return { bootstrapped, skipped, details };
+}
+

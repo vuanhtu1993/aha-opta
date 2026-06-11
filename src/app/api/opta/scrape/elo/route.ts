@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { Team } from "@/lib/db/models/Team";
 import { scrapeEloRatings } from "@/lib/services/elo-scraper";
+import { bootstrapStatsFromEloHistory } from "@/lib/etl/stats-calculator";
 
 export async function POST(request: NextRequest) {
   // ─── 1. Auth ─────────────────────────────────────────────────────────────
@@ -92,6 +93,19 @@ export async function POST(request: NextRequest) {
 
     console.log(`[EloScraper] Hoàn thành: ${synced.length} synced, ${notFound.length} not found, ${failed.length} failed`);
 
+    // ── Bước 4: Auto-bootstrap stats từ Elo history ────────────────────────
+    // Chạy ngay sau khi có recentEloMatches mới → UI hiển thị Phong độ luôn
+    let bootstrapResult = { bootstrapped: 0, skipped: 0 };
+    if (synced.length > 0) {
+      try {
+        bootstrapResult = await bootstrapStatsFromEloHistory();
+        console.log(`[EloScraper] Bootstrap stats: ${bootstrapResult.bootstrapped} đội cập nhật.`);
+      } catch (bsErr) {
+        // Không fail toàn bộ request nếu bootstrap lỗi
+        console.error("[EloScraper] Bootstrap stats thất bại:", bsErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: `Đã cập nhật Elo cho ${synced.length}/${eloData.length} đội WC 2026`,
@@ -101,6 +115,7 @@ export async function POST(request: NextRequest) {
         failed: failed.length,
         syncedTeams: synced,
         notFoundTeams: notFound,    // Log để debug tên đội bị miss
+        statsBootstrapped: bootstrapResult.bootstrapped,
       },
       scrapedAt: now.toISOString(),
     });

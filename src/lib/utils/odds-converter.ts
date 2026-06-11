@@ -28,7 +28,7 @@ export interface NormalizedOdds {
  * @param odds - Decimal odds (ví dụ: 2.10 cho Brazil)
  * @returns Raw probability (0-1), CHƯA normalize
  */
-export function oddsToRawProbability(odds: number): number {
+function oddsToRawProbability(odds: number): number {
   if (odds <= 0) throw new Error(`Invalid odds: ${odds}. Must be > 0`);
   return 1 / odds;
 }
@@ -45,7 +45,7 @@ export function oddsToRawProbability(odds: number): number {
  * normalizeOdds(2.10, 3.40, 3.80)
  * // → { homeProb: 46.1, drawProb: 28.5, awayProb: 25.4, vig: 3.3 }
  */
-export function normalizeOdds(
+function normalizeOdds(
   homeOdds: number,
   drawOdds: number,
   awayOdds: number
@@ -75,7 +75,7 @@ export function normalizeOdds(
  * @param oddsArray - Mảng decimal odds từ nhiều bookmakers
  * @returns Median odds
  */
-export function medianOdds(oddsArray: number[]): number {
+function medianOdds(oddsArray: number[]): number {
   if (oddsArray.length === 0) throw new Error("oddsArray cannot be empty");
 
   const sorted = [...oddsArray].sort((a, b) => a - b);

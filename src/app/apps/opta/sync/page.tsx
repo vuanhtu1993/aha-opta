@@ -88,6 +88,17 @@ export default function SyncPage() {
         <p className="text-[#121C42]/60 mt-2">
           Quản lý luồng dữ liệu ETL (Extract, Transform, Load) từ API-Football, eloratings.net, và FBref.
         </p>
+
+        {/* Deprecation Banner */}
+        <div className="mt-6 bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-amber-800 font-bold text-sm">Hệ thống đã chuyển sang Tự động hoá (AI-Powered)</h4>
+            <p className="text-amber-700 text-xs mt-1">
+              Toàn bộ chức năng đồng bộ hàng loạt (Sync) đã bị vô hiệu hóa do kiến trúc hiện tại đã chuyển sang cập nhật trực tiếp tại từng trận đấu bằng sức mạnh của <strong>Gemini AI (Autofetch)</strong> và tự động tính toán lại Form Index (Self-managed).
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Season Selector */}
@@ -128,8 +139,8 @@ export default function SyncPage() {
           <button
             id="btn-sync-teams"
             onClick={() => handleSync("teams", false)}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] hover:bg-[#3B5BDB] hover:text-white text-[#121C42] border border-[#121C42]/10 font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
+            disabled={true}
+            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] text-[#121C42] border border-[#121C42]/10 font-medium py-3 rounded-xl opacity-50 cursor-not-allowed"
           >
             {loading === "teams" ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />}
             Sync Teams
@@ -147,8 +158,8 @@ export default function SyncPage() {
           <button
             id="btn-sync-matches"
             onClick={() => handleSync("matches", true)}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] hover:bg-[#3B5BDB] hover:text-white text-[#121C42] border border-[#121C42]/10 font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
+            disabled={true}
+            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] text-[#121C42] border border-[#121C42]/10 font-medium py-3 rounded-xl opacity-50 cursor-not-allowed"
           >
             {loading === "matches" ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />}
             Sync Matches & xG
@@ -170,8 +181,8 @@ export default function SyncPage() {
           <button
             id="btn-init-wc2026"
             onClick={() => handleSync("manual-2026", false)}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-[#3B5BDB] hover:bg-[#264de4] text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-[#3B5BDB]/20 disabled:opacity-50 animate-pulse"
+            disabled={true}
+            className="w-full flex items-center justify-center gap-2 bg-slate-200 text-slate-500 font-medium py-3 rounded-xl opacity-50 cursor-not-allowed"
           >
             {loading === "manual-2026" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
             Khởi tạo WC 2026
@@ -208,8 +219,8 @@ export default function SyncPage() {
             <button
               id="btn-sync-elo"
               onClick={handleSyncElo}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 bg-[#3B5BDB] hover:bg-[#264de4] text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-[#3B5BDB]/20 disabled:opacity-50"
+              disabled={true}
+              className="w-full flex items-center justify-center gap-2 bg-slate-200 text-slate-500 font-medium py-3 rounded-xl opacity-50 cursor-not-allowed"
             >
               {loading === "elo" ? <Loader2 className="w-5 h-5 animate-spin" /> : <TrendingUp className="w-5 h-5" />}
               {loading === "elo" ? "Đang crawl eloratings.net..." : "Sync Elo Ratings"}

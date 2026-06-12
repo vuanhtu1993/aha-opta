@@ -50,7 +50,7 @@ export default function OptaDashboard() {
 
   const handleMatchUpdate = (updatedMatch: any) => {
     // Cập nhật nóng trận đấu vừa sửa trong danh sách để không cần F5
-    setMatches(prev => 
+    setMatches(prev =>
       prev.map(m => m._id === updatedMatch._id ? updatedMatch : m)
     );
   };
@@ -67,16 +67,16 @@ export default function OptaDashboard() {
         <div className="absolute inset-0 bg-[#3B5BDB] -z-10" />
         <div className="absolute top-0 left-0 w-[110%] h-[55%] bg-[#8DB7F4] rounded-br-[150%] sm:rounded-br-[800px] -z-10 transform -translate-x-[5%]" />
         <div className="absolute bottom-0 right-0 w-[60%] h-[60%] bg-[#121C42] rounded-tl-[150%] sm:rounded-tl-[800px] -z-10 transform translate-x-[10%] translate-y-[10%]" />
-        
+
         <div className="relative z-10 p-8 sm:p-12 md:p-16 h-full flex flex-col justify-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 tracking-tight">
-            FIFA World Cup 2026<span className="opacity-80"> | Mundial</span><br/>
+            FIFA World Cup 2026<span className="opacity-80"> | Mundial</span><br />
             <span className="opacity-80">de Fútbol FIFA 2026</span>
           </h1>
           <h3 className="text-xl sm:text-2xl font-light text-white mb-12 opacity-90">
             Sistema de Diseño
           </h3>
-          
+
           <div className="flex flex-col gap-1.5 text-base sm:text-lg font-medium text-white/90">
             <span>Perfiles de Equipos y Tarjetas</span>
             <span>Grupos</span>
@@ -100,7 +100,7 @@ export default function OptaDashboard() {
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        
+
         <div className="text-center select-none">
           <div className="flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wider text-[#3B5BDB] font-bold font-mono">
             <CalendarDays className="w-3.5 h-3.5" />
@@ -141,7 +141,7 @@ export default function OptaDashboard() {
             <Loader2 className="w-8 h-8 text-[#3B5BDB] animate-spin" />
           </div>
         ) : matches.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {matches.map(match => (
               <MatchCard key={match._id} match={match} onUpdate={handleMatchUpdate} />
             ))}

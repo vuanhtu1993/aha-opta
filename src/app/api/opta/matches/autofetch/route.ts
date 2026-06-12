@@ -1,14 +1,9 @@
 /**
  * POST /api/opta/matches/autofetch
  *
- * Tự động thu thập kết quả trận đấu từ internet bằng Gemini (Google Search grounding).
- *
- * Trade-off kỹ thuật quan trọng:
- * → searchGrounding=true KHÔNG tương thích với withStructuredOutput() trong @langchain/google-genai
- *   Lý do: Search grounding thay đổi nội bộ cách Gemini xử lý output, xung đột với schema enforcement
- * → Giải pháp: 2-step approach
- *   Step 1: Gemini + Search grounding → raw text (tìm kết quả)
- *   Step 2: Gemini không grounding + withStructuredOutput → parse text ra JSON chuẩn
+ * Tự động thu thập kết quả trận đấu:
+ * 1. Lấy Tỷ số & Kiểm soát bóng trực tiếp từ FIFA API (Nhanh & Chính xác 100%)
+ * 2. Lấy các chỉ số nâng cao (xG, Shots, Pass Accuracy) bằng Gemini Search Grounding
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -18,29 +13,36 @@ import { Team } from "@/lib/db/models/Team";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 
-// ─── Schema kết quả trả về ────────────────────────────────────────────────────
+export interface AutoFetchResult {
+  played: boolean;
+  message?: string;
+  homeScore?: number;
+  awayScore?: number;
+  homeXG?: number;
+  awayXG?: number;
+  homePossession?: number;
+  homeShots?: number;
+  awayShots?: number;
+  homeSOT?: number;
+  awaySOT?: number;
+  homePassAccuracy?: number;
+  awayPassAccuracy?: number;
+  source?: string;
+  confidence: "high" | "medium" | "low";
+}
 
-const MatchResultSchema = z.object({
-  played: z.boolean().describe("Trận đấu đã diễn ra chưa. false nếu chưa đến ngày hoặc chưa có kết quả."),
-  message: z.string().optional().describe("Thông báo nếu trận chưa diễn ra hoặc không tìm thấy thông tin."),
-  homeScore: z.number().int().min(0).optional().describe("Số bàn thắng của đội chủ nhà"),
-  awayScore: z.number().int().min(0).optional().describe("Số bàn thắng của đội khách"),
+// Schema cho phần Gemini parse
+const AdvancedStatsSchema = z.object({
   homeXG: z.number().min(0).optional().describe("Expected Goals (xG) của đội chủ nhà"),
   awayXG: z.number().min(0).optional().describe("Expected Goals (xG) của đội khách"),
-  homePossession: z.number().min(0).max(100).optional().describe("% kiểm soát bóng của đội chủ nhà"),
   homeShots: z.number().int().min(0).optional().describe("Tổng số cú sút của đội chủ nhà"),
   awayShots: z.number().int().min(0).optional().describe("Tổng số cú sút của đội khách"),
   homeSOT: z.number().int().min(0).optional().describe("Số cú sút trúng đích của đội chủ nhà"),
   awaySOT: z.number().int().min(0).optional().describe("Số cú sút trúng đích của đội khách"),
   homePassAccuracy: z.number().int().min(50).max(100).optional().describe("% chính xác chuyền bóng của đội chủ nhà"),
   awayPassAccuracy: z.number().int().min(50).max(100).optional().describe("% chính xác chuyền bóng của đội khách"),
-  source: z.string().optional().describe("Tên nguồn dữ liệu (ví dụ: 'BBC Sport', 'SofaScore', 'FBref')"),
-  confidence: z.enum(["high", "medium", "low"]).describe("Mức độ tin cậy của kết quả"),
+  source: z.string().optional().describe("Nguồn lấy dữ liệu nâng cao (ví dụ: FBref, SofaScore)"),
 });
-
-export type AutoFetchResult = z.infer<typeof MatchResultSchema>;
-
-// ─── Route Handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,22 +53,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing matchId" }, { status: 400 });
     }
 
-    // 1. Lấy thông tin trận đấu từ DB
     const match = await Match.findById(matchId).lean();
     if (!match) {
       return NextResponse.json({ success: false, error: "Match not found" }, { status: 404 });
     }
 
-    const [homeTeam, awayTeam] = await Promise.all([
-      Team.findById(match.homeTeamId).select("name shortName").lean(),
-      Team.findById(match.awayTeamId).select("name shortName").lean(),
-    ]);
-
-    if (!homeTeam || !awayTeam) {
-      return NextResponse.json({ success: false, error: "Team info not found" }, { status: 404 });
-    }
-
-    // 2. Kiểm tra sớm: trận chưa diễn ra → không cần gọi AI
     const matchDate = new Date(match.matchDate);
     const now = new Date();
 
@@ -75,74 +66,126 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           played: false,
-          confidence: "high" as const,
-          message: `Trận đấu ${homeTeam.name} vs ${awayTeam.name} sẽ diễn ra vào ${matchDate.toLocaleDateString("vi-VN", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}. Chưa có kết quả.`,
-        },
+          confidence: "high",
+          message: "Trận đấu chưa diễn ra.",
+        } as AutoFetchResult,
       });
     }
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-    const dateStr = matchDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    if (!match.fifaUrl) {
+      return NextResponse.json({ success: false, error: "Trận đấu chưa có link FIFA (fifaUrl) để lấy dữ liệu." }, { status: 400 });
+    }
 
-    // ── Step 1: Search grounding — Tìm kết quả trận đấu từ internet ──────────
-    // searchGrounding=true KHÔNG tương thích withStructuredOutput → dùng text output
-    // Type cast vì @langchain/google-genai types chưa export searchGrounding trong interface public
-    const searchLlm = new ChatGoogleGenerativeAI({ model: modelName, temperature: 0, searchGrounding: true } as any);
+    // ── Bước 1: Fetch Tỷ số từ FIFA API ──────────────────────────────────────────
+    const urlParts = match.fifaUrl.split("/");
+    const idMatch = urlParts[urlParts.length - 1];
+    const idStage = urlParts[urlParts.length - 2];
+    const idSeason = urlParts[urlParts.length - 3];
+    const idCompetition = urlParts[urlParts.length - 4];
 
+    const apiUrl = `https://api.fifa.com/api/v3/live/football/${idCompetition}/${idSeason}/${idStage}/${idMatch}?language=en`;
+    console.log(`[AutoFetch] Đang lấy dữ liệu từ FIFA API: ${apiUrl}`);
+    
+    const res = await fetch(apiUrl, { headers: { "Accept": "application/json" } });
+    if (!res.ok) {
+      return NextResponse.json({ success: false, error: "Không thể kết nối đến FIFA API" }, { status: 502 });
+    }
 
-    const searchPrompt = `Find the final match result for this football game:
+    const data = await res.json();
+    
+    if (data.MatchStatus === 1 || data.HomeTeam?.Score === null || data.HomeTeam?.Score === undefined) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          played: false,
+          confidence: "high",
+          message: "Trận đấu chưa bắt đầu hoặc chưa có kết quả trên hệ thống FIFA.",
+        } as AutoFetchResult,
+      });
+    }
+
+    const homeScore = data.HomeTeam?.Score ?? 0;
+    const awayScore = data.AwayTeam?.Score ?? 0;
+    let homePossession = 50;
+    if (data.BallPossession && data.BallPossession.OverallHome) {
+      homePossession = Math.round(data.BallPossession.OverallHome);
+    }
+
+    const resultData: AutoFetchResult = {
+      played: true,
+      confidence: "high",
+      source: "FIFA Official API",
+      homeScore,
+      awayScore,
+      homePossession,
+    };
+
+    // ── Bước 2: Dùng Gemini bổ sung các chỉ số nâng cao (Shots, xG) ─────────────
+    try {
+      const [homeTeam, awayTeam] = await Promise.all([
+        Team.findById(match.homeTeamId).select("name").lean(),
+        Team.findById(match.awayTeamId).select("name").lean(),
+      ]);
+
+      if (homeTeam && awayTeam) {
+        console.log(`[AutoFetch] Đang dùng AI Agent tìm kiếm các chỉ số nâng cao cho trận đấu...`);
+        const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+        const dateStr = matchDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        
+        // Search Grounding
+        const searchLlm = new ChatGoogleGenerativeAI({ model: modelName, temperature: 0, searchGrounding: true } as any);
+        const searchPrompt = `Find detailed match statistics for this football game:
 Match: ${homeTeam.name} vs ${awayTeam.name}
 Date: ${dateStr}
-Competition: FIFA World Cup 2026
+Final Score was: ${homeScore} - ${awayScore}
 
-Return the information you find including:
-- Final score (home team score - away team score)
-- Ball possession percentage (if available)  
-- Total shots (if available)
-- Shots on target (if available)
-- Expected goals xG (if available from FBref, Understat, or SofaScore)
-- Pass accuracy % (if available)
-- The source/website where you found this data
+Search and return ONLY these specific advanced statistics:
+- Total shots for both teams
+- Shots on target for both teams
+- Expected goals (xG) for both teams
+- Pass accuracy % for both teams
 
-If the match has not been played yet or results are unavailable, clearly state that.`;
+Include the source website. If a stat cannot be found, omit it.`;
 
-    const searchResponse = await searchLlm.invoke(searchPrompt);
-    const rawContent = typeof searchResponse.content === "string"
-      ? searchResponse.content
-      : JSON.stringify(searchResponse.content);
+        const searchResponse = await searchLlm.invoke(searchPrompt);
+        const rawContent = typeof searchResponse.content === "string" ? searchResponse.content : JSON.stringify(searchResponse.content);
 
-    console.log(`[AutoFetch] Step 1 Search kết quả (${rawContent.length} chars): ${rawContent.substring(0, 200)}...`);
-
-    // ── Step 2: Parse — Dùng Gemini thứ 2 extract JSON chuẩn từ raw text ─────
-    const parseLlm = new ChatGoogleGenerativeAI({ model: modelName, temperature: 0 });
-    const parserLlm = parseLlm.withStructuredOutput(MatchResultSchema);
-
-    const parsePrompt = `Based on the following search results about a football match, extract the information into a structured format.
-
-Match being searched: ${homeTeam.name} (home) vs ${awayTeam.name} (away) on ${dateStr}
+        // Parsing
+        const parseLlm = new ChatGoogleGenerativeAI({ model: modelName, temperature: 0 });
+        const parserLlm = parseLlm.withStructuredOutput(AdvancedStatsSchema);
+        const parsePrompt = `Based on the search results, extract the advanced statistics.
+Match: ${homeTeam.name} (home) vs ${awayTeam.name} (away)
 
 Search results:
----
 ${rawContent}
----
 
-Instructions:
-- If the search results clearly show the match has been played with a confirmed score, set played=true and extract the score.
-- If the match has NOT happened yet, or results are unclear/not found, set played=false.
-- Only include statistics (xG, possession, shots) if they are EXPLICITLY mentioned in the search results.
-- Set confidence: "high" if from official sources (BBC, FIFA, major sports sites), "medium" if from reliable fan sites, "low" if uncertain.
-- homeScore is the score of "${homeTeam.name}", awayScore is the score of "${awayTeam.name}".`;
+Only extract stats if they are clearly mentioned. Do not guess.`;
 
-    const result = await parserLlm.invoke(parsePrompt);
+        const advancedStats = await parserLlm.invoke(parsePrompt);
+        
+        console.log(`[AutoFetch] Advanced Stats from AI:`, advancedStats);
 
-    console.log(`[AutoFetch] Step 2 Parse: played=${result.played}, score=${result.homeScore}-${result.awayScore}, confidence=${result.confidence}`);
+        // Merge data
+        if (advancedStats.homeXG !== undefined) resultData.homeXG = advancedStats.homeXG;
+        if (advancedStats.awayXG !== undefined) resultData.awayXG = advancedStats.awayXG;
+        if (advancedStats.homeShots !== undefined) resultData.homeShots = advancedStats.homeShots;
+        if (advancedStats.awayShots !== undefined) resultData.awayShots = advancedStats.awayShots;
+        if (advancedStats.homeSOT !== undefined) resultData.homeSOT = advancedStats.homeSOT;
+        if (advancedStats.awaySOT !== undefined) resultData.awaySOT = advancedStats.awaySOT;
+        if (advancedStats.homePassAccuracy !== undefined) resultData.homePassAccuracy = advancedStats.homePassAccuracy;
+        if (advancedStats.awayPassAccuracy !== undefined) resultData.awayPassAccuracy = advancedStats.awayPassAccuracy;
+        if (advancedStats.source) resultData.source += ` & ${advancedStats.source}`;
+        
+        console.log(`[AutoFetch] Đã merge thành công các chỉ số nâng cao từ AI. ResultData:`, resultData);
+      }
+    } catch (aiError) {
+      console.warn(`[AutoFetch] AI Agent failed to fetch advanced stats. Continuing with basic FIFA stats.`, aiError);
+    }
 
-    return NextResponse.json({ success: true, data: result });
+    return NextResponse.json({
+      success: true,
+      data: resultData,
+    });
 
   } catch (error) {
     console.error("[API] POST /api/opta/matches/autofetch error:", error);

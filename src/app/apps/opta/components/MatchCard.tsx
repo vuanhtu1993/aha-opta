@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProbabilityBars } from "./ProbabilityBars";
 import { BrainCircuit, Loader2, Database, Search, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
 import type { AutoFetchResult } from "@/app/api/opta/matches/autofetch/route";
@@ -26,18 +26,35 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
   const [fetchPreview, setFetchPreview] = useState<AutoFetchResult | null>(null);
 
   const [formData, setFormData] = useState({
-    homeScore: match.homeScore !== null ? String(match.homeScore) : "0",
-    awayScore: match.awayScore !== null ? String(match.awayScore) : "0",
-    possession: match.homeStats?.possession ? String(match.homeStats.possession) : "50",
-    homeShots: match.homeStats?.shots ? String(match.homeStats.shots) : "10",
-    awayShots: match.awayStats?.shots ? String(match.awayStats.shots) : "10",
-    homeSOT: match.homeStats?.shotsOnTarget ? String(match.homeStats.shotsOnTarget) : "4",
-    awaySOT: match.awayStats?.shotsOnTarget ? String(match.awayStats.shotsOnTarget) : "4",
-    homeXG: match.homeStats?.xGoals ? String(match.homeStats.xGoals) : "1.0",
-    awayXG: match.awayStats?.xGoals ? String(match.awayStats.xGoals) : "1.0",
-    homePassAcc: match.homeStats?.passAccuracy ? String(match.homeStats.passAccuracy) : "82",
-    awayPassAcc: match.awayStats?.passAccuracy ? String(match.awayStats.passAccuracy) : "80",
+    homeScore: match.homeScore !== null && match.homeScore !== undefined ? String(match.homeScore) : "",
+    awayScore: match.awayScore !== null && match.awayScore !== undefined ? String(match.awayScore) : "",
+    possession: match.homeStats?.possession !== null && match.homeStats?.possession !== undefined ? String(match.homeStats.possession) : "50",
+    homeShots: match.homeStats?.shots !== null && match.homeStats?.shots !== undefined ? String(match.homeStats.shots) : "",
+    awayShots: match.awayStats?.shots !== null && match.awayStats?.shots !== undefined ? String(match.awayStats.shots) : "",
+    homeSOT: match.homeStats?.shotsOnTarget !== null && match.homeStats?.shotsOnTarget !== undefined ? String(match.homeStats.shotsOnTarget) : "",
+    awaySOT: match.awayStats?.shotsOnTarget !== null && match.awayStats?.shotsOnTarget !== undefined ? String(match.awayStats.shotsOnTarget) : "",
+    homeXG: match.homeStats?.xGoals !== null && match.homeStats?.xGoals !== undefined ? String(match.homeStats.xGoals) : "",
+    awayXG: match.awayStats?.xGoals !== null && match.awayStats?.xGoals !== undefined ? String(match.awayStats.xGoals) : "",
+    homePassAcc: match.homeStats?.passAccuracy !== null && match.homeStats?.passAccuracy !== undefined ? String(match.homeStats.passAccuracy) : "",
+    awayPassAcc: match.awayStats?.passAccuracy !== null && match.awayStats?.passAccuracy !== undefined ? String(match.awayStats.passAccuracy) : "",
   });
+
+  // Đồng bộ formData với prop match mới nhất mỗi khi match thay đổi (ví dụ: sau khi save thành công)
+  useEffect(() => {
+    setFormData({
+      homeScore: match.homeScore !== null && match.homeScore !== undefined ? String(match.homeScore) : "",
+      awayScore: match.awayScore !== null && match.awayScore !== undefined ? String(match.awayScore) : "",
+      possession: match.homeStats?.possession !== null && match.homeStats?.possession !== undefined ? String(match.homeStats.possession) : "50",
+      homeShots: match.homeStats?.shots !== null && match.homeStats?.shots !== undefined ? String(match.homeStats.shots) : "",
+      awayShots: match.awayStats?.shots !== null && match.awayStats?.shots !== undefined ? String(match.awayStats.shots) : "",
+      homeSOT: match.homeStats?.shotsOnTarget !== null && match.homeStats?.shotsOnTarget !== undefined ? String(match.homeStats.shotsOnTarget) : "",
+      awaySOT: match.awayStats?.shotsOnTarget !== null && match.awayStats?.shotsOnTarget !== undefined ? String(match.awayStats.shotsOnTarget) : "",
+      homeXG: match.homeStats?.xGoals !== null && match.homeStats?.xGoals !== undefined ? String(match.homeStats.xGoals) : "",
+      awayXG: match.awayStats?.xGoals !== null && match.awayStats?.xGoals !== undefined ? String(match.awayStats.xGoals) : "",
+      homePassAcc: match.homeStats?.passAccuracy !== null && match.homeStats?.passAccuracy !== undefined ? String(match.homeStats.passAccuracy) : "",
+      awayPassAcc: match.awayStats?.passAccuracy !== null && match.awayStats?.passAccuracy !== undefined ? String(match.awayStats.passAccuracy) : "",
+    });
+  }, [match]);
 
   const handleFormChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -83,6 +100,23 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
       const result = await res.json();
       if (result.success) {
         setFetchPreview(result.data);
+        // Tự động điền dữ liệu vào form luôn để user không phải click "Dùng kết quả này"
+        if (result.data && result.data.played) {
+          setFormData(prev => ({
+            ...prev,
+            homeScore: String(result.data.homeScore ?? prev.homeScore),
+            awayScore: String(result.data.awayScore ?? prev.awayScore),
+            possession: result.data.homePossession !== undefined ? String(result.data.homePossession) : prev.possession,
+            homeShots: result.data.homeShots !== undefined ? String(result.data.homeShots) : prev.homeShots,
+            awayShots: result.data.awayShots !== undefined ? String(result.data.awayShots) : prev.awayShots,
+            homeSOT: result.data.homeSOT !== undefined ? String(result.data.homeSOT) : prev.homeSOT,
+            awaySOT: result.data.awaySOT !== undefined ? String(result.data.awaySOT) : prev.awaySOT,
+            homeXG: result.data.homeXG !== undefined ? String(result.data.homeXG) : prev.homeXG,
+            awayXG: result.data.awayXG !== undefined ? String(result.data.awayXG) : prev.awayXG,
+            homePassAcc: result.data.homePassAccuracy !== undefined ? String(result.data.homePassAccuracy) : prev.homePassAcc,
+            awayPassAcc: result.data.awayPassAccuracy !== undefined ? String(result.data.awayPassAccuracy) : prev.awayPassAcc,
+          }));
+        }
       } else {
         setFetchError(result.error || "Không tìm thấy kết quả");
       }
@@ -93,26 +127,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
     }
   };
 
-  // Xác nhận: Điền dữ liệu fetch vào form, chuyển sang mode editing để user chỉnh sửa nếu cần
-  const handleConfirmFetch = () => {
-    if (!fetchPreview || !fetchPreview.played) return;
-    setFormData(prev => ({
-      ...prev,
-      homeScore: String(fetchPreview.homeScore ?? prev.homeScore),
-      awayScore: String(fetchPreview.awayScore ?? prev.awayScore),
-      possession: fetchPreview.homePossession ? String(fetchPreview.homePossession) : prev.possession,
-      homeShots: fetchPreview.homeShots ? String(fetchPreview.homeShots) : prev.homeShots,
-      awayShots: fetchPreview.awayShots ? String(fetchPreview.awayShots) : prev.awayShots,
-      homeSOT: fetchPreview.homeSOT ? String(fetchPreview.homeSOT) : prev.homeSOT,
-      awaySOT: fetchPreview.awaySOT ? String(fetchPreview.awaySOT) : prev.awaySOT,
-      homeXG: fetchPreview.homeXG ? String(fetchPreview.homeXG) : prev.homeXG,
-      awayXG: fetchPreview.awayXG ? String(fetchPreview.awayXG) : prev.awayXG,
-      homePassAcc: fetchPreview.homePassAccuracy ? String(fetchPreview.homePassAccuracy) : prev.homePassAcc,
-      awayPassAcc: fetchPreview.awayPassAccuracy ? String(fetchPreview.awayPassAccuracy) : prev.awayPassAcc,
-    }));
-    setFetchPreview(null);
-    setIsEditing(true); // Chuyển sang form để user kiểm tra lại trước khi lưu
-  };
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,24 +246,32 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                 </div>
 
                 {/* Thống kê chi tiết nếu có */}
-                {(fetchPreview.homeXG || fetchPreview.homePossession) && (
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {fetchPreview.homePossession && (
-                      <div className="bg-white rounded-lg p-2 border border-[#121C42]/10">
-                        <div className="text-[10px] text-[#121C42]/50 font-mono">Possession</div>
-                        <div className="text-xs font-bold text-[#121C42]">{fetchPreview.homePossession}% — {100 - fetchPreview.homePossession}%</div>
+                {(fetchPreview.homePossession !== undefined || fetchPreview.homeShots !== undefined || fetchPreview.homeXG !== undefined || fetchPreview.homePassAccuracy !== undefined) && (
+                  <div className="grid grid-cols-2 gap-2 text-center mt-3">
+                    {fetchPreview.homePossession !== undefined && (
+                      <div className="bg-white rounded-lg p-2 border border-[#121C42]/10 shadow-sm">
+                        <div className="text-[10px] text-[#121C42]/50 font-mono font-semibold uppercase tracking-wider">Kiểm soát bóng</div>
+                        <div className="text-xs font-bold text-[#121C42] mt-1">{fetchPreview.homePossession}% — {100 - fetchPreview.homePossession}%</div>
                       </div>
                     )}
-                    {fetchPreview.homeXG && (
-                      <div className="bg-white rounded-lg p-2 border border-[#121C42]/10">
-                        <div className="text-[10px] text-[#121C42]/50 font-mono">xG</div>
-                        <div className="text-xs font-bold text-[#121C42]">{fetchPreview.homeXG?.toFixed(2)} — {fetchPreview.awayXG?.toFixed(2)}</div>
+                    {(fetchPreview.homeShots !== undefined || fetchPreview.homeSOT !== undefined) && (
+                      <div className="bg-white rounded-lg p-2 border border-[#121C42]/10 shadow-sm">
+                        <div className="text-[10px] text-[#121C42]/50 font-mono font-semibold uppercase tracking-wider">Sút (Trúng đích)</div>
+                        <div className="text-xs font-bold text-[#121C42] mt-1">
+                          {fetchPreview.homeShots ?? 0} ({fetchPreview.homeSOT ?? 0}) — {fetchPreview.awayShots ?? 0} ({fetchPreview.awaySOT ?? 0})
+                        </div>
                       </div>
                     )}
-                    {fetchPreview.homeSOT && (
-                      <div className="bg-white rounded-lg p-2 border border-[#121C42]/10">
-                        <div className="text-[10px] text-[#121C42]/50 font-mono">SOT</div>
-                        <div className="text-xs font-bold text-[#121C42]">{fetchPreview.homeSOT} — {fetchPreview.awaySOT}</div>
+                    {fetchPreview.homeXG !== undefined && (
+                      <div className="bg-white rounded-lg p-2 border border-[#121C42]/10 shadow-sm">
+                        <div className="text-[10px] text-[#121C42]/50 font-mono font-semibold uppercase tracking-wider">xG</div>
+                        <div className="text-xs font-bold text-[#121C42] mt-1">{fetchPreview.homeXG?.toFixed(2)} — {fetchPreview.awayXG?.toFixed(2)}</div>
+                      </div>
+                    )}
+                    {fetchPreview.homePassAccuracy !== undefined && (
+                      <div className="bg-white rounded-lg p-2 border border-[#121C42]/10 shadow-sm">
+                        <div className="text-[10px] text-[#121C42]/50 font-mono font-semibold uppercase tracking-wider">Chuyền chính xác</div>
+                        <div className="text-xs font-bold text-[#121C42] mt-1">{fetchPreview.homePassAccuracy}% — {fetchPreview.awayPassAccuracy}%</div>
                       </div>
                     )}
                   </div>
@@ -266,10 +288,14 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={handleConfirmFetch}
+                    onClick={() => {
+                      setFetchPreview(null);
+                      // Tự động lưu luôn vì đã được fill vào form
+                      handleUpdateSubmit(new Event('submit') as any);
+                    }}
                     className="flex-1 text-xs font-bold py-2 rounded-xl bg-[#3B5BDB] text-white hover:bg-[#264de4] transition-colors shadow-lg shadow-[#3B5BDB]/20"
                   >
-                    Dùng kết quả này →
+                    Lưu kết quả ngay →
                   </button>
                 </div>
               </div>
@@ -340,7 +366,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   value={formData.homeShots}
                   onChange={e => handleFormChange("homeShots", e.target.value)}
                   className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
-                  required
                 />
                 <input
                   type="number"
@@ -349,7 +374,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   value={formData.homeSOT}
                   onChange={e => handleFormChange("homeSOT", e.target.value)}
                   className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
-                  required
                 />
               </div>
             </div>
@@ -363,7 +387,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   value={formData.awayShots}
                   onChange={e => handleFormChange("awayShots", e.target.value)}
                   className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
-                  required
                 />
                 <input
                   type="number"
@@ -372,7 +395,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   value={formData.awaySOT}
                   onChange={e => handleFormChange("awaySOT", e.target.value)}
                   className="w-full bg-white border border-[#121C42]/20 rounded-lg px-2 py-1.5 text-center text-xs text-[#121C42] focus:border-[#3B5BDB] focus:ring-1 focus:ring-[#3B5BDB]/20 outline-none"
-                  required
                 />
               </div>
             </div>
@@ -389,7 +411,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                 value={formData.homeXG}
                 onChange={e => handleFormChange("homeXG", e.target.value)}
                 className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
-                required
               />
             </div>
             <div>
@@ -401,7 +422,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                 value={formData.awayXG}
                 onChange={e => handleFormChange("awayXG", e.target.value)}
                 className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
-                required
               />
             </div>
           </div>

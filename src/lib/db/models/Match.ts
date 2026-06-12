@@ -60,6 +60,7 @@ export interface IMatch extends Document {
   awayStats: IMatchStats | null;
   // Nguồn xG: giúp debug và verify data quality
   xgSource: "statsbomb" | "fbref" | "none";
+  fifaUrl?: string; // Link cập nhật kết quả trận đấu từ FIFA
   lastUpdated: Date;
 }
 
@@ -138,6 +139,7 @@ const MatchSchema = new Schema<IMatch>(
       enum: ["statsbomb", "fbref", "none"],
       default: "none",
     },
+    fifaUrl: { type: String, default: "" },
     lastUpdated: { type: Date, default: Date.now },
   },
   {

@@ -4,15 +4,19 @@ import { useEffect, useState } from "react";
 import { MatchCard } from "./components/MatchCard";
 import { Loader2, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 
-// Danh sách các ngày diễn ra vòng bảng World Cup 2026 (11/06 đến 24/06/2026)
+// Danh sách các ngày diễn ra World Cup 2026 (theo giờ Việt Nam - GMT+7)
 const TOURNAMENT_DATES = [
-  "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15",
-  "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20",
-  "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24"
+  "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16",
+  "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21",
+  "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26",
+  "2026-06-27", "2026-06-28", "2026-06-29", "2026-06-30", "2026-07-01",
+  "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05", "2026-07-06",
+  "2026-07-07", "2026-07-08", "2026-07-10", "2026-07-11", "2026-07-12",
+  "2026-07-15", "2026-07-16", "2026-07-19", "2026-07-20"
 ];
 
 export default function OptaDashboard() {
-  const [selectedDate, setSelectedDate] = useState("2026-06-11");
+  const [selectedDate, setSelectedDate] = useState("2026-06-12");
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

@@ -35,8 +35,10 @@ export async function GET(request: NextRequest) {
       filter.$or = [{ homeTeamId: teamId }, { awayTeamId: teamId }];
     }
     if (dateParam) {
-      const startOfDay = new Date(`${dateParam}T00:00:00.000Z`);
-      const endOfDay = new Date(`${dateParam}T23:59:59.999Z`);
+      // dateParam is a local date string (e.g. "2026-06-12")
+      // Interpret the boundaries in GMT+7 (Vietnam Time)
+      const startOfDay = new Date(`${dateParam}T00:00:00.000+07:00`);
+      const endOfDay = new Date(`${dateParam}T23:59:59.999+07:00`);
       filter.matchDate = { $gte: startOfDay, $lte: endOfDay };
     }
 

@@ -121,8 +121,23 @@ const WC2026_VENUES = [
  * Hàm khởi tạo dữ liệu World Cup 2026 thủ công
  */
 export async function seedWorldCup2026(): Promise<{ teamsCount: number; matchesCount: number }> {
-  console.log("[Seeder] Bắt đầu dọn dẹp toàn bộ dữ liệu Teams và Matches cũ...");
+  console.log("[Seeder] Bắt đầu lấy dữ liệu từ FIFA API...");
   
+  const fifaRes = await fetch("https://api.fifa.com/api/v3/calendar/matches?idSeason=285023&idCompetition=17&language=en&count=200");
+  if (!fifaRes.ok) {
+    throw new Error(`[Seeder] Lỗi khi gọi FIFA API: ${fifaRes.statusText}`);
+  }
+  
+  const data = await fifaRes.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matches: any[] = data.Results || [];
+  
+  if (matches.length === 0) {
+    throw new Error("[Seeder] Không tìm thấy trận đấu nào từ FIFA API.");
+  }
+
+  console.log(`[Seeder] Tải thành công ${matches.length} trận đấu từ FIFA. Bắt đầu dọn dẹp Database...`);
+
   // Làm sạch database để tránh xung đột unique index
   await Team.deleteMany({});
   await Match.deleteMany({});
@@ -153,106 +168,86 @@ export async function seedWorldCup2026(): Promise<{ teamsCount: number; matchesC
   
   console.log(`[Seeder] Đã đồng bộ ${seededTeams.length} đội bóng WC 2026 vào MongoDB.`);
 
-  // Khởi tạo Mapping tên đội bóng và Mongoose ObjectId
+  // Khởi tạo Mapping mã quốc gia (ISO3) sang Mongoose ObjectId
+  // FIFA API dùng "MEX", "USA", v.v. Các mã này trùng khớp hoàn hảo với shortName
   const teamIdMap: Record<string, Types.ObjectId> = {};
   seededTeams.forEach((t) => {
-    teamIdMap[t.name] = t._id;
+    teamIdMap[t.shortName] = t._id;
   });
 
-  // 2. Dọn dẹp các trận đấu WC 2026 cũ (được tạo thủ công) trước khi insert mới
-  // Tránh việc trùng lặp lịch thi đấu khi người dùng click Seed nhiều lần
-  const matchApiIdsRange = Array.from({ length: 72 }, (_, i) => 202600 + i + 1);
-  await Match.deleteMany({ apiFootballId: { $in: matchApiIdsRange } });
+  // Helper map Stage
+  const stageMap: Record<string, string> = {
+    "First Stage": "Group Stage",
+    "Round of 32": "Round of 32",
+    "Round of 16": "Round of 16",
+    "Quarter-final": "Quarter-Final",
+    "Semi-final": "Semi-Final",
+    "Play-off for third place": "Third Place",
+    "Final": "Final"
+  };
 
-  // 3. Tự động sinh 72 trận đấu vòng bảng
-  // 12 bảng đấu, mỗi bảng 4 đội đấu vòng tròn một lượt = 6 trận/bảng
-  const mockMatches: any[] = [];
-  let matchCounter = 0;
-
-  // Nhóm các đội tuyển theo bảng đấu
-  const groups: Record<string, typeof seededTeams> = {};
-  seededTeams.forEach((t) => {
-    if (!groups[t.group]) groups[t.group] = [];
-    groups[t.group].push(t);
-  });
-
-  // Duyệt qua từng bảng đấu (A đến L)
-  for (const [groupName, teamList] of Object.entries(groups)) {
-    if (teamList.length !== 4) {
-      console.warn(`Bảng ${groupName} có số lượng đội tuyển không chuẩn (${teamList.length}), bỏ qua.`);
+  // 3. Xử lý matches từ FIFA
+  let matchesUpserted = 0;
+  for (const m of matches) {
+    // Stage
+    const rawStage = m.StageName?.[0]?.Description;
+    const mappedStage = stageMap[rawStage] || "Group Stage";
+    
+    // Group
+    let groupStr = null;
+    if (m.GroupName && m.GroupName.length > 0) {
+       // "Group A" -> "A"
+       groupStr = m.GroupName[0].Description.replace("Group ", "").trim();
+    }
+    
+    // Teams (Home/Away could be null if TBD)
+    const homeTeamIdStr = m.Home?.IdCountry;
+    const awayTeamIdStr = m.Away?.IdCountry;
+    
+    const homeTeamId = homeTeamIdStr ? teamIdMap[homeTeamIdStr] : null;
+    const awayTeamId = awayTeamIdStr ? teamIdMap[awayTeamIdStr] : null;
+    
+    // Schema yêu cầu `required: true` cho `homeTeamId`.
+    // Nếu chưa có (trận Knockout chưa phân định), tạm thời bỏ qua (chỉ seed các trận đã xác định)
+    if (!homeTeamId || !awayTeamId) {
       continue;
     }
+    
+    // Venue
+    const stadium = m.Stadium?.Name?.[0]?.Description || "";
+    const city = m.Stadium?.CityName?.[0]?.Description || "";
+    const venue = stadium ? `${stadium} (${city})` : "";
+    
+    const apiFootballId = parseInt(m.IdMatch, 10);
+    const matchDate = new Date(m.Date);
+    const fifaUrl = `https://www.fifa.com/en/match-centre/match/${m.IdCompetition}/${m.IdSeason}/${m.IdStage}/${m.IdMatch}`;
 
-    const [t1, t2, t3, t4] = teamList;
+    const matchDoc = {
+      apiFootballId,
+      homeTeamId,
+      awayTeamId,
+      homeScore: null,
+      awayScore: null,
+      status: "scheduled",
+      matchDate,
+      stage: mappedStage,
+      group: groupStr,
+      venue,
+      homeStats: null,
+      awayStats: null,
+      xgSource: "none",
+      fifaUrl,
+      lastUpdated: new Date()
+    };
 
-    // Định nghĩa 6 cặp đấu vòng bảng
-    const fixturesDef = [
-      { home: t1, away: t2, round: 1 },
-      { home: t3, away: t4, round: 1 },
-      { home: t1, away: t3, round: 2 },
-      { home: t2, away: t4, round: 2 },
-      { home: t1, away: t4, round: 3 },
-      { home: t2, away: t3, round: 3 }
-    ];
-
-    // Lấy chỉ số bảng đấu (A = 0, B = 1, C = 2, ...)
-    const gIndex = groupName.charCodeAt(0) - "A".charCodeAt(0);
-
-    fixturesDef.forEach((fix, fIndex) => {
-      matchCounter++;
-      const apiFootballId = 202600 + matchCounter; // Dummy ID từ 202601 đến 202672
-      
-      // Tính toán ngày thi đấu (phân bổ từ 11/06/2026 đến 27/06/2026)
-      let dayOffset = 0;
-      if (fix.round === 1) {
-        dayOffset = gIndex % 4; // Spreads Round 1: Jun 11 - Jun 14
-      } else if (fix.round === 2) {
-        dayOffset = 5 + (gIndex % 4); // Spreads Round 2: Jun 16 - Jun 19
-      } else {
-        dayOffset = 10 + (gIndex % 4); // Spreads Round 3: Jun 21 - Jun 24
-      }
-
-      const matchDate = new Date("2026-06-11T00:00:00Z");
-      matchDate.setDate(matchDate.getDate() + dayOffset);
-      
-      // Gán giờ thi đấu (xoay vòng 15h, 18h, 21h)
-      const hoursList = [15, 18, 21];
-      const selectedHour = hoursList[(gIndex + fIndex) % 3];
-      matchDate.setHours(selectedHour, 0, 0, 0);
-
-      // Chọn ngẫu nhiên/xoay vòng sân vận động
-      const venue = WC2026_VENUES[(gIndex + fIndex) % WC2026_VENUES.length];
-
-      mockMatches.push({
-        apiFootballId,
-        homeTeamId: teamIdMap[fix.home.name],
-        awayTeamId: teamIdMap[fix.away.name],
-        homeScore: null, // Trận đấu chưa diễn ra
-        awayScore: null,
-        status: "scheduled",
-        matchDate,
-        stage: "Group Stage",
-        group: groupName,
-        venue,
-        homeStats: null,
-        awayStats: null,
-        xgSource: "none",
-        lastUpdated: new Date()
-      });
-    });
-  }
-
-  // Lưu lịch thi đấu vào MongoDB
-  let matchesUpserted = 0;
-  for (const m of mockMatches) {
     await Match.findOneAndUpdate(
-      { apiFootballId: m.apiFootballId },
-      { $set: m },
+      { apiFootballId: matchDoc.apiFootballId },
+      { $set: matchDoc },
       { upsert: true }
     );
     matchesUpserted++;
   }
 
-  console.log(`[Seeder] Đã sinh và lưu ${matchesUpserted} trận đấu vòng bảng WC 2026.`);
+  console.log(`[Seeder] Đã sinh và lưu ${matchesUpserted} trận đấu WC 2026 từ FIFA API.`);
   return { teamsCount: seededTeams.length, matchesCount: matchesUpserted };
 }

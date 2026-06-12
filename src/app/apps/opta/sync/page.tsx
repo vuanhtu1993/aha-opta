@@ -181,8 +181,8 @@ export default function SyncPage() {
           <button
             id="btn-init-wc2026"
             onClick={() => handleSync("manual-2026", false)}
-            disabled={true}
-            className="w-full flex items-center justify-center gap-2 bg-slate-200 text-slate-500 font-medium py-3 rounded-xl opacity-50 cursor-not-allowed"
+            disabled={loading === "manual-2026"}
+            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] hover:bg-[#3B5BDB]/10 text-[#121C42] hover:text-[#3B5BDB] border border-[#121C42]/10 font-medium py-3 rounded-xl transition-all"
           >
             {loading === "manual-2026" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
             Khởi tạo WC 2026

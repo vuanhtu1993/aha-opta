@@ -658,14 +658,12 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           ) : (
             <div className="text-center">
               {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
-              {!isReadOnly && (
-                <button
-                onClick={() => handlePredict()}
+              <button
+                onClick={() => handlePredict(false)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-400 text-white font-medium hover:bg-[#264de4] transition-all shadow-lg shadow-[#3B5BDB]/30 active:scale-95"
               >
-                Dự đoán kết quả
+                {isReadOnly ? "Xem dự đoán" : "Dự đoán kết quả"}
               </button>
-              )}
             </div>
           )}
         </div>

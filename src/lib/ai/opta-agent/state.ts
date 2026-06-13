@@ -25,18 +25,20 @@ export const OptaAgentState = Annotation.Root({
   // 3. Stats Analyzer output
   homeFormIndex: Annotation<number>(),   // Phong độ 0-100
   awayFormIndex: Annotation<number>(),
-  homeXgAverage: Annotation<number>(),   // Sức mạnh tấn công (xG)
-  awayXgAverage: Annotation<number>(),
-  homeDefRating: Annotation<number>(),   // Sức mạnh phòng thủ
-  awayDefRating: Annotation<number>(),
+  homeGoalsForAvg: Annotation<number>(), // Bàn thắng trung bình
+  awayGoalsForAvg: Annotation<number>(),
+  homeGoalsAgainstAvg: Annotation<number>(), // Bàn thua trung bình
+  awayGoalsAgainstAvg: Annotation<number>(),
+  homeShotsOnTargetAvg: Annotation<number>(), // Sút trúng đích trung bình
+  awayShotsOnTargetAvg: Annotation<number>(),
 
-  // 4. Market Signal output
-  marketOdds: Annotation<{               // Tín hiệu từ nhà cái
+  // 4. Elo & Expert Signal output
+  eloWinProbability: Annotation<{          // Xác suất thắng theo công thức Elo
     homeProb: number;
-    drawProb: number;
     awayProb: number;
-    vig: number;
-  } | null>(),                           // Null nếu trận đấu quá xa hoặc không có kèo
+    drawProb: number; // Elo không tính hòa, có thể estimate
+  } | null>(),
+  expertOpinion: Annotation<string | null>(), // Nhận định từ chuyên gia (Internet Search)
 
   // 5. Predictor output
   prediction: Annotation<{               // Kết quả cuối cùng
@@ -44,6 +46,7 @@ export const OptaAgentState = Annotation.Root({
     draw: number;
     away: number;
     winner: "home" | "away" | "draw";
+    predictedScore: string;              // Tỉ số dự đoán (VD: "2-1")
     confidence: number;                  // 0-1
     reasoning: string;
     keyFactors: string[];

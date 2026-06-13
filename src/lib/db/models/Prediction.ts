@@ -46,6 +46,7 @@ export interface IPrediction extends Document {
   // Versioning để so sánh giữa các lần chạy hoặc model updates
   modelVersion: string;             // "gemini-2.5-flash@opta-v1"
   predictedWinner: MatchOutcome;
+  predictedScore: string | null;    // Ví dụ: "2-1", "0-0"
   probabilities: IProbabilities;    // Output của Node 4 (Predictor)
   confidence: number;               // 0-1: mức tự tin của AI
   reasoning: string;                // Chuỗi giải thích chi tiết
@@ -103,6 +104,7 @@ const PredictionSchema = new Schema<IPrediction>(
       required: true,
       enum: ["home", "away", "draw"],
     },
+    predictedScore: { type: String, default: null },
     probabilities:  { type: ProbabilitiesSchema, required: true },
     confidence:     { type: Number, required: true, min: 0, max: 1 },
     reasoning:      { type: String, required: true },

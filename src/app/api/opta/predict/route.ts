@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       {
         $set: {
           predictedWinner: predictionResult.winner,
+          predictedScore: predictionResult.predictedScore,
           probabilities: {
             home: predictionResult.home,
             draw: predictionResult.draw,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ProbabilityBars } from "./ProbabilityBars";
 import { BrainCircuit, Loader2, Database, Search, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
 import type { AutoFetchResult } from "@/app/api/opta/matches/autofetch/route";
 
@@ -200,10 +199,10 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
         {/* Preview kết quả fetch — hiện trước khi điền vào form */}
         {fetchPreview && (
           <div className={`mx-5 mt-4 rounded-2xl border p-4 ${!fetchPreview.played
-              ? "bg-amber-50 border-amber-200"
-              : fetchPreview.confidence === "high"
-                ? "bg-[#10b981]/5 border-[#10b981]/30"
-                : "bg-blue-50 border-blue-200"
+            ? "bg-amber-50 border-amber-200"
+            : fetchPreview.confidence === "high"
+              ? "bg-[#10b981]/5 border-[#10b981]/30"
+              : "bg-blue-50 border-blue-200"
             }`}>
             {!fetchPreview.played ? (
               // Trận chưa diễn ra
@@ -226,8 +225,8 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                     )}
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto ${fetchPreview.confidence === "high" ? "bg-[#10b981]/10 text-[#10b981]" :
-                      fetchPreview.confidence === "medium" ? "bg-amber-100 text-amber-700" :
-                        "bg-rose-100 text-rose-600"
+                    fetchPreview.confidence === "medium" ? "bg-amber-100 text-amber-700" :
+                      "bg-rose-100 text-rose-600"
                     }`}>
                     {fetchPreview.confidence === "high" ? "Tin cậy cao" :
                       fetchPreview.confidence === "medium" ? "Trung bình" : "Cần kiểm tra"}
@@ -523,22 +522,89 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           {loading ? (
             <div className="flex flex-col items-center justify-center text-[#3B5BDB] gap-3 py-4">
               <Loader2 className="w-6 h-6 animate-spin" />
-              <span className="text-sm font-mono animate-pulse">LangGraph Agent đang phân tích...</span>
+              <span className="text-sm font-mono animate-pulse">Opta Agent đang phân tích...</span>
             </div>
           ) : prediction ? (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <ProbabilityBars
-                homeName={home.name}
-                awayName={away.name}
-                homeProb={prediction.probabilities.home}
-                drawProb={prediction.probabilities.draw}
-                awayProb={prediction.probabilities.away}
-              />
+              
+              {/* 1. Tỉ số to rõ ràng */}
+              {prediction.predictedScore && (
+                <div className="bg-gradient-to-br from-[#f8fafc] to-white border border-[#121C42]/10 rounded-2xl p-5 shadow-sm text-center relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#3B5BDB] to-transparent opacity-50"></div>
+                  <span className="block text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-3">Tỉ số dự kiến</span>
+                  <div className="flex items-center justify-center gap-6">
+                    <span className="text-sm font-bold text-[#121C42] flex-1 text-right truncate">{home.name}</span>
+                    <span className="px-6 py-2 bg-gradient-to-r from-[#3B5BDB] to-[#121C42] text-white font-black rounded-xl font-mono text-3xl shadow-lg shadow-[#3B5BDB]/20 border border-[#3B5BDB]/30 shrink-0">
+                      {prediction.predictedScore}
+                    </span>
+                    <span className="text-sm font-bold text-[#121C42] flex-1 text-left truncate">{away.name}</span>
+                  </div>
+                </div>
+              )}
 
-              <div className="bg-[#f8fafc] p-3 rounded-lg text-sm text-[#121C42]/70 border border-[#3B5BDB]/20">
-                <div className="flex gap-2 items-start">
-                  <BrainCircuit className="w-4 h-4 text-[#3B5BDB] mt-0.5 shrink-0" />
-                  <p className="leading-relaxed text-xs">{prediction.reasoning}</p>
+              {/* 2. Cột so sánh chỉ số (Khả năng thắng) */}
+              <div className="grid grid-cols-2 gap-3">
+                 {/* Cột Home */}
+                 <div className="bg-[#f8fafc] p-4 rounded-2xl border border-[#121C42]/5 flex flex-col items-center justify-center text-center shadow-sm">
+                    <span className="text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-1">{home.name} Thắng</span>
+                    <span className="text-3xl font-black text-[#3B5BDB]">{prediction.probabilities.home?.toFixed(1) ?? 0}%</span>
+                 </div>
+                 
+                 {/* Cột Away */}
+                 <div className="bg-[#f8fafc] p-4 rounded-2xl border border-[#121C42]/5 flex flex-col items-center justify-center text-center shadow-sm">
+                    <span className="text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-1">{away.name} Thắng</span>
+                    <span className="text-3xl font-black text-[#121C42]">{prediction.probabilities.away?.toFixed(1) ?? 0}%</span>
+                 </div>
+              </div>
+
+              {/* Xác suất hòa */}
+              <div className="text-center text-xs font-medium text-[#121C42]/50">
+                Xác suất hai đội hòa: <span className="font-bold text-[#121C42]">{prediction.probabilities.draw?.toFixed(1) ?? 0}%</span>
+              </div>
+
+              {/* 3. Reasoning chi tiết (có highlight) */}
+              <div className="bg-white p-4 rounded-xl text-sm text-[#121C42]/80 border border-[#3B5BDB]/20 shadow-sm relative mt-2">
+                <div className="absolute top-0 left-4 -translate-y-1/2 bg-white px-2 py-0.5 text-[10px] font-bold text-[#3B5BDB] uppercase tracking-widest border border-[#3B5BDB]/20 rounded-full">
+                  Phân tích từ AI Agent
+                </div>
+                <div className="mt-2 flex gap-2 items-start">
+                  <p className="leading-relaxed text-xs">
+                    {(() => {
+                      const text = prediction.reasoning;
+                      if (!text) return null;
+                      
+                      // Split by **...**
+                      const parts = text.split(/(\*\*.*?\*\*)/g);
+                      
+                      return parts.map((part: string, index: number) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          const content = part.slice(2, -2);
+                          return (
+                            <span key={index} className="font-bold text-[#121C42] bg-[#3B5BDB]/15 px-1.5 py-0.5 rounded-md border border-[#3B5BDB]/30 shadow-sm mx-0.5 whitespace-nowrap">
+                              {content}
+                            </span>
+                          );
+                        }
+                        
+                        // Fallback regex for % and scores if LLM missed them
+                        const subParts = part.split(/(\b\d+(?:\.\d+)?%|\b\d+\s*-\s*\d+\b)/g);
+                        if (subParts.length > 1) {
+                           return subParts.map((subPart: string, subIndex: number) => {
+                             if (/^\d+(?:\.\d+)?%$/.test(subPart) || /^\d+\s*-\s*\d+$/.test(subPart)) {
+                               return (
+                                 <span key={`${index}-${subIndex}`} className="font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-300 shadow-sm mx-0.5 whitespace-nowrap">
+                                   {subPart}
+                                 </span>
+                               );
+                             }
+                             return <span key={`${index}-${subIndex}`}>{subPart}</span>;
+                           });
+                        }
+                        
+                        return <span key={index}>{part}</span>;
+                      });
+                    })()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -547,10 +613,9 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
               {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
               <button
                 onClick={handlePredict}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3B5BDB] text-white font-medium hover:bg-[#264de4] transition-all shadow-lg shadow-[#3B5BDB]/30 active:scale-95"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-400 text-white font-medium hover:bg-[#264de4] transition-all shadow-lg shadow-[#3B5BDB]/30 active:scale-95"
               >
-                <BrainCircuit className="w-4 h-4" />
-                Yêu cầu AI Dự đoán
+                Dự đoán kết quả
               </button>
             </div>
           )}

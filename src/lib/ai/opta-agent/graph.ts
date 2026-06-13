@@ -9,7 +9,7 @@ import { StateGraph, START, END } from "@langchain/langgraph";
 import { OptaAgentState } from "./state";
 import { dataFetcherNode } from "./nodes/data-fetcher.node";
 import { statsAnalyzerNode } from "./nodes/stats-analyzer.node";
-import { marketSignalNode } from "./nodes/market-signal.node";
+import { expertOpinionNode } from "./nodes/expert-opinion.node";
 import { predictorNode } from "./nodes/predictor.node";
 
 // 1. Khởi tạo StateGraph
@@ -18,7 +18,7 @@ const graphBuilder = new StateGraph<typeof OptaAgentState, any, any, string>(Opt
 // 2. Thêm các Node vào Graph
 graphBuilder.addNode("dataFetcher", dataFetcherNode);
 graphBuilder.addNode("statsAnalyzer", statsAnalyzerNode);
-graphBuilder.addNode("marketSignal", marketSignalNode);
+graphBuilder.addNode("fetchExpertOpinion", expertOpinionNode);
 graphBuilder.addNode("predictor", predictorNode);
 
 // 3. Định nghĩa luồng chảy (Edges)
@@ -29,10 +29,10 @@ graphBuilder.addEdge(START, "dataFetcher");
 graphBuilder.addEdge("dataFetcher", "statsAnalyzer");
 
 // Node 2 -> Node 3
-graphBuilder.addEdge("statsAnalyzer", "marketSignal");
+graphBuilder.addEdge("statsAnalyzer", "fetchExpertOpinion");
 
 // Node 3 -> Node 4
-graphBuilder.addEdge("marketSignal", "predictor");
+graphBuilder.addEdge("fetchExpertOpinion", "predictor");
 
 // Node 4 -> Kết thúc
 graphBuilder.addEdge("predictor", END);

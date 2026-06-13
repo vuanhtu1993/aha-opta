@@ -199,13 +199,12 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
 
         {/* Preview kết quả fetch — hiện trước khi điền vào form */}
         {fetchPreview && (
-          <div className={`mx-5 mt-4 rounded-2xl border p-4 ${
-            !fetchPreview.played
+          <div className={`mx-5 mt-4 rounded-2xl border p-4 ${!fetchPreview.played
               ? "bg-amber-50 border-amber-200"
               : fetchPreview.confidence === "high"
-              ? "bg-[#10b981]/5 border-[#10b981]/30"
-              : "bg-blue-50 border-blue-200"
-          }`}>
+                ? "bg-[#10b981]/5 border-[#10b981]/30"
+                : "bg-blue-50 border-blue-200"
+            }`}>
             {!fetchPreview.played ? (
               // Trận chưa diễn ra
               <div className="flex items-start gap-3">
@@ -226,13 +225,12 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                       <span className="ml-1.5 font-normal text-[#121C42]/50">từ {fetchPreview.source}</span>
                     )}
                   </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto ${
-                    fetchPreview.confidence === "high" ? "bg-[#10b981]/10 text-[#10b981]" :
-                    fetchPreview.confidence === "medium" ? "bg-amber-100 text-amber-700" :
-                    "bg-rose-100 text-rose-600"
-                  }`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto ${fetchPreview.confidence === "high" ? "bg-[#10b981]/10 text-[#10b981]" :
+                      fetchPreview.confidence === "medium" ? "bg-amber-100 text-amber-700" :
+                        "bg-rose-100 text-rose-600"
+                    }`}>
                     {fetchPreview.confidence === "high" ? "Tin cậy cao" :
-                     fetchPreview.confidence === "medium" ? "Trung bình" : "Cần kiểm tra"}
+                      fetchPreview.confidence === "medium" ? "Trung bình" : "Cần kiểm tra"}
                   </span>
                 </div>
 

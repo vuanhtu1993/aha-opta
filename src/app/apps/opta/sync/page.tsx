@@ -88,6 +88,7 @@ export default function SyncPage() {
         <p className="text-[#121C42]/60 mt-2">
           Quản lý luồng dữ liệu ETL (Extract, Transform, Load) từ API-Football, eloratings.net, và FBref.
         </p>
+      </div>
 
       {/* Pipeline Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

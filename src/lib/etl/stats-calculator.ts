@@ -81,8 +81,6 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
 
   // ── Bước 2: Tính W/D/L, GF/GA, xG/Possession avg từ WC matches ────────────
 
-  let wins = 0, draws = 0, losses = 0;
-  let goalsFor = 0, goalsAgainst = 0;
   let totalXgFor = 0, totalXgAgainst = 0, xgCount = 0;
   let totalPossession = 0, possCount = 0;
   let totalSOT = 0, sotCount = 0;
@@ -90,15 +88,6 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
 
   for (const match of wcMatches) {
     const isHome = match.homeTeamId.toString() === teamId;
-    const gf = isHome ? (match.homeScore ?? 0) : (match.awayScore ?? 0);
-    const ga = isHome ? (match.awayScore ?? 0) : (match.homeScore ?? 0);
-
-    goalsFor += gf;
-    goalsAgainst += ga;
-
-    if (gf > ga) wins++;
-    else if (gf === ga) draws++;
-    else losses++;
 
     // Thống kê lối chơi: chỉ tính nếu có dữ liệu (> 0 để tránh ảnh hưởng trận chưa có stats)
     const myStats = isHome ? match.homeStats : match.awayStats;
@@ -125,14 +114,6 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
     }
   }
 
-  const matchesPlayed = wcMatches.length;
-
-  // ── Bước 3: Tính Form Index (Hybrid) ───────────────────────────────────────
-
-  /**
-   * Chuẩn bị WC matches dưới dạng { dateMs: number, outcome: "win"|"draw"|"loss" }
-   * để merge với lịch sử Elo, sau đó sort và lấy top 5
-   */
   const wcFormData = wcMatches.map((match) => {
     const isHome = match.homeTeamId.toString() === teamId;
     const gf = isHome ? (match.homeScore ?? 0) : (match.awayScore ?? 0);
@@ -140,45 +121,66 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
     return {
       dateMs: new Date(match.matchDate).getTime(),
       outcome: gf > ga ? "win" : gf === ga ? "draw" : ("loss" as const),
+      gf,
+      ga,
     };
   });
 
   /**
    * Lịch sử Elo: chỉ lấy trận thi đấu chính thức (không giao hữu).
-   * Dùng homeScore/awayScore thực tế để xác định kết quả, KHÔNG dùng ratingChange
-   * vì ratingChange có thể dương khi hòa với đội yếu hơn.
    */
   const teamName = teamDoc.name.toLowerCase();
   const historicalFormData = (teamDoc.recentEloMatches || [])
-    .filter((m) => isCompetitiveMatch(m.tournament))
-    .map((m) => {
-      // Xác định vai trò chủ nhà/khách dựa trên tên đội
-      const isHome = m.homeTeam.toLowerCase() === teamName;
+    .filter((m: any) => isCompetitiveMatch(m.tournament))
+    .map((m: any) => {
+      // Xác định vai trò chủ nhà/khách
+      const isHome = m.homeTeam.toLowerCase().includes(teamName) || teamName.includes(m.homeTeam.toLowerCase());
       const myScore = isHome ? m.homeScore : m.awayScore;
       const oppScore = isHome ? m.awayScore : m.homeScore;
       return {
         dateMs: new Date(m.date).getTime(),
         outcome: myScore > oppScore ? "win" : myScore === oppScore ? "draw" : ("loss" as const),
+        gf: myScore,
+        ga: oppScore,
       };
     })
-    .filter((m) => !isNaN(m.dateMs)); // Loại bỏ entry có date không hợp lệ
+    .filter((m: any) => !isNaN(m.dateMs));
 
   /**
    * Merge WC + lịch sử, sort descending (mới nhất trước), lấy top 10.
-   * WC matches sẽ tự động được ưu tiên vì ngày tháng mới hơn.
    */
   const allFormData = [...wcFormData, ...historicalFormData]
     .sort((a, b) => b.dateMs - a.dateMs)
     .slice(0, 10);
 
-  // Áp dụng Weighted Average với FORM_WEIGHTS
+  // Áp dụng Weighted Average và tính lại W/D/L từ 10 trận này
+  let wins = 0, draws = 0, losses = 0;
+  let goalsFor = 0, goalsAgainst = 0;
   let formIndex = 0;
+  let weightSum = 0;
+
   for (let i = 0; i < allFormData.length; i++) {
-    const score =
-      allFormData[i].outcome === "win" ? 100 : allFormData[i].outcome === "draw" ? 50 : 0;
-    formIndex += score * (FORM_WEIGHTS[i] ?? 0.02);
+    const data = allFormData[i];
+    goalsFor += data.gf;
+    goalsAgainst += data.ga;
+    
+    let score = 0;
+    if (data.outcome === "win") { wins++; score = 100; }
+    else if (data.outcome === "draw") { draws++; score = 50; }
+    else { losses++; score = 0; }
+
+    const weight = FORM_WEIGHTS[i] ?? 0.02;
+    formIndex += score * weight;
+    weightSum += weight;
   }
-  formIndex = Math.round(formIndex);
+  
+  if (weightSum > 0) {
+    formIndex = Math.round(formIndex / weightSum);
+  } else {
+    formIndex = 0;
+  }
+  
+  const matchesPlayed = allFormData.length;
 
   // ── Bước 4: Update Team document ──────────────────────────────────────────
 
@@ -291,15 +293,24 @@ export async function bootstrapStatsFromEloHistory(): Promise<{
     // ── Tính Form Index (weighted average) ──────────────────────────────────
     // Dùng cùng logic với recalculateTeamStats để nhất quán
     let formIndex = 0;
+    let weightSum = 0;
     for (let i = 0; i < competitiveMatches.length; i++) {
       const m = competitiveMatches[i];
-      const isHome = m.homeTeam.toLowerCase() === teamName;
+      const isHome = m.homeTeam.toLowerCase().includes(teamName) || teamName.includes(m.homeTeam.toLowerCase());
       const gf = isHome ? m.homeScore : m.awayScore;
       const ga = isHome ? m.awayScore : m.homeScore;
       const score = gf > ga ? 100 : gf === ga ? 50 : 0;
-      formIndex += score * (FORM_WEIGHTS[i] ?? 0.02);
+      
+      const weight = FORM_WEIGHTS[i] ?? 0.02;
+      formIndex += score * weight;
+      weightSum += weight;
     }
-    formIndex = Math.round(formIndex);
+    
+    if (weightSum > 0) {
+      formIndex = Math.round(formIndex / weightSum);
+    } else {
+      formIndex = 0;
+    }
 
     // ── Cập nhật Team document ──────────────────────────────────────────────
     // Chiến lược update quan trọng:

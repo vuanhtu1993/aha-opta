@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    const { matchId } = await request.json();
+    const { matchId, forceRefresh } = await request.json();
     if (!matchId) {
       return NextResponse.json({ success: false, error: "Missing matchId" }, { status: 400 });
     }
@@ -25,21 +25,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Match not found" }, { status: 404 });
     }
 
+    const modelVersion = `${process.env.GEMINI_MODEL || "gemini-2.5-flash"}@opta-v1`;
+
+    // KIỂM TRA CACHE: Nếu đã có dự đoán cho version này, trả về luôn (Trừ khi forceRefresh)
+    if (!forceRefresh) {
+      const existingPrediction = await Prediction.findOne({ matchId: match._id, modelVersion }).lean();
+      if (existingPrediction) {
+        console.log(`[API] Trả về dự đoán từ DB cho trận ${matchId} (không tốn token)`);
+        return NextResponse.json({ success: true, data: existingPrediction });
+      }
+    } else {
+      console.log(`[API] Force refresh dự đoán cho trận ${matchId}`);
+    }
+
     // 1. Chạy AI Prediction qua LangGraph
-    const predictionResult = await runOptaPrediction(
+    const result = await runOptaPrediction(
       match._id.toString(),
       match.homeTeamId.toString(),
       match.awayTeamId.toString()
     );
 
-    if (!predictionResult) {
+    if (!result || !result.prediction) {
       throw new Error("LangGraph trả về kết quả rỗng");
     }
 
+    const predictionResult = result.prediction;
+
     // 2. Lưu vào DB Collection Predictions
-    // (Upsert để đảm bảo 1 trận 1 model chỉ có 1 dự đoán)
-    const modelVersion = `${process.env.GEMINI_MODEL || "gemini-2.5-flash"}@opta-v1`;
-    
     const savedPrediction = await Prediction.findOneAndUpdate(
       { matchId: match._id, modelVersion },
       {
@@ -54,6 +66,11 @@ export async function POST(request: NextRequest) {
           confidence: predictionResult.confidence,
           reasoning: predictionResult.reasoning,
           keyFactors: predictionResult.keyFactors,
+          contextSnapshot: {
+            homeFormIndex: result.homeFormIndex,
+            awayFormIndex: result.awayFormIndex,
+            expertOpinion: result.expertOpinion,
+          }
         }
       },
       { upsert: true, new: true }

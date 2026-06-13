@@ -58,5 +58,10 @@ export async function runOptaPrediction(matchId: string, homeTeamId: string, awa
   
   console.log(`[LangGraph] Workflow kết thúc.`);
   
-  return finalState.prediction;
+  return {
+    prediction: finalState.prediction,
+    homeFormIndex: finalState.homeFormIndex,
+    awayFormIndex: finalState.awayFormIndex,
+    expertOpinion: finalState.expertOpinion,
+  };
 }

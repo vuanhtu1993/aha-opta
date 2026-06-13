@@ -56,6 +56,12 @@ export interface IPrediction extends Document {
   // Điền sau khi trận kết thúc — dùng để back-test accuracy
   actualOutcome: MatchOutcome | null;
   isCorrect: boolean | null;        // Computed từ actualOutcome vs predictedWinner
+  // Lưu snapshot của context lúc dự đoán để hiển thị UI
+  contextSnapshot: {
+    homeFormIndex: number;
+    awayFormIndex: number;
+    expertOpinion: string | null;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -112,6 +118,11 @@ const PredictionSchema = new Schema<IPrediction>(
     marketSignal:   { type: MarketSignalSchema, default: null },
     actualOutcome:  { type: String, enum: ["home", "away", "draw", null], default: null },
     isCorrect:      { type: Boolean, default: null },
+    contextSnapshot: {
+      homeFormIndex: { type: Number, default: 0 },
+      awayFormIndex: { type: Number, default: 0 },
+      expertOpinion: { type: String, default: null },
+    },
   },
   {
     timestamps: true,

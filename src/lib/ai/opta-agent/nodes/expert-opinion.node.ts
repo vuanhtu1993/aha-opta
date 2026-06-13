@@ -19,7 +19,9 @@ export async function expertOpinionNode(state: OptaStateType): Promise<Partial<O
 
     if (process.env.TAVILY_API_KEY) {
       const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
-      const searchQuery = `expert predictions football match ${home} vs ${away}`;
+      // Đưa thêm năm hiện tại để tránh tìm nhầm các bài viết phân tích trận đấu từ 5-10 năm trước
+      const currentYear = new Date().getFullYear();
+      const searchQuery = `expert predictions football match ${home} vs ${away} ${currentYear} World Cup`;
       try {
         const rawResults = await tvly.search(searchQuery, { searchDepth: "basic", maxResults: 3 });
         // Chỉ lấy mảng results (title, url, content) để truyền vào LLM cho nhẹ

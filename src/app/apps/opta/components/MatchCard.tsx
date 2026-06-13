@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { BrainCircuit, Loader2, Database, Search, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
 import type { AutoFetchResult } from "@/app/api/opta/matches/autofetch/route";
 
@@ -63,14 +64,14 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
   const away = match.awayTeamId;
   const date = new Date(match.matchDate);
 
-  const handlePredict = async () => {
+  const handlePredict = async (forceRefresh = false) => {
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/opta/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matchId: match._id }),
+        body: JSON.stringify({ matchId: match._id, forceRefresh }),
       });
       const result = await res.json();
       if (result.success) {
@@ -495,11 +496,11 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
       {/* Teams */}
       <div className="p-5">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex flex-col items-center gap-2 w-1/3">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden border border-[#121C42]/10 shadow-sm">
+          <div className="flex flex-col items-center gap-2 w-1/3 group">
+            <Link href={`/apps/opta/teams/${home.slug}`} className="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden border border-[#121C42]/10 shadow-sm group-hover:ring-2 group-hover:ring-[#3B5BDB] transition-all">
               {home.flag ? <img src={home.flag} alt={home.name} className="w-full h-full object-cover" /> : <span className="text-xs">{home.shortName}</span>}
-            </div>
-            <span className="font-bold text-center">{home.name}</span>
+            </Link>
+            <Link href={`/apps/opta/teams/${home.slug}`} className="font-bold text-center group-hover:text-[#3B5BDB] transition-colors">{home.name}</Link>
           </div>
 
           <div className="flex flex-col items-center justify-center w-1/3 text-[#121C42]/40">
@@ -509,11 +510,11 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
             </span>
           </div>
 
-          <div className="flex flex-col items-center gap-2 w-1/3">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden border border-[#121C42]/10 shadow-sm">
+          <div className="flex flex-col items-center gap-2 w-1/3 group">
+            <Link href={`/apps/opta/teams/${away.slug}`} className="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden border border-[#121C42]/10 shadow-sm group-hover:ring-2 group-hover:ring-[#3B5BDB] transition-all">
               {away.flag ? <img src={away.flag} alt={away.name} className="w-full h-full object-cover" /> : <span className="text-xs">{away.shortName}</span>}
-            </div>
-            <span className="font-bold text-center">{away.name}</span>
+            </Link>
+            <Link href={`/apps/opta/teams/${away.slug}`} className="font-bold text-center group-hover:text-[#3B5BDB] transition-colors">{away.name}</Link>
           </div>
         </div>
 
@@ -526,12 +527,23 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
             </div>
           ) : prediction ? (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              
+
               {/* 1. Tỉ số to rõ ràng */}
               {prediction.predictedScore && (
-                <div className="bg-gradient-to-br from-[#f8fafc] to-white border border-[#121C42]/10 rounded-2xl p-5 shadow-sm text-center relative overflow-hidden">
+                <div className="bg-gradient-to-br from-[#f8fafc] to-white border border-[#121C42]/10 rounded-2xl p-5 shadow-sm text-center relative overflow-hidden group/score">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#3B5BDB] to-transparent opacity-50"></div>
-                  <span className="block text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-3">Tỉ số dự kiến</span>
+
+                  <div className="absolute top-2 right-2">
+                    <button
+                      onClick={() => handlePredict(true)}
+                      title="Dự đoán lại (Bỏ qua Cache)"
+                      className="p-1.5 text-[#121C42]/30 hover:text-[#3B5BDB] hover:bg-[#3B5BDB]/10 rounded-full transition-all"
+                    >
+                      <RefreshCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <span className="block text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-3 mt-1">Tỉ số dự kiến</span>
                   <div className="flex items-center justify-center gap-6">
                     <span className="text-sm font-bold text-[#121C42] flex-1 text-right truncate">{home.name}</span>
                     <span className="px-6 py-2 bg-gradient-to-r from-[#3B5BDB] to-[#121C42] text-white font-black rounded-xl font-mono text-3xl shadow-lg shadow-[#3B5BDB]/20 border border-[#3B5BDB]/30 shrink-0">
@@ -544,23 +556,49 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
 
               {/* 2. Cột so sánh chỉ số (Khả năng thắng) */}
               <div className="grid grid-cols-2 gap-3">
-                 {/* Cột Home */}
-                 <div className="bg-[#f8fafc] p-4 rounded-2xl border border-[#121C42]/5 flex flex-col items-center justify-center text-center shadow-sm">
-                    <span className="text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-1">{home.name} Thắng</span>
-                    <span className="text-3xl font-black text-[#3B5BDB]">{prediction.probabilities.home?.toFixed(1) ?? 0}%</span>
-                 </div>
-                 
-                 {/* Cột Away */}
-                 <div className="bg-[#f8fafc] p-4 rounded-2xl border border-[#121C42]/5 flex flex-col items-center justify-center text-center shadow-sm">
-                    <span className="text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-1">{away.name} Thắng</span>
-                    <span className="text-3xl font-black text-[#121C42]">{prediction.probabilities.away?.toFixed(1) ?? 0}%</span>
-                 </div>
+                {/* Cột Home */}
+                <div className="bg-[#f8fafc] p-4 rounded-2xl border border-[#121C42]/5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <span className="text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-1">{home.name} Thắng</span>
+                  <span className="text-3xl font-black text-[#3B5BDB]">{prediction.probabilities.home?.toFixed(1) ?? 0}%</span>
+
+                  {prediction.contextSnapshot && (
+                    <div className="mt-3 pt-3 border-t border-[#121C42]/10 w-full flex flex-col items-center">
+                      <span className="text-[10px] text-[#121C42]/50 block mb-0.5">Phong độ (Form Index)</span>
+                      <span className="text-sm font-bold text-[#121C42]">{prediction.contextSnapshot.homeFormIndex}/100</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cột Away */}
+                <div className="bg-[#f8fafc] p-4 rounded-2xl border border-[#121C42]/5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <span className="text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-1">{away.name} Thắng</span>
+                  <span className="text-3xl font-black text-[#121C42]">{prediction.probabilities.away?.toFixed(1) ?? 0}%</span>
+
+                  {prediction.contextSnapshot && (
+                    <div className="mt-3 pt-3 border-t border-[#121C42]/10 w-full flex flex-col items-center">
+                      <span className="text-[10px] text-[#121C42]/50 block mb-0.5">Phong độ (Form Index)</span>
+                      <span className="text-sm font-bold text-[#121C42]">{prediction.contextSnapshot.awayFormIndex}/100</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Xác suất hòa */}
               <div className="text-center text-xs font-medium text-[#121C42]/50">
                 Xác suất hai đội hòa: <span className="font-bold text-[#121C42]">{prediction.probabilities.draw?.toFixed(1) ?? 0}%</span>
               </div>
+
+              {/* Ý kiến chuyên gia */}
+              {prediction.contextSnapshot?.expertOpinion && (
+                <div className="bg-amber-50 p-4 rounded-xl text-sm text-amber-900 border border-amber-200 shadow-sm relative mt-2">
+                  <div className="absolute top-0 left-4 -translate-y-1/2 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600 uppercase tracking-widest border border-amber-200 rounded-full">
+                    Góc nhìn chuyên gia
+                  </div>
+                  <div className="mt-2">
+                    <p className="leading-relaxed text-xs italic">"{prediction.contextSnapshot.expertOpinion}"</p>
+                  </div>
+                </div>
+              )}
 
               {/* 3. Reasoning chi tiết (có highlight) */}
               <div className="bg-white p-4 rounded-xl text-sm text-[#121C42]/80 border border-[#3B5BDB]/20 shadow-sm relative mt-2">
@@ -572,10 +610,10 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                     {(() => {
                       const text = prediction.reasoning;
                       if (!text) return null;
-                      
+
                       // Split by **...**
                       const parts = text.split(/(\*\*.*?\*\*)/g);
-                      
+
                       return parts.map((part: string, index: number) => {
                         if (part.startsWith('**') && part.endsWith('**')) {
                           const content = part.slice(2, -2);
@@ -585,22 +623,22 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                             </span>
                           );
                         }
-                        
+
                         // Fallback regex for % and scores if LLM missed them
                         const subParts = part.split(/(\b\d+(?:\.\d+)?%|\b\d+\s*-\s*\d+\b)/g);
                         if (subParts.length > 1) {
-                           return subParts.map((subPart: string, subIndex: number) => {
-                             if (/^\d+(?:\.\d+)?%$/.test(subPart) || /^\d+\s*-\s*\d+$/.test(subPart)) {
-                               return (
-                                 <span key={`${index}-${subIndex}`} className="font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-300 shadow-sm mx-0.5 whitespace-nowrap">
-                                   {subPart}
-                                 </span>
-                               );
-                             }
-                             return <span key={`${index}-${subIndex}`}>{subPart}</span>;
-                           });
+                          return subParts.map((subPart: string, subIndex: number) => {
+                            if (/^\d+(?:\.\d+)?%$/.test(subPart) || /^\d+\s*-\s*\d+$/.test(subPart)) {
+                              return (
+                                <span key={`${index}-${subIndex}`} className="font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-300 shadow-sm mx-0.5 whitespace-nowrap">
+                                  {subPart}
+                                </span>
+                              );
+                            }
+                            return <span key={`${index}-${subIndex}`}>{subPart}</span>;
+                          });
                         }
-                        
+
                         return <span key={index}>{part}</span>;
                       });
                     })()}
@@ -612,7 +650,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
             <div className="text-center">
               {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
               <button
-                onClick={handlePredict}
+                onClick={() => handlePredict()}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-400 text-white font-medium hover:bg-[#264de4] transition-all shadow-lg shadow-[#3B5BDB]/30 active:scale-95"
               >
                 Dự đoán kết quả

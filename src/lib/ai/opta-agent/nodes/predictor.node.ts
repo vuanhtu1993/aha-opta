@@ -54,10 +54,10 @@ Dưới đây là các dữ liệu FACTS (Sự thật):
 - HOME: ${home.name} (Hạng FIFA: ${home.fifaRanking}, Elo Rating: ${home.eloRating ?? "N/A"}, Hạng Elo: ${home.eloRank ?? "N/A"}, Confederation: ${home.confederation})
 - AWAY: ${away.name} (Hạng FIFA: ${away.fifaRanking}, Elo Rating: ${away.eloRating ?? "N/A"}, Hạng Elo: ${away.eloRank ?? "N/A"}, Confederation: ${away.confederation})
 
-[PHONG ĐỘ (FORM) - Dựa trên 5 trận gần nhất]
-- HOME Form: ${state.homeFormIndex}/100 
+[PHONG ĐỘ (FORM) - Đánh giá từ các trận đã đấu gần đây, trọng số ưu tiên trận gần nhất]
+- HOME Form: ${state.homeFormIndex}/100 (Tính trên ${state.homeRecentMatches?.length || 0} trận gần nhất)
   (Ghi bàn TB: ${state.homeGoalsForAvg}, Lọt lưới TB: ${state.homeGoalsAgainstAvg}, Sút trúng đích TB: ${state.homeShotsOnTargetAvg})
-- AWAY Form: ${state.awayFormIndex}/100 
+- AWAY Form: ${state.awayFormIndex}/100 (Tính trên ${state.awayRecentMatches?.length || 0} trận gần nhất)
   (Ghi bàn TB: ${state.awayGoalsForAvg}, Lọt lưới TB: ${state.awayGoalsAgainstAvg}, Sút trúng đích TB: ${state.awayShotsOnTargetAvg})
 
 [XÁC SUẤT CHIẾN THẮNG (Dựa trên Elo Rating)]
@@ -73,7 +73,8 @@ ${expertOpinion ? expertOpinion : "Không có nhận định nào từ chuyên g
 [HƯỚNG DẪN LẬP LUẬN & DỰ ĐOÁN TỈ SỐ]
 1. Sử dụng "Xác suất chiến thắng theo Elo" làm Baseline (Điểm neo chính). 
 2. Hãy điều chỉnh tỷ lệ này dựa trên Thống kê truyền thống: 
-   - Đội nào có khả năng dứt điểm trúng đích (Sút trúng đích TB) và hiệu số Bàn thắng/Bàn thua vượt trội ở 5 trận gần nhất, hãy cộng thêm 5-10% cơ hội thắng.
+   - Đội nào có khả năng dứt điểm trúng đích (Sút trúng đích TB) và hiệu số Bàn thắng/Bàn thua vượt trội, hãy cộng thêm 5-10% cơ hội thắng.
+   - CHÚ Ý: Nếu Form Index chỉ được tính trên 1-2 trận đấu, hãy xem đây là mẫu (sample size) rất nhỏ và ĐỪNG đánh giá quá cao phong độ này. Hãy dựa nhiều hơn vào Elo Rating và Ý kiến chuyên gia.
 3. Trong các giải đấu loại trực tiếp hoặc nếu chênh lệch Elo nhỏ (<50 điểm), sức mạnh phòng ngự (Lọt lưới TB thấp) là yếu tố quyết định.
 4. Tham khảo thêm Ý KIẾN CHUYÊN GIA để đưa ra nhận định cuối cùng chân thực và đa chiều hơn.
 5. DỰ ĐOÁN TỈ SỐ: Dựa vào số "Ghi bàn TB" và "Lọt lưới TB" của 2 đội, kết hợp với phong độ phòng ngự, hãy suy luận ra một tỉ số khả dĩ nhất (ví dụ: 2-1, 0-0, 1-1). Nếu 2 đội đều có Ghi bàn TB cao, tỉ số có thể nhiều bàn thắng. NẾU dự đoán đội X thắng, tỉ số bắt buộc phải phản ánh đội X thắng.

@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-slate-50 text-slate-900 flex flex-col`}>
         {/* Navigation Bar (Header) - Đóng vai trò làm lớp vỏ (Shell) cho các Micro Frontend */}
         <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md shadow-sm">

@@ -15,8 +15,29 @@ const TOURNAMENT_DATES = [
   "2026-07-15", "2026-07-16", "2026-07-19", "2026-07-20"
 ];
 
+const getInitialDate = () => {
+  // Use current local date
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+  
+  if (TOURNAMENT_DATES.includes(todayStr)) {
+    return todayStr;
+  }
+  
+  // Find the closest past date or default to the first day
+  const pastDates = TOURNAMENT_DATES.filter(d => d <= todayStr);
+  if (pastDates.length > 0) {
+    return pastDates[pastDates.length - 1];
+  }
+  
+  return TOURNAMENT_DATES[0];
+};
+
 export default function OptaDashboard() {
-  const [selectedDate, setSelectedDate] = useState("2026-06-12");
+  const [selectedDate, setSelectedDate] = useState<string>(getInitialDate);
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -106,7 +127,7 @@ export default function OptaDashboard() {
             <CalendarDays className="w-3.5 h-3.5" />
             Lịch thi đấu theo ngày
           </div>
-          <h3 className="text-lg sm:text-xl font-extrabold text-[#121C42] mt-1 sm:min-w-[280px]">
+          <h3 suppressHydrationWarning className="text-lg sm:text-xl font-extrabold text-[#121C42] mt-1 sm:min-w-[280px]">
             {new Date(selectedDate + "T00:00:00Z").toLocaleDateString("vi-VN", {
               weekday: "long",
               day: "numeric",

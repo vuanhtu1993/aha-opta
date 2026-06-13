@@ -362,7 +362,7 @@ export default async function TeamDetailPage({ params }: PageProps) {
                   >
                     {/* Time & Venue */}
                     <div className="space-y-1">
-                      <div className="text-xs font-semibold text-[#121C42]/60 font-mono uppercase tracking-wider">
+                      <div suppressHydrationWarning className="text-xs font-semibold text-[#121C42]/60 font-mono uppercase tracking-wider">
                         {matchDate.toLocaleDateString("vi-VN", {
                           weekday: "short",
                           day: "2-digit",

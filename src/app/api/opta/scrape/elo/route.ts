@@ -33,7 +33,13 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── 2. Scrape & Upsert ───────────────────────────────────────────────────
-  try {
+    try {
+    const isReadOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === "true";
+    if (isReadOnly) {
+      return NextResponse.json({ success: false, error: "Hệ thống đang ở chế độ Read-Only" }, { status: 403 });
+    }
+
+try {
     await connectDB();
 
     // Bước 1: Crawl eloratings.net

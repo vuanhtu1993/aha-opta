@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
 
     const modelVersion = `${process.env.GEMINI_MODEL || "gemini-2.5-flash"}@opta-v1`;
 
+    const isReadOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === "true";
+
     // KIỂM TRA CACHE: Nếu đã có dự đoán cho version này, trả về luôn (Trừ khi forceRefresh)
     if (!forceRefresh) {
       const existingPrediction = await Prediction.findOne({ matchId: match._id, modelVersion }).lean();
@@ -35,7 +37,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, data: existingPrediction });
       }
     } else {
+      if (isReadOnly) {
+        return NextResponse.json({ success: false, error: "Hệ thống đang ở chế độ Read-Only" }, { status: 403 });
+      }
       console.log(`[API] Force refresh dự đoán cho trận ${matchId}`);
+    }
+
+    if (isReadOnly) {
+      return NextResponse.json({ success: false, error: "Hệ thống đang ở chế độ Read-Only, không thể tạo dự đoán mới" }, { status: 403 });
     }
 
     // 1. Chạy AI Prediction qua LangGraph

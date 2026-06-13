@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { seedWorldCup2026 } from "@/lib/etl/wc2026-seeder";
 
 export async function POST(request: NextRequest) {
-  try {
+    try {
+    const isReadOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === "true";
+    if (isReadOnly) {
+      return NextResponse.json({ success: false, error: "Hệ thống đang ở chế độ Read-Only" }, { status: 403 });
+    }
+
+try {
     const body = await request.json();
     const { type } = body;
 

@@ -62,6 +62,11 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     await connectDB();
+
+    const isReadOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === "true";
+    if (isReadOnly) {
+      return NextResponse.json({ success: false, error: "Hệ thống đang ở chế độ Read-Only" }, { status: 403 });
+    }
     const body = await request.json();
     const {
       matchId,

@@ -64,7 +64,10 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
   const away = match.awayTeamId;
   const date = new Date(match.matchDate);
 
+  const isReadOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === "true";
+
   const handlePredict = async (forceRefresh = false) => {
+    if (isReadOnly && forceRefresh) return;
     setLoading(true);
     setError("");
     try {
@@ -178,7 +181,8 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           <span className="font-semibold text-[#121C42] text-xs">{home.name} vs {away.name}</span>
           <div className="flex items-center gap-2">
             {/* Nút Tự động tìm kết quả */}
-            <button
+            {!isReadOnly && (
+              <button
               type="button"
               onClick={handleAutoFetch}
               disabled={isFetching}
@@ -187,6 +191,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
               {isFetching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
               {isFetching ? "Đang tìm..." : "Tự động tìm"}
             </button>
+            )}
             <button
               type="button"
               onClick={() => setIsEditing(false)}
@@ -465,7 +470,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
             </button>
             <button
               type="submit"
-              disabled={formLoading}
+              disabled={formLoading || isReadOnly}
               className="w-1/2 bg-[#3B5BDB] hover:bg-[#264de4] disabled:opacity-50 text-white font-medium py-2 rounded-xl flex items-center justify-center gap-1.5"
             >
               {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -484,12 +489,14 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
         <span suppressHydrationWarning>{date.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })} - {match.stage}</span>
         <div className="flex items-center gap-2">
           {match.group && <span className="px-2 py-0.5 rounded-md bg-[#f8fafc] border border-[#121C42]/10 text-[#121C42]">Bảng {match.group}</span>}
-          <button
+          {!isReadOnly && (
+            <button
             onClick={() => setIsEditing(true)}
             className="px-2 py-0.5 rounded bg-white hover:bg-[#3B5BDB]/10 text-[#3B5BDB] border border-[#121C42]/10 text-[10px]"
           >
             Cập nhật kết quả
           </button>
+          )}
         </div>
       </div>
 
@@ -534,13 +541,15 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#3B5BDB] to-transparent opacity-50"></div>
 
                   <div className="absolute top-2 right-2">
-                    <button
+                    {!isReadOnly && (
+                      <button
                       onClick={() => handlePredict(true)}
                       title="Dự đoán lại (Bỏ qua Cache)"
                       className="p-1.5 text-[#121C42]/30 hover:text-[#3B5BDB] hover:bg-[#3B5BDB]/10 rounded-full transition-all"
                     >
                       <RefreshCcw className="w-3.5 h-3.5" />
                     </button>
+                    )}
                   </div>
 
                   <span className="block text-[10px] font-bold text-[#121C42]/40 uppercase tracking-widest mb-3 mt-1">Tỉ số dự kiến</span>
@@ -649,12 +658,14 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           ) : (
             <div className="text-center">
               {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
-              <button
+              {!isReadOnly && (
+                <button
                 onClick={() => handlePredict()}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-400 text-white font-medium hover:bg-[#264de4] transition-all shadow-lg shadow-[#3B5BDB]/30 active:scale-95"
               >
                 Dự đoán kết quả
               </button>
+              )}
             </div>
           )}
         </div>

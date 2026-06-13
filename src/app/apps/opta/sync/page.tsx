@@ -76,6 +76,7 @@ export default function SyncPage() {
     }
   };
 
+  const isReadOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === "true";
   const isLoading = loading !== null;
 
   return (
@@ -89,6 +90,14 @@ export default function SyncPage() {
           Quản lý luồng dữ liệu ETL (Extract, Transform, Load) từ API-Football, eloratings.net, và FBref.
         </p>
       </div>
+
+
+      {isReadOnly && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-amber-800 text-sm">Hệ thống đang ở chế độ <strong>Read-Only</strong>. Các chức năng đồng bộ dữ liệu đã bị khóa.</p>
+        </div>
+      )}
 
       {/* Pipeline Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -107,8 +116,8 @@ export default function SyncPage() {
           <button
             id="btn-init-wc2026"
             onClick={() => handleSync("manual-2026", false)}
-            disabled={loading === "manual-2026"}
-            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] hover:bg-[#3B5BDB]/10 text-[#121C42] hover:text-[#3B5BDB] border border-[#121C42]/10 font-medium py-3 rounded-xl transition-all"
+            disabled={loading === "manual-2026" || isReadOnly}
+            className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] hover:bg-[#3B5BDB]/10 text-[#121C42] disabled:opacity-50 disabled:cursor-not-allowed hover:text-[#3B5BDB] border border-[#121C42]/10 font-medium py-3 rounded-xl transition-all"
           >
             {loading === "manual-2026" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
             Khởi tạo WC 2026
@@ -135,7 +144,8 @@ export default function SyncPage() {
           <button
             id="btn-sync-elo"
             onClick={handleSyncElo}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-400 hover:bg-indigo-600 text-slate-100 font-medium py-3 rounded-xl transition-colors"
+            disabled={isReadOnly || loading === "elo"}
+            className="w-full flex items-center justify-center gap-2 bg-indigo-400 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-slate-100 font-medium py-3 rounded-xl transition-colors"
           >
             {loading === "elo" ? <Loader2 className="w-5 h-5 animate-spin" /> : <TrendingUp className="w-5 h-5" />}
             {loading === "elo" ? "Đang crawl eloratings.net..." : "Sync Elo Ratings"}

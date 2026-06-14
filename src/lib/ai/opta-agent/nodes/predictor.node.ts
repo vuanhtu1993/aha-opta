@@ -55,9 +55,9 @@ Dưới đây là các dữ liệu FACTS (Sự thật):
 - AWAY: ${away.name} (Hạng FIFA: ${away.fifaRanking}, Elo Rating: ${away.eloRating ?? "N/A"}, Hạng Elo: ${away.eloRank ?? "N/A"}, Confederation: ${away.confederation})
 
 [PHONG ĐỘ (FORM) - Đánh giá từ các trận đã đấu gần đây, trọng số ưu tiên trận gần nhất]
-- HOME Form: ${state.homeFormIndex}/100 (Tính trên ${state.homeRecentMatches?.length || 0} trận gần nhất)
+- HOME Form: ${state.homeFormIndex}/100 (Tính trên ${state.homeTeamInfo?.stats?.matchesPlayed || 0} trận gần nhất)
   (Ghi bàn TB: ${state.homeGoalsForAvg}, Lọt lưới TB: ${state.homeGoalsAgainstAvg}, Sút trúng đích TB: ${state.homeShotsOnTargetAvg})
-- AWAY Form: ${state.awayFormIndex}/100 (Tính trên ${state.awayRecentMatches?.length || 0} trận gần nhất)
+- AWAY Form: ${state.awayFormIndex}/100 (Tính trên ${state.awayTeamInfo?.stats?.matchesPlayed || 0} trận gần nhất)
   (Ghi bàn TB: ${state.awayGoalsForAvg}, Lọt lưới TB: ${state.awayGoalsAgainstAvg}, Sút trúng đích TB: ${state.awayShotsOnTargetAvg})
 
 [XÁC SUẤT CHIẾN THẮNG (Dựa trên Elo Rating)]

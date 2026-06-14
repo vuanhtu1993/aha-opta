@@ -34,46 +34,23 @@ function calculateAverage(values: number[]): number {
 export async function statsAnalyzerNode(state: OptaStateType): Promise<Partial<OptaStateType>> {
   console.log(`[LangGraph] Node 2: Analyzing traditional stats and Elo...`);
 
-  // Hàm helper phân tích 1 team
-  const analyzeTeam = (teamId: string, matches: MinimalMatchData[]) => {
-    const results: MatchResult[] = [];
-    const goalsFor: number[] = [];
-    const goalsAgainst: number[] = [];
-    const shotsOnTarget: number[] = [];
-
-    matches.forEach(match => {
-      const isHome = match.homeTeamId._id.toString() === teamId;
-      
-      // Tính W/D/L
-      const res = getResultForTeam(
-        teamId,
-        match.homeTeamId._id.toString(),
-        match.awayScore,
-        match.homeScore
-      );
-      if (res) results.push(res);
-
-      if (isHome) {
-        if (match.homeScore !== null) goalsFor.push(match.homeScore);
-        if (match.awayScore !== null) goalsAgainst.push(match.awayScore);
-        if (match.homeStats?.shotsOnTarget) shotsOnTarget.push(match.homeStats.shotsOnTarget);
-      } else {
-        if (match.awayScore !== null) goalsFor.push(match.awayScore);
-        if (match.homeScore !== null) goalsAgainst.push(match.homeScore);
-        if (match.awayStats?.shotsOnTarget) shotsOnTarget.push(match.awayStats.shotsOnTarget);
-      }
-    });
-
+  // Thay vì tự tính toán từ mảng matches (có thể rỗng nếu World Cup chưa đá),
+  // chúng ta sử dụng trực tiếp chỉ số `stats` đã được tổng hợp sẵn trong Database (bao gồm cả lịch sử Elo).
+  
+  const getTeamAnalysis = (teamInfo: any) => {
+    const stats = teamInfo?.stats || {};
+    const matchesPlayed = stats.matchesPlayed || 1; // Tránh chia cho 0
+    
     return {
-      formIndex: calculateFormIndex(results),
-      goalsForAvg: calculateAverage(goalsFor),
-      goalsAgainstAvg: calculateAverage(goalsAgainst),
-      shotsOnTargetAvg: calculateAverage(shotsOnTarget),
+      formIndex: stats.formIndex || 0,
+      goalsForAvg: Math.round((stats.goalsFor || 0) / matchesPlayed * 100) / 100,
+      goalsAgainstAvg: Math.round((stats.goalsAgainst || 0) / matchesPlayed * 100) / 100,
+      shotsOnTargetAvg: stats.shotsOnTargetAvg || 0,
     };
   };
 
-  const homeAnalysis = analyzeTeam(state.homeTeamId, state.homeRecentMatches || []);
-  const awayAnalysis = analyzeTeam(state.awayTeamId, state.awayRecentMatches || []);
+  const homeAnalysis = getTeamAnalysis(state.homeTeamInfo);
+  const awayAnalysis = getTeamAnalysis(state.awayTeamInfo);
 
   console.log(`[LangGraph] Node 2 -> Home Form: ${homeAnalysis.formIndex}, GF: ${homeAnalysis.goalsForAvg}, GA: ${homeAnalysis.goalsAgainstAvg}`);
   console.log(`[LangGraph] Node 2 -> Away Form: ${awayAnalysis.formIndex}, GF: ${awayAnalysis.goalsForAvg}, GA: ${awayAnalysis.goalsAgainstAvg}`);

@@ -30,6 +30,8 @@ export interface ITeamStats {
   possessionAvg: number;      // % kiểm soát bóng (0-100)
   shotsOnTargetAvg: number;
   passAccuracyAvg: number;
+  passesAvg: number;
+  passesCompletedAvg: number;
   // Form index từ 5 trận gần nhất (0-100, weighted)
   formIndex: number;
 }
@@ -89,6 +91,8 @@ const TeamStatsSchema = new Schema<ITeamStats>(
     possessionAvg:      { type: Number, default: 0 },
     shotsOnTargetAvg:   { type: Number, default: 0 },
     passAccuracyAvg:    { type: Number, default: 0 },
+    passesAvg:          { type: Number, default: 0 },
+    passesCompletedAvg: { type: Number, default: 0 },
     formIndex:          { type: Number, default: 0, min: 0, max: 100 },
   },
   { _id: false } // Không cần _id cho subdocument

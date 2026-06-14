@@ -125,6 +125,8 @@ export default async function TeamDetailPage({ params }: PageProps) {
     possessionAvg: 0,
     shotsOnTargetAvg: 0,
     passAccuracyAvg: 0,
+    passesAvg: 0,
+    passesCompletedAvg: 0,
     formIndex: 0
   };
 

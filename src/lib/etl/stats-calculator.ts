@@ -84,7 +84,7 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
   let totalXgFor = 0, totalXgAgainst = 0, xgCount = 0;
   let totalPossession = 0, possCount = 0;
   let totalSOT = 0, sotCount = 0;
-  let totalPassAcc = 0, passCount = 0;
+  let totalPassAcc = 0, totalPasses = 0, totalPassesCompleted = 0, passCount = 0;
 
   for (const match of wcMatches) {
     const isHome = match.homeTeamId.toString() === teamId;
@@ -107,8 +107,10 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
         totalSOT += myStats.shotsOnTarget ?? 0;
         sotCount++;
       }
-      if ((myStats.passAccuracy ?? 0) > 0) {
+      if ((myStats.passAccuracy ?? 0) > 0 || (myStats.passes ?? 0) > 0) {
         totalPassAcc += myStats.passAccuracy ?? 0;
+        totalPasses += myStats.passes ?? 0;
+        totalPassesCompleted += myStats.passesCompleted ?? 0;
         passCount++;
       }
     }
@@ -197,6 +199,8 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
     possessionAvg: possCount > 0 ? Math.round(totalPossession / possCount) : 0,
     shotsOnTargetAvg: sotCount > 0 ? parseFloat((totalSOT / sotCount).toFixed(1)) : 0,
     passAccuracyAvg: passCount > 0 ? Math.round(totalPassAcc / passCount) : 0,
+    passesAvg: passCount > 0 ? Math.round(totalPasses / passCount) : 0,
+    passesCompletedAvg: passCount > 0 ? Math.round(totalPassesCompleted / passCount) : 0,
     formIndex,
   };
 

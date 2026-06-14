@@ -79,9 +79,10 @@ export async function PUT(request: NextRequest) {
       awaySOT,
       homeXG,
       awayXG,
-      // Trường mới: Pass Accuracy do admin tự nhập (thay vì hard-code)
-      homePassAccuracy,
-      awayPassAccuracy,
+      homePasses,
+      homePassesCompleted,
+      awayPasses,
+      awayPassesCompleted,
     } = body;
 
     if (!matchId) {
@@ -100,8 +101,11 @@ export async function PUT(request: NextRequest) {
             shots: parseInt(homeShots, 10) || 0,
             shotsOnTarget: parseInt(homeSOT, 10) || 0,
             xGoals: parseFloat(homeXG) || 0,
-            // Dùng giá trị admin nhập, fallback về 0 nếu không có
-            passAccuracy: parseInt(homePassAccuracy, 10) || 0,
+            passes: parseInt(homePasses, 10) || 0,
+            passesCompleted: parseInt(homePassesCompleted, 10) || 0,
+            passAccuracy: parseInt(homePasses, 10) > 0 
+              ? Math.round((parseInt(homePassesCompleted, 10) / parseInt(homePasses, 10)) * 100)
+              : 0,
             corners: 0,
             fouls: 0,
             yellowCards: 0,
@@ -112,8 +116,11 @@ export async function PUT(request: NextRequest) {
             shots: parseInt(awayShots, 10) || 0,
             shotsOnTarget: parseInt(awaySOT, 10) || 0,
             xGoals: parseFloat(awayXG) || 0,
-            // Dùng giá trị admin nhập, fallback về 0 nếu không có
-            passAccuracy: parseInt(awayPassAccuracy, 10) || 0,
+            passes: parseInt(awayPasses, 10) || 0,
+            passesCompleted: parseInt(awayPassesCompleted, 10) || 0,
+            passAccuracy: parseInt(awayPasses, 10) > 0 
+              ? Math.round((parseInt(awayPassesCompleted, 10) / parseInt(awayPasses, 10)) * 100)
+              : 0,
             corners: 0,
             fouls: 0,
             yellowCards: 0,

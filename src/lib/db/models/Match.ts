@@ -27,6 +27,8 @@ export interface IMatchStats {
   // xG thực từ StatsBomb (event-level) hoặc FBref (scraped)
   xGoals:         number;
   passAccuracy:   number; // % (0-100)
+  passes:         number; // Tổng số đường chuyền
+  passesCompleted: number; // Đường chuyền thành công
   corners:        number;
   fouls:          number;
   yellowCards:    number;
@@ -73,6 +75,8 @@ const MatchStatsSchema = new Schema<IMatchStats>(
     shotsOnTarget: { type: Number, default: 0 },
     xGoals:        { type: Number, default: 0 },
     passAccuracy:  { type: Number, default: 0, min: 0, max: 100 },
+    passes:        { type: Number, default: 0 },
+    passesCompleted: { type: Number, default: 0 },
     corners:       { type: Number, default: 0 },
     fouls:         { type: Number, default: 0 },
     yellowCards:   { type: Number, default: 0 },

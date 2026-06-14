@@ -35,8 +35,11 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
     awaySOT: match.awayStats?.shotsOnTarget !== null && match.awayStats?.shotsOnTarget !== undefined ? String(match.awayStats.shotsOnTarget) : "",
     homeXG: match.homeStats?.xGoals !== null && match.homeStats?.xGoals !== undefined ? String(match.homeStats.xGoals) : "",
     awayXG: match.awayStats?.xGoals !== null && match.awayStats?.xGoals !== undefined ? String(match.awayStats.xGoals) : "",
-    homePassAcc: match.homeStats?.passAccuracy !== null && match.homeStats?.passAccuracy !== undefined ? String(match.homeStats.passAccuracy) : "",
-    awayPassAcc: match.awayStats?.passAccuracy !== null && match.awayStats?.passAccuracy !== undefined ? String(match.awayStats.passAccuracy) : "",
+    homePasses: match.homeStats?.passes ? String(match.homeStats.passes) : "",
+    homePassesCompleted: match.homeStats?.passesCompleted ? String(match.homeStats.passesCompleted) : "",
+    awayPasses: match.awayStats?.passes ? String(match.awayStats.passes) : "",
+    awayPassesCompleted: match.awayStats?.passesCompleted ? String(match.awayStats.passesCompleted) : "",
+    
   });
 
   // Đồng bộ formData với prop match mới nhất mỗi khi match thay đổi (ví dụ: sau khi save thành công)
@@ -51,8 +54,11 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
       awaySOT: match.awayStats?.shotsOnTarget !== null && match.awayStats?.shotsOnTarget !== undefined ? String(match.awayStats.shotsOnTarget) : "",
       homeXG: match.homeStats?.xGoals !== null && match.homeStats?.xGoals !== undefined ? String(match.homeStats.xGoals) : "",
       awayXG: match.awayStats?.xGoals !== null && match.awayStats?.xGoals !== undefined ? String(match.awayStats.xGoals) : "",
-      homePassAcc: match.homeStats?.passAccuracy !== null && match.homeStats?.passAccuracy !== undefined ? String(match.homeStats.passAccuracy) : "",
-      awayPassAcc: match.awayStats?.passAccuracy !== null && match.awayStats?.passAccuracy !== undefined ? String(match.awayStats.passAccuracy) : "",
+      homePasses: match.homeStats?.passes ? String(match.homeStats.passes) : "",
+    homePassesCompleted: match.homeStats?.passesCompleted ? String(match.homeStats.passesCompleted) : "",
+    awayPasses: match.awayStats?.passes ? String(match.awayStats.passes) : "",
+    awayPassesCompleted: match.awayStats?.passesCompleted ? String(match.awayStats.passesCompleted) : "",
+      
     });
   }, [match]);
 
@@ -116,8 +122,10 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
             awaySOT: result.data.awaySOT !== undefined ? String(result.data.awaySOT) : prev.awaySOT,
             homeXG: result.data.homeXG !== undefined ? String(result.data.homeXG) : prev.homeXG,
             awayXG: result.data.awayXG !== undefined ? String(result.data.awayXG) : prev.awayXG,
-            homePassAcc: result.data.homePassAccuracy !== undefined ? String(result.data.homePassAccuracy) : prev.homePassAcc,
-            awayPassAcc: result.data.awayPassAccuracy !== undefined ? String(result.data.awayPassAccuracy) : prev.awayPassAcc,
+            homePasses: result.data.homePasses !== undefined ? String(result.data.homePasses) : prev.homePasses,
+            homePassesCompleted: result.data.homePassesCompleted !== undefined ? String(result.data.homePassesCompleted) : prev.homePassesCompleted,
+            awayPasses: result.data.awayPasses !== undefined ? String(result.data.awayPasses) : prev.awayPasses,
+            awayPassesCompleted: result.data.awayPassesCompleted !== undefined ? String(result.data.awayPassesCompleted) : prev.awayPassesCompleted,
           }));
         }
       } else {
@@ -151,8 +159,10 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           awaySOT: formData.awaySOT,
           homeXG: formData.homeXG,
           awayXG: formData.awayXG,
-          homePassAccuracy: formData.homePassAcc,
-          awayPassAccuracy: formData.awayPassAcc,
+          homePasses: formData.homePasses,
+          homePassesCompleted: formData.homePassesCompleted,
+          awayPasses: formData.awayPasses,
+          awayPassesCompleted: formData.awayPassesCompleted,
         }),
       });
 
@@ -249,7 +259,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                 </div>
 
                 {/* Thống kê chi tiết nếu có */}
-                {(fetchPreview.homePossession !== undefined || fetchPreview.homeShots !== undefined || fetchPreview.homeXG !== undefined || fetchPreview.homePassAccuracy !== undefined) && (
+                {(fetchPreview.homePossession !== undefined || fetchPreview.homeShots !== undefined || fetchPreview.homeXG !== undefined || fetchPreview.homePasses !== undefined) && (
                   <div className="grid grid-cols-2 gap-2 text-center mt-3">
                     {fetchPreview.homePossession !== undefined && (
                       <div className="bg-white rounded-lg p-2 border border-[#121C42]/10 shadow-sm">
@@ -271,10 +281,10 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                         <div className="text-xs font-bold text-[#121C42] mt-1">{fetchPreview.homeXG?.toFixed(2)} — {fetchPreview.awayXG?.toFixed(2)}</div>
                       </div>
                     )}
-                    {fetchPreview.homePassAccuracy !== undefined && (
+                    {fetchPreview.homePasses !== undefined && (
                       <div className="bg-white rounded-lg p-2 border border-[#121C42]/10 shadow-sm">
-                        <div className="text-[10px] text-[#121C42]/50 font-mono font-semibold uppercase tracking-wider">Chuyền chính xác</div>
-                        <div className="text-xs font-bold text-[#121C42] mt-1">{fetchPreview.homePassAccuracy}% — {fetchPreview.awayPassAccuracy}%</div>
+                        <div className="text-[10px] text-[#121C42]/50 font-mono font-semibold uppercase tracking-wider">Đường chuyền</div>
+                        <div className="text-xs font-bold text-[#121C42] mt-1">{fetchPreview.homePassesCompleted}/{fetchPreview.homePasses} — {fetchPreview.awayPassesCompleted}/{fetchPreview.awayPasses}</div>
                       </div>
                     )}
                   </div>
@@ -429,31 +439,51 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
             </div>
           </div>
 
-          {/* Độ chính xác chuyền bóng (Pass Accuracy) */}
+          {/* Đường chuyền (Passes) */}
           <div>
-            <div className="text-xs font-semibold text-[#121C42]/60 mb-2">% Chuyền bóng chính xác</div>
+            <div className="text-xs font-semibold text-[#121C42]/60 mb-2">Đường chuyền (Thành công / Tổng)</div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] text-[#121C42]/50 mb-1">{home.name} (%)</label>
-                <input
-                  type="number"
-                  min="50"
-                  max="100"
-                  value={formData.homePassAcc}
-                  onChange={e => handleFormChange("homePassAcc", e.target.value)}
-                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
-                />
+                <label className="block text-[10px] text-[#121C42]/50 mb-1">{home.name}</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="SC"
+                    value={formData.homePassesCompleted}
+                    onChange={e => handleFormChange("homePassesCompleted", e.target.value)}
+                    className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Tổng"
+                    value={formData.homePasses}
+                    onChange={e => handleFormChange("homePasses", e.target.value)}
+                    className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-[10px] text-[#121C42]/50 mb-1">{away.name} (%)</label>
-                <input
-                  type="number"
-                  min="50"
-                  max="100"
-                  value={formData.awayPassAcc}
-                  onChange={e => handleFormChange("awayPassAcc", e.target.value)}
-                  className="w-full bg-white border border-[#121C42]/20 rounded-lg px-3 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none"
-                />
+                <label className="block text-[10px] text-[#121C42]/50 mb-1">{away.name}</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="SC"
+                    value={formData.awayPassesCompleted}
+                    onChange={e => handleFormChange("awayPassesCompleted", e.target.value)}
+                    className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Tổng"
+                    value={formData.awayPasses}
+                    onChange={e => handleFormChange("awayPasses", e.target.value)}
+                    className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
+                  />
+                </div>
               </div>
             </div>
           </div>

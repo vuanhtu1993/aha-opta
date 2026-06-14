@@ -27,6 +27,10 @@ export interface AutoFetchResult {
   awaySOT?: number;
   homePassAccuracy?: number;
   awayPassAccuracy?: number;
+  homePasses?: number;
+  awayPasses?: number;
+  homePassesCompleted?: number;
+  awayPassesCompleted?: number;
   source?: string;
   confidence: "high" | "medium" | "low";
 }
@@ -41,6 +45,10 @@ const AdvancedStatsSchema = z.object({
   awaySOT: z.number().int().min(0).optional().describe("Số cú sút trúng đích của đội khách"),
   homePassAccuracy: z.number().int().min(50).max(100).optional().describe("% chính xác chuyền bóng của đội chủ nhà"),
   awayPassAccuracy: z.number().int().min(50).max(100).optional().describe("% chính xác chuyền bóng của đội khách"),
+  homePasses: z.number().int().min(0).optional().describe("Tổng số đường chuyền của đội chủ nhà"),
+  awayPasses: z.number().int().min(0).optional().describe("Tổng số đường chuyền của đội khách"),
+  homePassesCompleted: z.number().int().min(0).optional().describe("Số đường chuyền thành công của đội chủ nhà"),
+  awayPassesCompleted: z.number().int().min(0).optional().describe("Số đường chuyền thành công của đội khách"),
   source: z.string().optional().describe("Nguồn lấy dữ liệu nâng cao (ví dụ: FBref, SofaScore)"),
 });
 
@@ -148,6 +156,7 @@ Search and return ONLY these specific advanced statistics:
 - Total shots for both teams
 - Shots on target for both teams
 - Expected goals (xG) for both teams
+- Total passes and completed passes for both teams (e.g. 450/500 passes)
 - Pass accuracy % for both teams
 
 Include the source website. If a stat cannot be found, omit it.`;
@@ -179,6 +188,10 @@ Only extract stats if they are clearly mentioned. Do not guess.`;
         if (advancedStats.awaySOT !== undefined) resultData.awaySOT = advancedStats.awaySOT;
         if (advancedStats.homePassAccuracy !== undefined) resultData.homePassAccuracy = advancedStats.homePassAccuracy;
         if (advancedStats.awayPassAccuracy !== undefined) resultData.awayPassAccuracy = advancedStats.awayPassAccuracy;
+        if (advancedStats.homePasses !== undefined) resultData.homePasses = advancedStats.homePasses;
+        if (advancedStats.awayPasses !== undefined) resultData.awayPasses = advancedStats.awayPasses;
+        if (advancedStats.homePassesCompleted !== undefined) resultData.homePassesCompleted = advancedStats.homePassesCompleted;
+        if (advancedStats.awayPassesCompleted !== undefined) resultData.awayPassesCompleted = advancedStats.awayPassesCompleted;
         if (advancedStats.source) resultData.source += ` & ${advancedStats.source}`;
         
         console.log(`[AutoFetch] Đã merge thành công các chỉ số nâng cao từ AI. ResultData:`, resultData);

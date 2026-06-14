@@ -3,7 +3,27 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrainCircuit, Loader2, Database, Search, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
-import type { AutoFetchResult } from "@/app/api/opta/matches/autofetch/route";
+export interface AutoFetchResult {
+  played: boolean;
+  message?: string;
+  homeScore?: number;
+  awayScore?: number;
+  homeXG?: number;
+  awayXG?: number;
+  homePossession?: number;
+  homeShots?: number;
+  awayShots?: number;
+  homeSOT?: number;
+  awaySOT?: number;
+  homePassAccuracy?: number;
+  awayPassAccuracy?: number;
+  homePasses?: number;
+  awayPasses?: number;
+  homePassesCompleted?: number;
+  awayPassesCompleted?: number;
+  source?: string;
+  confidence?: "high" | "medium" | "low";
+}
 
 interface MatchCardProps {
   match: any;
@@ -498,7 +518,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
             </button>
             <button
               type="submit"
-              disabled={formLoading || isReadOnly}
+              disabled={formLoading}
               className="w-1/2 bg-[#3B5BDB] hover:bg-[#264de4] disabled:opacity-50 text-white font-medium py-2 rounded-xl flex items-center justify-center gap-1.5"
             >
               {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}

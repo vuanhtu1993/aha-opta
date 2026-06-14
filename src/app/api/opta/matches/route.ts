@@ -63,10 +63,7 @@ export async function PUT(request: NextRequest) {
   try {
     await connectDB();
 
-    const isReadOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === "true";
-    if (isReadOnly) {
-      return NextResponse.json({ success: false, error: "Hệ thống đang ở chế độ Read-Only" }, { status: 403 });
-    }
+    // Cho phép cập nhật kết quả trận đấu thủ công ngay cả trên production
     const body = await request.json();
     const {
       matchId,

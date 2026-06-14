@@ -31,9 +31,9 @@ export default function WhiteNoiseRevamp() {
     <div className="min-h-[85vh] flex flex-col relative bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 rounded-[3rem] p-6 shadow-inner overflow-hidden">
       
       {/* Decorative blobs (Cartoonish effect) */}
-      <div className="absolute top-0 left-0 w-64 h-64 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-64 h-64 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+      <div className="absolute top-0 left-0 w-64 h-64 rounded-full mix-blend-multiply opacity-30 animate-blob" style={{ background: 'radial-gradient(circle, rgba(249,168,212,1) 0%, rgba(249,168,212,0) 70%)' }}></div>
+      <div className="absolute top-0 right-0 w-64 h-64 rounded-full mix-blend-multiply opacity-30 animate-blob animation-delay-2000" style={{ background: 'radial-gradient(circle, rgba(253,224,71,1) 0%, rgba(253,224,71,0) 70%)' }}></div>
+      <div className="absolute -bottom-8 left-20 w-64 h-64 rounded-full mix-blend-multiply opacity-30 animate-blob animation-delay-4000" style={{ background: 'radial-gradient(circle, rgba(216,180,254,1) 0%, rgba(216,180,254,0) 70%)' }}></div>
 
       {/* Header & Settings */}
       <div className="relative z-10 flex justify-between items-center mb-8">

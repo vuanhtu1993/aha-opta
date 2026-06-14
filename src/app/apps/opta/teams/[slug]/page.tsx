@@ -153,8 +153,8 @@ export default async function TeamDetailPage({ params }: PageProps) {
       {/* Hero Header Section */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white to-[#8DB7F4]/10 border border-[#121C42]/10 p-6 sm:p-10 shadow-2xl">
         {/* Glow Effects */}
-        <div className="absolute top-0 right-0 -mr-24 -mt-24 w-80 h-80 bg-[#3B5BDB]/5 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-24 -mb-24 w-80 h-80 bg-[#8DB7F4]/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 -mr-24 -mt-24 w-80 h-80 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(59,91,219,0.05) 0%, rgba(59,91,219,0) 70%)' }} />
+        <div className="absolute bottom-0 left-0 -ml-24 -mb-24 w-80 h-80 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(141,183,244,0.1) 0%, rgba(141,183,244,0) 70%)' }} />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Flag and basic info */}

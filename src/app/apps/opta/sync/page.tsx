@@ -103,7 +103,7 @@ export default function SyncPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Manual Init WC 2026 */}
         <div className="bg-gradient-to-b from-white to-[#8DB7F4]/10 border border-[#3B5BDB]/20 p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-indigo-950/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.1) 0%, rgba(99,102,241,0) 70%)' }} />
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xl font-bold text-[#3B5BDB]">Khởi tạo WC 2026</h3>
@@ -126,7 +126,7 @@ export default function SyncPage() {
 
         {/* Sync Elo Ratings */}
         <div className="bg-gradient-to-b from-white to-[#3B5BDB]/5 border border-[#3B5BDB]/20 p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-emerald-950/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.05) 0%, rgba(16,185,129,0) 70%)' }} />
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xl font-bold text-[#3B5BDB]">Sync Elo Ratings</h3>

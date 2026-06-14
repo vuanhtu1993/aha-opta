@@ -14,7 +14,12 @@ export default function OptaLayout({ children }: { children: ReactNode }) {
 
       {/* Background Decorator Lines/Shapes (Global) */}
       <div className="absolute top-0 left-0 w-full h-[50vh] bg-[#8DB7F4] -z-20" />
-      <div className="absolute top-[-20%] left-[-10%] w-[120%] h-[60vh] bg-[#8DB7F4]/20 rounded-b-[50%] -z-20 blur-3xl" />
+      <div 
+        className="absolute top-[-20%] left-[-10%] w-[120%] h-[60vh] -z-20"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 50%, rgba(141, 183, 244, 0.3) 0%, rgba(141, 183, 244, 0) 70%)'
+        }}
+      />
 
       {/* Navbar nội bộ của aha-opta */}
       <OptaNavbar />

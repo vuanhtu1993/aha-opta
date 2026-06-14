@@ -39,7 +39,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
     homePassesCompleted: match.homeStats?.passesCompleted ? String(match.homeStats.passesCompleted) : "",
     awayPasses: match.awayStats?.passes ? String(match.awayStats.passes) : "",
     awayPassesCompleted: match.awayStats?.passesCompleted ? String(match.awayStats.passesCompleted) : "",
-    
+
   });
 
   // Đồng bộ formData với prop match mới nhất mỗi khi match thay đổi (ví dụ: sau khi save thành công)
@@ -55,10 +55,10 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
       homeXG: match.homeStats?.xGoals !== null && match.homeStats?.xGoals !== undefined ? String(match.homeStats.xGoals) : "",
       awayXG: match.awayStats?.xGoals !== null && match.awayStats?.xGoals !== undefined ? String(match.awayStats.xGoals) : "",
       homePasses: match.homeStats?.passes ? String(match.homeStats.passes) : "",
-    homePassesCompleted: match.homeStats?.passesCompleted ? String(match.homeStats.passesCompleted) : "",
-    awayPasses: match.awayStats?.passes ? String(match.awayStats.passes) : "",
-    awayPassesCompleted: match.awayStats?.passesCompleted ? String(match.awayStats.passesCompleted) : "",
-      
+      homePassesCompleted: match.homeStats?.passesCompleted ? String(match.homeStats.passesCompleted) : "",
+      awayPasses: match.awayStats?.passes ? String(match.awayStats.passes) : "",
+      awayPassesCompleted: match.awayStats?.passesCompleted ? String(match.awayStats.passesCompleted) : "",
+
     });
   }, [match]);
 
@@ -191,8 +191,7 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
           <span className="font-semibold text-[#121C42] text-xs">{home.name} vs {away.name}</span>
           <div className="flex items-center gap-2">
             {/* Nút Tự động tìm kết quả */}
-            {!isReadOnly && (
-              <button
+            <button
               type="button"
               onClick={handleAutoFetch}
               disabled={isFetching}
@@ -201,7 +200,6 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
               {isFetching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
               {isFetching ? "Đang tìm..." : "Tự động tìm"}
             </button>
-            )}
             <button
               type="button"
               onClick={() => setIsEditing(false)}
@@ -519,14 +517,12 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
         <span suppressHydrationWarning>{date.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })} - {match.stage}</span>
         <div className="flex items-center gap-2">
           {match.group && <span className="px-2 py-0.5 rounded-md bg-[#f8fafc] border border-[#121C42]/10 text-[#121C42]">Bảng {match.group}</span>}
-          {!isReadOnly && (
-            <button
+          <button
             onClick={() => setIsEditing(true)}
             className="px-2 py-0.5 rounded bg-white hover:bg-[#3B5BDB]/10 text-[#3B5BDB] border border-[#121C42]/10 text-[10px]"
           >
             Cập nhật kết quả
           </button>
-          )}
         </div>
       </div>
 
@@ -573,12 +569,12 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   <div className="absolute top-2 right-2">
                     {!isReadOnly && (
                       <button
-                      onClick={() => handlePredict(true)}
-                      title="Dự đoán lại (Bỏ qua Cache)"
-                      className="p-1.5 text-[#121C42]/30 hover:text-[#3B5BDB] hover:bg-[#3B5BDB]/10 rounded-full transition-all"
-                    >
-                      <RefreshCcw className="w-3.5 h-3.5" />
-                    </button>
+                        onClick={() => handlePredict(true)}
+                        title="Dự đoán lại (Bỏ qua Cache)"
+                        className="p-1.5 text-[#121C42]/30 hover:text-[#3B5BDB] hover:bg-[#3B5BDB]/10 rounded-full transition-all"
+                      >
+                        <RefreshCcw className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
 

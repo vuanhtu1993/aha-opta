@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { Prediction } from "@/lib/db/models/Prediction";
 import { Match } from "@/lib/db/models/Match";
-import { runOptaPrediction } from "@/lib/ai/opta-agent/graph";
+import { runOptaPrediction } from "@/lib/agents/opta-agent/graph";
 
 export async function POST(request: NextRequest) {
   try {

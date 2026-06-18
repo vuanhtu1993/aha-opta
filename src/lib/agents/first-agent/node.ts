@@ -30,10 +30,12 @@ export const toolNode: GraphNode<typeof MessagesState> = async (state) => {
     // Lặp qua từng tool_call trong AIMessage
     // LLM có thể yêu cầu nhiều tool cùng lúc
     for (const toolCall of lastMessage.tool_calls ?? []) {
-        const selectedTool = toolsByName[toolCall.name];
-        // tool.invoke(toolCall) = thực thi function với args từ LLM
-        const observation = await selectedTool.invoke(toolCall);
-        result.push(observation);
+        const selectedTool = (toolsByName as Record<string, any>)[toolCall.name];
+        if (selectedTool) {
+            // tool.invoke(toolCall) = thực thi function với args từ LLM
+            const observation = await selectedTool.invoke(toolCall);
+            result.push(observation);
+        }
     }
 
     return { messages: result };

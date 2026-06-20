@@ -467,17 +467,17 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   <input
                     type="number"
                     min="0"
-                    placeholder="SC"
-                    value={formData.homePassesCompleted}
-                    onChange={e => handleFormChange("homePassesCompleted", e.target.value)}
+                    placeholder="Tổng"
+                    value={formData.homePasses}
+                    onChange={e => handleFormChange("homePasses", e.target.value)}
                     className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
                   />
                   <input
                     type="number"
                     min="0"
-                    placeholder="Tổng"
-                    value={formData.homePasses}
-                    onChange={e => handleFormChange("homePasses", e.target.value)}
+                    placeholder="SC"
+                    value={formData.homePassesCompleted}
+                    onChange={e => handleFormChange("homePassesCompleted", e.target.value)}
                     className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
                   />
                 </div>
@@ -488,17 +488,17 @@ export function MatchCard({ match, onUpdate }: MatchCardProps) {
                   <input
                     type="number"
                     min="0"
-                    placeholder="SC"
-                    value={formData.awayPassesCompleted}
-                    onChange={e => handleFormChange("awayPassesCompleted", e.target.value)}
+                    placeholder="Tổng"
+                    value={formData.awayPasses}
+                    onChange={e => handleFormChange("awayPasses", e.target.value)}
                     className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
                   />
                   <input
                     type="number"
                     min="0"
-                    placeholder="Tổng"
-                    value={formData.awayPasses}
-                    onChange={e => handleFormChange("awayPasses", e.target.value)}
+                    placeholder="SC"
+                    value={formData.awayPassesCompleted}
+                    onChange={e => handleFormChange("awayPassesCompleted", e.target.value)}
                     className="w-1/2 bg-white border border-[#121C42]/20 rounded-lg px-2 py-2 text-[#121C42] font-mono text-center focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/20 outline-none text-sm"
                   />
                 </div>

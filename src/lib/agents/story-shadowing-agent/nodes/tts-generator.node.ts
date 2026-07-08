@@ -13,44 +13,59 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
   const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
 
   try {
-    const concurrency = 3;
+    const concurrency = 4;
     const results = [];
 
-    // Chia nhỏ thành từng chunk (3 câu/lần) để tránh lỗi 429 RESOURCE_EXHAUSTED
+    // Hàm gọi API có retry
+    const fetchWithRetry = async (text: string, id: string, retries = 3, delay = 1000): Promise<any> => {
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input: { text },
+            voice: { languageCode: "en-US", name: "en-US-Neural2-F" }, // Chuyển sang Neural2 (Nhanh hơn, quota cao hơn Journey)
+            audioConfig: { audioEncoding: "MP3" },
+          }),
+        });
+
+        if (!response.ok) {
+          if (response.status === 429 && retries > 0) {
+            console.warn(`[TTS] 429 Rate Limit. Retrying in ${delay}ms...`);
+            await new Promise(r => setTimeout(r, delay));
+            return fetchWithRetry(text, id, retries - 1, delay * 2);
+          }
+          const errorBody = await response.text();
+          throw new Error(`Google Cloud TTS API error: ${response.status} - Chi tiết: ${errorBody}`);
+        }
+
+        const data = await response.json();
+        return {
+          id,
+          text,
+          audioBase64: data.audioContent,
+        };
+      } catch (error) {
+        if (retries > 0) {
+          await new Promise(r => setTimeout(r, delay));
+          return fetchWithRetry(text, id, retries - 1, delay * 2);
+        }
+        throw error;
+      }
+    };
+
+    // Chia nhỏ thành từng chunk
     for (let i = 0; i < state.rawSentences.length; i += concurrency) {
       const chunk = state.rawSentences.slice(i, i + concurrency);
       const chunkResults = await Promise.all(
-        chunk.map(async (s) => {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              input: { text: s.text },
-              voice: { languageCode: "en-US", name: "en-US-Journey-F" }, 
-              audioConfig: { audioEncoding: "MP3" },
-            }),
-          });
-
-          if (!response.ok) {
-            const errorBody = await response.text();
-            console.error("[TTS API ERROR]", response.status, errorBody);
-            throw new Error(`Google Cloud TTS API error: ${response.status} - Chi tiết: ${errorBody}`);
-          }
-
-          const data = await response.json();
-          return {
-            id: s.id,
-            text: s.text,
-            audioBase64: data.audioContent,
-          };
-        })
+        chunk.map(s => fetchWithRetry(s.text, s.id))
       );
       
       results.push(...chunkResults);
       
-      // Nghỉ 1 giây giữa các chunk để tránh Google API Rate Limit
+      // Nghỉ 500ms giữa các chunk để tránh Google API Rate Limit
       if (i + concurrency < state.rawSentences.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 

@@ -1,12 +1,13 @@
 import { StorybookStateType } from "../state";
 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${process.env.GOOGLE_API_KEY}`;
+const TTS_MODEL = process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts";
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent?key=${process.env.GOOGLE_API_KEY}`;
 
 function pcmToWavBase64(pcmBase64: string): string {
   const pcmBuffer = Buffer.from(pcmBase64, 'base64');
   const numChannels = 1;
   const sampleRate = 24000;
-  
+
   const wavHeader = Buffer.alloc(44);
   wavHeader.write('RIFF', 0);
   wavHeader.writeUInt32LE(36 + pcmBuffer.length, 4);
@@ -21,7 +22,7 @@ function pcmToWavBase64(pcmBase64: string): string {
   wavHeader.writeUInt16LE(16, 34); // BitsPerSample
   wavHeader.write('data', 36);
   wavHeader.writeUInt32LE(pcmBuffer.length, 40);
-  
+
   const wavBuffer = Buffer.concat([wavHeader, pcmBuffer]);
   return wavBuffer.toString('base64');
 }

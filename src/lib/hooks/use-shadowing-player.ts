@@ -13,17 +13,24 @@ export function useShadowingPlayer(sentences: Sentence[]) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const shadowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentBlobUrlRef = useRef<string | null>(null);
 
-  // Cleanup helper — dùng mọi lúc cần dừng
+  // Khởi tạo Audio 1 lần duy nhất để Safari cấp quyền Autoplay (bắt buộc)
+  useEffect(() => {
+    if (typeof window !== "undefined" && !audioRef.current) {
+      audioRef.current = new Audio();
+    }
+  }, []);
+
+  // Cleanup helper
   const clearTimers = useCallback(() => {
     if (shadowTimeoutRef.current) clearTimeout(shadowTimeoutRef.current);
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     if (audioRef.current) {
       audioRef.current.pause();
-      if (audioRef.current.src.startsWith("blob:")) {
-        URL.revokeObjectURL(audioRef.current.src);
-      }
-      audioRef.current.src = ""; // Giải phóng memory
+      audioRef.current.onended = null;
+      audioRef.current.onloadedmetadata = null;
+      audioRef.current.onerror = null;
     }
   }, []);
 
@@ -40,13 +47,17 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     setCurrentIndex(index);
     setPlayerState("AI_SPEAKING");
 
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+    const audio = audioRef.current;
+
     // Detect MIME type and create Blob URL
     let mimeType = "audio/mpeg";
     if (sentence.audioBase64.startsWith("UklGR")) {
       mimeType = "audio/wav";
     }
 
-    // Chuyển base64 sang Blob
     const binary = atob(sentence.audioBase64);
     const array = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
@@ -55,23 +66,28 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     const blob = new Blob([array], { type: mimeType });
     const blobUrl = URL.createObjectURL(blob);
 
-    // Tạo Audio object từ Blob URL
-    const audio = new Audio(blobUrl);
-    audioRef.current = audio;
+    // Giải phóng URL cũ để không bị memory leak
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+    }
+    currentBlobUrlRef.current = blobUrl;
 
-    // Chờ metadata load để lấy chính xác duration
-    audio.addEventListener("loadedmetadata", () => {
-      audio.play();
-    });
+    // Thay đổi src của cùng 1 thẻ Audio
+    audio.src = blobUrl;
+    audio.load();
 
-    audio.addEventListener("ended", () => {
-      // Audio kết thúc → chuyển sang trạng thái USER_SHADOWING
-      const userTime = (audio.duration * 1000) + 1500; // audio duration + 1.5s buffer
+    // Dùng callback property (on...) để ghi đè, tránh bị lặp sự kiện như addEventListener
+    audio.onended = () => {
+      // Lấy duration (phải đảm bảo audio.duration hợp lệ)
+      const duration = isNaN(audio.duration) ? 3 : audio.duration;
+      const userTime = (duration * 1000) + 1500; // audio duration + 1.5s buffer
+      
       setPlayerState("USER_SHADOWING");
       setCountdown(Math.round(userTime));
 
       // Đếm ngược countdown
       const startTime = Date.now();
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
       countdownIntervalRef.current = setInterval(() => {
         const remaining = Math.max(0, userTime - (Date.now() - startTime));
         setCountdown(Math.round(remaining));
@@ -80,15 +96,22 @@ export function useShadowingPlayer(sentences: Sentence[]) {
         }
       }, 100);
 
-      // Sau thời gian đó → tự động phát câu tiếp
+      // Tự động phát câu tiếp theo
+      if (shadowTimeoutRef.current) clearTimeout(shadowTimeoutRef.current);
       shadowTimeoutRef.current = setTimeout(() => {
         playSentence(index + 1);
       }, userTime);
-    });
+    };
 
-    audio.addEventListener("error", () => {
+    audio.onerror = () => {
       console.error("[Player] Audio load error");
       setPlayerState("IDLE");
+    };
+
+    // CRITICAL FIX FOR SAFARI: Gọi play() ngay lập tức, đồng bộ với luồng click của người dùng
+    audio.play().catch(e => {
+      console.warn("[Player] Safari/Browser Autoplay prevented:", e);
+      // Nếu Safari chặn (do mạng chậm dẫn đến mất User Gesture), trạng thái vẫn an toàn.
     });
   }, [sentences]);
 
@@ -119,6 +142,9 @@ export function useShadowingPlayer(sentences: Sentence[]) {
   useEffect(() => {
     return () => {
       clearTimers();
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+      }
     };
   }, [clearTimers]);
 

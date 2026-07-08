@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { HumanMessage } from "@langchain/core/messages";
 import { shouldContinue } from "./routing";

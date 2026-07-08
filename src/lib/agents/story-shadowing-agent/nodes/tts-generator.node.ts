@@ -13,9 +13,6 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
   const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
 
   try {
-    const concurrency = 4;
-    const results = [];
-
     // Lấy tên Model giọng đọc từ env
     const ttsModel = process.env.GOOGLE_CLOUD_TTS_MODEL || "en-US-Journey-F";
 

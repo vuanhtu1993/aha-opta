@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import { useShadowingPlayer } from "@/lib/hooks/use-shadowing-player";
 import { SentenceCard } from "./sentence-card";
-import { ProgressCountdown } from "./progress-countdown";
 import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
 
 interface ShadowingPlayerProps {
@@ -39,15 +38,6 @@ export function ShadowingPlayer({ sentences }: ShadowingPlayerProps) {
         </div>
       </div>
 
-      {/* Progress countdown (chỉ hiện khi USER_SHADOWING) */}
-      {playerState === "USER_SHADOWING" && (
-        <ProgressCountdown
-          totalMs={countdown + 1000}
-          remainingMs={countdown}
-          isActive={true}
-        />
-      )}
-
       {/* Danh sách câu */}
       <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
         {sentences.map((s, i) => (
@@ -57,6 +47,11 @@ export function ShadowingPlayer({ sentences }: ShadowingPlayerProps) {
             sentence={s}
             isActive={i === currentIndex && isPlaying}
             isDone={i < currentIndex}
+            shadowingProgress={
+              i === currentIndex && playerState === "USER_SHADOWING"
+                ? { totalMs: countdown + 1000, remainingMs: countdown }
+                : undefined
+            }
           />
         ))}
       </div>

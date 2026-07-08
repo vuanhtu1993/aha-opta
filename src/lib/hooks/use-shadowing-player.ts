@@ -38,7 +38,7 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     setPlayerState("AI_SPEAKING");
 
     // Tạo Audio object từ base64
-    const audio = new Audio(`data:audio/mp3;base64,${sentence.audioBase64}`);
+    const audio = new Audio(`data:audio/mpeg;base64,${sentence.audioBase64}`);
     audioRef.current = audio;
 
     // Chờ metadata load để lấy chính xác duration

@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { useShadowingPlayer } from "@/lib/hooks/use-shadowing-player";
 import { SentenceCard } from "./sentence-card";
 import { ProgressCountdown } from "./progress-countdown";
@@ -11,6 +12,14 @@ interface ShadowingPlayerProps {
 export function ShadowingPlayer({ sentences }: ShadowingPlayerProps) {
   const { playerState, currentIndex, countdown, play, pause, goToNext, goToPrev, isPlaying } =
     useShadowingPlayer(sentences);
+
+  // Auto-scroll tới câu đang đọc
+  useEffect(() => {
+    const el = document.getElementById(`sentence-${currentIndex}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [currentIndex]);
 
   return (
     <div className="space-y-6">
@@ -44,6 +53,7 @@ export function ShadowingPlayer({ sentences }: ShadowingPlayerProps) {
         {sentences.map((s, i) => (
           <SentenceCard
             key={s.id}
+            id={`sentence-${i}`}
             sentence={s}
             isActive={i === currentIndex && isPlaying}
             isDone={i < currentIndex}

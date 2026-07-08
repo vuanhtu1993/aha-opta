@@ -16,6 +16,9 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
     const concurrency = 4;
     const results = [];
 
+    // Lấy tên Model giọng đọc từ env
+    const ttsModel = process.env.GOOGLE_CLOUD_TTS_MODEL || "en-US-Journey-F";
+
     // Hàm gọi API có retry
     const fetchWithRetry = async (text: string, id: string, retries = 3, delay = 1000): Promise<any> => {
       try {
@@ -24,7 +27,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             input: { text },
-            voice: { languageCode: "en-US", name: "en-US-Journey-F" }, // Chuyển sang Neural2 (Nhanh hơn, quota cao hơn Journey)
+            voice: { languageCode: "en-US", name: ttsModel },
             audioConfig: { audioEncoding: "MP3" },
           }),
         });

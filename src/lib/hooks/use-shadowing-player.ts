@@ -9,33 +9,31 @@ export function useShadowingPlayer(sentences: Sentence[]) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [countdown, setCountdown] = useState(0); // ms còn lại để đọc theo
 
-  // Refs để tránh stale closure trong setTimeout
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Sử dụng Web Audio API để vượt rào Mobile Safari/Chrome strict autoplay
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  
   const shadowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentBlobUrlRef = useRef<string | null>(null);
+  const isMounted = useRef(true);
 
-  // Khởi tạo Audio 1 lần duy nhất để Safari cấp quyền Autoplay (bắt buộc)
-  useEffect(() => {
-    if (typeof window !== "undefined" && !audioRef.current) {
-      audioRef.current = new Audio();
-    }
-  }, []);
-
-  // Cleanup helper
   const clearTimers = useCallback(() => {
     if (shadowTimeoutRef.current) clearTimeout(shadowTimeoutRef.current);
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onended = null;
-      audioRef.current.onloadedmetadata = null;
-      audioRef.current.onerror = null;
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.onended = null;
+      try {
+        sourceNodeRef.current.stop();
+      } catch (e) {
+        // ignore
+      }
+      sourceNodeRef.current = null;
     }
   }, []);
 
-  // Phát 1 câu theo index
-  const playSentence = useCallback((index: number) => {
+  const playSentence = useCallback(async (index: number) => {
+    if (!isMounted.current) return;
+    
     if (index >= sentences.length) {
       setPlayerState("DONE");
       return;
@@ -47,75 +45,90 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     setCurrentIndex(index);
     setPlayerState("AI_SPEAKING");
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+    // Khởi tạo AudioContext nếu chưa có
+    if (!audioCtxRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioCtxRef.current = new AudioContextClass();
     }
-    const audio = audioRef.current;
-
-    // Detect MIME type and create Blob URL
-    let mimeType = "audio/mpeg";
-    if (sentence.audioBase64.startsWith("UklGR")) {
-      mimeType = "audio/wav";
+    const ctx = audioCtxRef.current;
+    
+    // Unlock AudioContext trên Safari
+    if (ctx.state === "suspended") {
+      await ctx.resume();
     }
 
-    const binary = atob(sentence.audioBase64);
-    const array = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      array[i] = binary.charCodeAt(i);
+    // Dừng node cũ
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.onended = null;
+      try { sourceNodeRef.current.stop(); } catch(e){}
     }
-    const blob = new Blob([array], { type: mimeType });
-    const blobUrl = URL.createObjectURL(blob);
 
-    // Giải phóng URL cũ để không bị memory leak
-    if (currentBlobUrlRef.current) {
-      URL.revokeObjectURL(currentBlobUrlRef.current);
-    }
-    currentBlobUrlRef.current = blobUrl;
-
-    // Thay đổi src của cùng 1 thẻ Audio
-    audio.src = blobUrl;
-    audio.load();
-
-    // Dùng callback property (on...) để ghi đè, tránh bị lặp sự kiện như addEventListener
-    audio.onended = () => {
-      // Lấy duration (phải đảm bảo audio.duration hợp lệ)
-      const duration = isNaN(audio.duration) ? 3 : audio.duration;
-      const userTime = (duration * 1000) + 1500; // audio duration + 1.5s buffer
+    try {
+      const binary = atob(sentence.audioBase64);
+      const array = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        array[i] = binary.charCodeAt(i);
+      }
       
-      setPlayerState("USER_SHADOWING");
-      setCountdown(Math.round(userTime));
+      // Decode audio bằng callback để support các bản Safari siêu cũ
+      const audioBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+        ctx.decodeAudioData(
+          array.buffer,
+          (buffer) => resolve(buffer),
+          (err) => reject(err)
+        );
+      });
+      
+      if (!isMounted.current) return;
 
-      // Đếm ngược countdown
-      const startTime = Date.now();
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      countdownIntervalRef.current = setInterval(() => {
-        const remaining = Math.max(0, userTime - (Date.now() - startTime));
-        setCountdown(Math.round(remaining));
-        if (remaining <= 0) {
-          clearInterval(countdownIntervalRef.current!);
-        }
-      }, 100);
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(ctx.destination);
+      sourceNodeRef.current = source;
 
-      // Tự động phát câu tiếp theo
-      if (shadowTimeoutRef.current) clearTimeout(shadowTimeoutRef.current);
-      shadowTimeoutRef.current = setTimeout(() => {
-        playSentence(index + 1);
-      }, userTime);
-    };
+      source.onended = () => {
+        if (!isMounted.current) return;
+        const userTime = (audioBuffer.duration * 1000) + 1500; // duration + 1.5s
+        
+        setPlayerState("USER_SHADOWING");
+        setCountdown(Math.round(userTime));
 
-    audio.onerror = () => {
-      console.error("[Player] Audio load error");
+        const startTime = Date.now();
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = setInterval(() => {
+          const remaining = Math.max(0, userTime - (Date.now() - startTime));
+          setCountdown(Math.round(remaining));
+          if (remaining <= 0) {
+            clearInterval(countdownIntervalRef.current!);
+          }
+        }, 100);
+
+        if (shadowTimeoutRef.current) clearTimeout(shadowTimeoutRef.current);
+        shadowTimeoutRef.current = setTimeout(() => {
+          playSentence(index + 1);
+        }, userTime);
+      };
+
+      // Play audio ngay lập tức
+      // Web Audio API không bị giới hạn autoplay sau khi context đã running
+      source.start(0);
+      
+    } catch (err) {
+      console.error("[Player] Web Audio API load error", err);
       setPlayerState("IDLE");
-    };
-
-    // CRITICAL FIX FOR SAFARI: Gọi play() ngay lập tức, đồng bộ với luồng click của người dùng
-    audio.play().catch(e => {
-      console.warn("[Player] Safari/Browser Autoplay prevented:", e);
-      // Nếu Safari chặn (do mạng chậm dẫn đến mất User Gesture), trạng thái vẫn an toàn.
-    });
+    }
   }, [sentences]);
 
   const play = useCallback(() => {
+    // Bắt buộc gọi resume() đồng bộ với click của người dùng để unlock Context trên iOS
+    if (!audioCtxRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioCtxRef.current = new AudioContextClass();
+    }
+    if (audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
+
     if (playerState === "PAUSED") {
       playSentence(currentIndex);
     } else {
@@ -138,12 +151,14 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     playSentence(Math.max(0, currentIndex - 1));
   }, [clearTimers, currentIndex, playSentence]);
 
-  // CRITICAL: Cleanup khi component unmount — tránh memory leak
+  // CRITICAL: Cleanup khi component unmount
   useEffect(() => {
+    isMounted.current = true;
     return () => {
+      isMounted.current = false;
       clearTimers();
-      if (currentBlobUrlRef.current) {
-        URL.revokeObjectURL(currentBlobUrlRef.current);
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(console.error);
       }
     };
   }, [clearTimers]);

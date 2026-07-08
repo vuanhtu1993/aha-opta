@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { runStorybookPipeline } from "@/lib/agents/story-shadowing-agent/graph";
+import { connectDB } from "@/lib/db/mongoose";
+import Storybook from "@/lib/db/models/Storybook";
 
 // Validate input với Zod
 const RequestSchema = z.object({
@@ -17,7 +19,23 @@ export async function POST(request: NextRequest) {
     // Chạy LangGraph pipeline (blocking ~5-10s do TTS)
     const sentences = await runStorybookPipeline(text);
 
-    return NextResponse.json({ sentences, totalCount: sentences.length });
+    // Lưu vào database
+    await connectDB();
+    
+    // Tự động tạo title từ 6 từ đầu tiên
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const title = words.slice(0, 6).join(" ") + (words.length > 6 ? "..." : "");
+
+    const newStory = await Storybook.create({
+      title,
+      originalText: text,
+      sentences: sentences,
+    });
+
+    return NextResponse.json({ 
+      id: newStory._id,
+      totalCount: sentences.length 
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(

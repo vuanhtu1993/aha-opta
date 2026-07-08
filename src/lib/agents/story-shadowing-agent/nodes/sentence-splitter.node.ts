@@ -4,7 +4,7 @@ import { StorybookStateType } from "../state";
 
 const model = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash",
-  apiKey: process.env.GEMINI_API_KEY!,
+  apiKey: process.env.GOOGLE_API_KEY!,
   // Yêu cầu output JSON thuần túy — tránh hallucination format
   generationConfig: {
     responseMimeType: "application/json",

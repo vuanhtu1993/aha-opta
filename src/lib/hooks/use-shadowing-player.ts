@@ -79,7 +79,7 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     if (!audioRef.current) {
       audioRef.current = new Audio();
       // Bật thuộc tính này để tương thích tốt hơn trên Mobile
-      audioRef.current.playsInline = true;
+      audioRef.current.setAttribute("playsinline", "true");
     }
     const audio = audioRef.current;
 
@@ -154,7 +154,7 @@ export function useShadowingPlayer(sentences: Sentence[]) {
   const play = useCallback(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.playsInline = true;
+      audioRef.current.setAttribute("playsinline", "true");
     }
     
     if (playerState === "PAUSED") {

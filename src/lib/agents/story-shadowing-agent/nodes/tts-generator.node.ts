@@ -1,6 +1,7 @@
+import { geminiRateLimiter } from "@/lib/utils/gemini-rate-limiter";
 import { StorybookStateType } from "../state";
 
-const TTS_MODEL = process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts";
+const TTS_MODEL = process.env.GOOGLE_TTS_MODEL || "gemini-2.5-flash-preview-tts";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent?key=${process.env.GOOGLE_API_KEY}`;
 
 function pcmToWavBase64(pcmBase64: string): string {
@@ -68,7 +69,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
       state.rawSentences.map(async (s) => ({
         id: s.id,
         text: s.text,
-        audioBase64: await synthesizeWithGemini(s.text),
+        audioBase64: await geminiRateLimiter.execute(100, () => synthesizeWithGemini(s.text)),
       }))
     );
 

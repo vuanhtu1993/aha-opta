@@ -1,23 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 type StoryHistory = {
   _id: string;
   title: string;
   originalText: string;
   createdAt: string;
+  thumbnail?: string;
 };
 
 export default function StorybookPage() {
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<StoryHistory[]>([]);
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  // Load danh sách lịch sử khi mount
   useEffect(() => {
     fetch("/api/story-shadowing")
       .then(res => res.json())
@@ -26,92 +23,70 @@ export default function StorybookPage() {
           setHistory(data);
         }
       })
-      .catch(err => console.error("Failed to load history", err));
+      .catch(err => console.error("Failed to load history", err))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/story-shadowing/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Lỗi không xác định");
-      }
-
-      const data = await res.json();
-      // Chuyển hướng sang player với ID vừa lưu
-      router.push(`/apps/story-shadowing/player/${data.id}`);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="max-w-2xl mx-auto space-y-12 py-12">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-slate-900">📖 AI Storybook Shadowing</h1>
-        <p className="text-slate-500">Nhập đoạn văn tiếng Anh, AI sẽ sinh Audio để bạn luyện đọc theo.</p>
+    <div className="max-w-5xl mx-auto space-y-10 py-12 px-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+        <div className="space-y-1 text-center sm:text-left">
+          <h1 className="text-3xl font-bold text-slate-900">AI Storybook Shadowing</h1>
+          <p className="text-slate-500 text-sm">Kho lưu trữ các bài luyện đọc tiếng Anh.</p>
+        </div>
+        <Link
+          href="/apps/story-shadowing/create"
+          className="px-6 py-3 bg-[#FFBA49] text-slate-900 font-bold rounded-xl hover:bg-[#e6a640] transition-colors shadow-sm"
+        >
+          + Tạo bài luyện tập
+        </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Dán đoạn văn tiếng Anh vào đây... (10–2000 ký tự)"
-          className="w-full h-48 p-4 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
-          maxLength={2000}
-        />
-        <div className="flex justify-between text-xs text-slate-400">
-          <span>{text.length} / 2000 ký tự</span>
+      {loading ? (
+        <div className="text-center text-slate-400 py-20">Đang tải danh sách...</div>
+      ) : history.length === 0 ? (
+        <div className="text-center text-slate-500 py-20 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          Chưa có bài luyện tập nào. Bấm tạo bài mới để bắt đầu.
         </div>
-
-        {error && (
-          <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading || text.length < 10}
-          className="w-full py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? "⏳ Đang xử lý (5-15 giây)..." : "✨ Tạo bài luyện tập"}
-        </button>
-      </form>
-
-      {history.length > 0 && (
-        <div className="space-y-4 pt-8 border-t border-slate-200">
-          <h2 className="text-xl font-semibold text-slate-800">📚 Các bài luyện tập gần đây</h2>
-          <div className="grid gap-3">
-            {history.map((story) => (
-              <Link 
-                key={story._id}
-                href={`/apps/story-shadowing/player/${story._id}`}
-                className="block p-4 bg-white border border-slate-100 shadow-sm rounded-xl hover:border-indigo-300 hover:shadow-md transition-all group"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-slate-900 group-hover:text-indigo-600 transition-colors">
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {history.map((story) => (
+            <Link 
+              key={story._id}
+              href={`/apps/story-shadowing/player/${story._id}`}
+              className="flex flex-col bg-white border border-slate-100 shadow-sm rounded-2xl hover:border-[#FFBA49] hover:shadow-md transition-all group overflow-hidden"
+            >
+              <div className="w-full h-40 bg-slate-100 relative">
+                {story.thumbnail ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={story.thumbnail}
+                    alt={story.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#FFBA49]/20 flex items-center justify-center text-[#FFBA49] opacity-50">
+                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-semibold text-lg text-slate-900 group-hover:text-[#e6a640] transition-colors mb-2 line-clamp-1">
                     {story.title}
                   </h3>
-                  <span className="text-xs text-slate-400">
-                    {new Date(story.createdAt).toLocaleDateString('vi-VN')}
-                  </span>
+                  <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                    {story.originalText}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-500 line-clamp-1">
-                  {story.originalText}
-                </p>
-              </Link>
-            ))}
-          </div>
+                <div className="mt-4 text-xs text-slate-400 font-medium">
+                  {new Date(story.createdAt).toLocaleDateString('vi-VN')}
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>

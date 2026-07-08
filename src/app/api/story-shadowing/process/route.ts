@@ -9,12 +9,14 @@ const RequestSchema = z.object({
   text: z.string()
     .min(10, "Văn bản quá ngắn (tối thiểu 10 ký tự)")
     .max(2000, "Văn bản quá dài (tối đa 2000 ký tự)"),
+  title: z.string().optional(),
+  thumbnail: z.string().url("URL ảnh không hợp lệ").optional().or(z.literal("")),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text } = RequestSchema.parse(body);
+    const { text, title, thumbnail } = RequestSchema.parse(body);
 
     // Chạy LangGraph pipeline (blocking ~5-10s do TTS)
     const sentences = await runStorybookPipeline(text);
@@ -22,12 +24,16 @@ export async function POST(request: NextRequest) {
     // Lưu vào database
     await connectDB();
     
-    // Tự động tạo title từ 6 từ đầu tiên
-    const words = text.split(/\s+/).filter(w => w.length > 0);
-    const title = words.slice(0, 6).join(" ") + (words.length > 6 ? "..." : "");
+    // Tự động tạo title từ 6 từ đầu tiên nếu không có title
+    let finalTitle = title?.trim();
+    if (!finalTitle) {
+      const words = text.split(/\s+/).filter(w => w.length > 0);
+      finalTitle = words.slice(0, 6).join(" ") + (words.length > 6 ? "..." : "");
+    }
 
     const newStory = await Storybook.create({
-      title,
+      title: finalTitle,
+      thumbnail: thumbnail || undefined,
       originalText: text,
       sentences: sentences,
     });

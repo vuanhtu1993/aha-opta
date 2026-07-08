@@ -8,6 +8,7 @@ export interface IStorybookSentence {
 
 export interface IStorybook extends Document {
   title: string;
+  thumbnail?: string;
   originalText: string;
   sentences: IStorybookSentence[];
   createdAt: Date;
@@ -22,6 +23,7 @@ const StorybookSentenceSchema = new Schema<IStorybookSentence>({
 const StorybookSchema = new Schema<IStorybook>(
   {
     title: { type: String, required: true },
+    thumbnail: { type: String, required: false },
     originalText: { type: String, required: true },
     sentences: { type: [StorybookSentenceSchema], required: true },
   },

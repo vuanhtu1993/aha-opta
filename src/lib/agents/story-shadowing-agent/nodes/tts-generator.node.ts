@@ -17,7 +17,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
     const ttsModel = process.env.GOOGLE_CLOUD_TTS_MODEL || "en-US-Journey-F";
 
     // Hàm gọi API có retry
-    const fetchWithRetry = async (text: string, id: string, retries = 3, delay = 1000): Promise<any> => {
+    const fetchWithRetry = async (text: string, id: number, retries = 3, delay = 1000): Promise<any> => {
       try {
         const response = await fetch(url, {
           method: "POST",

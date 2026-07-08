@@ -5,11 +5,9 @@ import { StorybookStateType } from "../state";
 const model = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash",
   apiKey: process.env.GOOGLE_API_KEY!,
-  // Yêu cầu output JSON thuần túy — tránh hallucination format
-  generationConfig: {
-    responseMimeType: "application/json",
-  },
 });
+
+const structuredLlm = model.withStructuredOutput(GeminiSentenceListSchema);
 
 const SYSTEM_PROMPT = `You are a language learning assistant.
 Split the given English text into individual sentences for shadowing practice.
@@ -22,15 +20,10 @@ Rules:
 
 export async function sentenceSplitterNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
   try {
-    const response = await model.invoke([
+    const parsed = await structuredLlm.invoke([
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: state.rawText },
     ]);
-
-    // Parse và validate với Zod — throw nếu format sai
-    const parsed = GeminiSentenceListSchema.parse(
-      JSON.parse(response.content as string)
-    );
 
     return { rawSentences: parsed.sentences };
   } catch (err) {

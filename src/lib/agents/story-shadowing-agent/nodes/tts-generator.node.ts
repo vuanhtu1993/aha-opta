@@ -24,7 +24,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             input: { text },
-            voice: { languageCode: "en-US", name: "en-US-Neural2-F" }, // Chuyển sang Neural2 (Nhanh hơn, quota cao hơn Journey)
+            voice: { languageCode: "en-US", name: "en-US-Journey-F" }, // Chuyển sang Neural2 (Nhanh hơn, quota cao hơn Journey)
             audioConfig: { audioEncoding: "MP3" },
           }),
         });
@@ -54,18 +54,22 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
       }
     };
 
-    // Chia nhỏ thành từng chunk
-    for (let i = 0; i < state.rawSentences.length; i += concurrency) {
-      const chunk = state.rawSentences.slice(i, i + concurrency);
-      const chunkResults = await Promise.all(
-        chunk.map(s => fetchWithRetry(s.text, s.id))
-      );
+    // Lấy config Rate Limit từ biến môi trường (Mặc định 30 requests/phút cho Journey voice)
+    const rpmLimit = parseInt(process.env.GOOGLE_TTS_RATE_LIMIT_RPM || "30", 10);
+    // Tính toán thời gian cần nghỉ giữa mỗi request (Ví dụ: 30 RPM => 2000ms/request)
+    const delayBetweenRequests = Math.ceil((60 * 1000) / rpmLimit);
+
+    const results = [];
+
+    // Chạy tuần tự từng request để đảm bảo tuyệt đối không vượt quá Rate Limit Burst
+    for (let i = 0; i < state.rawSentences.length; i++) {
+      const s = state.rawSentences[i];
+      const result = await fetchWithRetry(s.text, s.id);
+      results.push(result);
       
-      results.push(...chunkResults);
-      
-      // Nghỉ 500ms giữa các chunk để tránh Google API Rate Limit
-      if (i + concurrency < state.rawSentences.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // Nghỉ một khoảng thời gian tính toán được trước khi gửi request tiếp theo
+      if (i < state.rawSentences.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayBetweenRequests));
       }
     }
 

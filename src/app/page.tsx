@@ -60,6 +60,25 @@ export default function Home() {
           </CardContent>
         </Card>
 
+        {/* App 3: AI Storybook Shadowing */}
+        <Card className="hover:shadow-lg transition-shadow duration-300 border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50">
+          <CardHeader>
+            <div className="text-4xl mb-2">📖</div>
+            <CardTitle className="text-indigo-800">AI Storybook Shadowing</CardTitle>
+            <CardDescription>
+              Luyện phát âm tiếng Anh qua phương pháp Shadowing — AI đọc mẫu, bạn đọc theo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link
+              href="/apps/story-shadowing"
+              className={cn(buttonVariants({ variant: "default" }), "w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center")}
+            >
+              Bắt đầu luyện tập
+            </Link>
+          </CardContent>
+        </Card>
+
         {/* Các App Tương Lai (Placeholder) */}
         <Card className="opacity-70 border-dashed border-slate-300 bg-slate-50/50">
           <CardHeader>

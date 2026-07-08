@@ -20,6 +20,9 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     if (audioRef.current) {
       audioRef.current.pause();
+      if (audioRef.current.src.startsWith("blob:")) {
+        URL.revokeObjectURL(audioRef.current.src);
+      }
       audioRef.current.src = ""; // Giải phóng memory
     }
   }, []);
@@ -37,8 +40,23 @@ export function useShadowingPlayer(sentences: Sentence[]) {
     setCurrentIndex(index);
     setPlayerState("AI_SPEAKING");
 
-    // Tạo Audio object từ base64
-    const audio = new Audio(`data:audio/mpeg;base64,${sentence.audioBase64}`);
+    // Detect MIME type and create Blob URL
+    let mimeType = "audio/mpeg";
+    if (sentence.audioBase64.startsWith("UklGR")) {
+      mimeType = "audio/wav";
+    }
+
+    // Chuyển base64 sang Blob
+    const binary = atob(sentence.audioBase64);
+    const array = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      array[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([array], { type: mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Tạo Audio object từ Blob URL
+    const audio = new Audio(blobUrl);
     audioRef.current = audio;
 
     // Chờ metadata load để lấy chính xác duration

@@ -2,7 +2,7 @@ export class GeminiRateLimiter {
   private static instance: GeminiRateLimiter;
 
   // Giới hạn theo Gemini Free Tier (Minute Limit)
-  private readonly RPM_LIMIT = 15; // API Gemini free tier là 15 RPM
+  private readonly RPM_LIMIT = 5; // API Gemini free tier là 5 RPM
   private readonly TPM_LIMIT = 1000000;
 
   // Trạng thái cục bộ (per minute)
@@ -14,7 +14,7 @@ export class GeminiRateLimiter {
   private queue: Array<() => void> = [];
   private isProcessing = false;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): GeminiRateLimiter {
     if (!GeminiRateLimiter.instance) {
@@ -114,7 +114,7 @@ export class GeminiRateLimiter {
     // 3. Thực thi operation, catch lỗi RPD (429) và hiển thị warning
     try {
       // Delay thêm một khoảng nhỏ để tránh bắn quá nhanh cùng lúc (burst limit)
-      await this.sleep(500); 
+      await this.sleep(500);
       return await operation();
     } catch (error: any) {
       throw error;

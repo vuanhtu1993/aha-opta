@@ -27,7 +27,9 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
         });
 
         if (!response.ok) {
-          throw new Error(`Google Cloud TTS API error: ${response.status}`);
+          const errorBody = await response.text();
+          console.error("[TTS API ERROR]", response.status, errorBody);
+          throw new Error(`Google Cloud TTS API error: ${response.status} - Chi tiết: ${errorBody}`);
         }
 
         const data = await response.json();

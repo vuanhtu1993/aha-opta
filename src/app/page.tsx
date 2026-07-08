@@ -9,7 +9,7 @@ export default function Home() {
       {/* Tiêu đề & Giới thiệu (Pedagogical approach: explain what this is) */}
       <section className="text-center space-y-4 pt-12 pb-8">
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-          Chào mừng đến với <span className="text-blue-600">Aha Tools</span>
+          Chào mừng đến với <span className="text-emerald-500">AHA-MIND</span>
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
           Tập hợp các tiện ích nhỏ gọn (Micro-apps) giúp cuộc sống gia đình trở nên dễ dàng hơn.

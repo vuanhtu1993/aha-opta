@@ -22,8 +22,8 @@ export default function RootLayout({
         {/* Navigation Bar (Header) - Đóng vai trò làm lớp vỏ (Shell) cho các Micro Frontend */}
         <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md shadow-sm">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <Link href="/" className="font-bold text-xl tracking-tight text-blue-600">
-              Aha<span className="text-slate-800">Mind</span>
+            <Link href="/" className="flex items-center">
+              <img src="/logo.jpg" alt="Aha-Mind Logo" className="h-8 w-auto mix-blend-multiply" />
             </Link>
 
             <nav className="flex items-center gap-2">

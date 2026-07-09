@@ -1,8 +1,8 @@
-# AI Storybook Shadowing — Implementation Plan
+# AI Story Shadowing — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Thêm một micro-app "Storybook Shadowing" vào workspace `aha-tools`, cho phép người dùng nhập đoạn văn bản tiếng Anh, AI sẽ chia câu, tổng hợp giọng đọc (TTS), và phát theo kiểu Shadowing (AI đọc → dừng → người dùng lặp lại).
+**Goal:** Thêm một micro-app "Story Shadowing" vào workspace `aha-tools`, cho phép người dùng nhập đoạn văn bản tiếng Anh, AI sẽ chia câu, tổng hợp giọng đọc (TTS), và phát theo kiểu Shadowing (AI đọc → dừng → người dùng lặp lại).
 
 **Architecture:** Frontend dùng Next.js App Router với một Custom Hook `useShadowingPlayer` quản lý State Machine. Backend dùng Next.js API Routes để gọi Gemini Flash (chia câu) và Google Cloud TTS (tổng hợp âm thanh). LangGraph orchestrate pipeline AI 2 bước: sentence-splitter → tts-fetcher.
 
@@ -40,28 +40,28 @@
 src/
 ├── app/
 │   ├── apps/
-│   │   └── storybook/                         [NEW DIR]
+│   │   └── story-shadowing/                         [NEW DIR]
 │   │       ├── page.tsx                        [NEW] — Trang nhập text + nút "Generate"
 │   │       └── player/
 │   │           └── page.tsx                   [NEW] — Trang Shadowing Player
 │   └── api/
-│       └── storybook/                         [NEW DIR]
+│       └── story-shadowing/                         [NEW DIR]
 │           ├── process/
 │           │   └── route.ts                   [NEW] — POST: nhận text, chạy LangGraph pipeline
 │           └── tts/
 │               └── route.ts                   [NEW] — POST: nhận 1 câu, trả về audio base64
 ├── lib/
 │   ├── agents/
-│   │   └── storybook-agent/                   [NEW DIR]
+│   │   └── story-shadowing-agent/                   [NEW DIR]
 │   │       ├── state.ts                       [NEW] — LangGraph State schema
 │   │       ├── graph.ts                       [NEW] — Graph orchestrator
 │   │       └── nodes/
 │   │           ├── sentence-splitter.node.ts  [NEW] — Gemini Flash: chia câu
 │   │           └── tts-generator.node.ts      [NEW] — Google Cloud TTS: tổng hợp audio
 │   └── schemas/
-│       └── storybook.schema.ts               [NEW] — Zod schemas dùng chung
+│       └── story-shadowing.schema.ts               [NEW] — Zod schemas dùng chung
 └── components/
-    └── storybook/                             [NEW DIR]
+    └── story-shadowing/                             [NEW DIR]
         ├── text-input-form.tsx               [NEW] — Form nhập text
         ├── shadowing-player.tsx              [NEW] — Component player chính
         ├── sentence-card.tsx                 [NEW] — Hiển thị 1 câu (có highlight)
@@ -69,7 +69,7 @@ src/
 ```
 
 **File bị modify:**
-- `src/app/page.tsx` — Thêm card "AI Storybook Shadowing" vào danh sách micro-apps
+- `src/app/page.tsx` — Thêm card "AI Story Shadowing" vào danh sách micro-apps
 
 ---
 
@@ -78,12 +78,12 @@ src/
 ### Task 1: Zod Schemas & Types (Foundation)
 
 **Files:**
-- Create: `src/lib/schemas/storybook.schema.ts`
+- Create: `src/lib/schemas/story-shadowing.schema.ts`
 
 - [ ] **Step 1: Viết Zod schema cho toàn bộ domain**
 
 ```typescript
-// src/lib/schemas/storybook.schema.ts
+// src/lib/schemas/story-shadowing.schema.ts
 import { z } from "zod";
 
 // Schema cho 1 câu đã được xử lý (có text + audio)
@@ -95,7 +95,7 @@ export const SentenceSchema = z.object({
 
 export type Sentence = z.infer<typeof SentenceSchema>;
 
-// Schema response từ API /api/storybook/process
+// Schema response từ API /api/story-shadowing/process
 export const ProcessResponseSchema = z.object({
   sentences: z.array(SentenceSchema),
   totalCount: z.number(),
@@ -103,7 +103,7 @@ export const ProcessResponseSchema = z.object({
 
 export type ProcessResponse = z.infer<typeof ProcessResponseSchema>;
 
-// Schema request vào API /api/storybook/tts
+// Schema request vào API /api/story-shadowing/tts
 export const TtsRequestSchema = z.object({
   text: z.string().max(500, "Câu quá dài"),
   languageCode: z.string().default("en-US"),
@@ -117,29 +117,21 @@ export const GeminiSentenceListSchema = z.object({
   })),
 });
 ```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/lib/schemas/storybook.schema.ts
-git commit -m "feat(storybook): add Zod schemas for sentence and TTS domain"
-```
-
 ---
 
 ### Task 2: LangGraph State
 
 **Files:**
-- Create: `src/lib/agents/storybook-agent/state.ts`
+- Create: `src/lib/agents/story-shadowing-agent/state.ts`
 
-- [ ] **Step 1: Viết State cho storybook-agent**
+- [ ] **Step 1: Viết State cho story-shadowing-agent**
 
 ```typescript
-// src/lib/agents/storybook-agent/state.ts
+// src/lib/agents/story-shadowing-agent/state.ts
 import { Annotation } from "@langchain/langgraph";
 
 // "Bộ nhớ" của Agent — truyền qua lại giữa các Node
-export const StorybookAgentState = Annotation.Root({
+export const StoryShadowingAgentState = Annotation.Root({
   // === INPUT ===
   rawText: Annotation<string>(),       // Văn bản thô do người dùng nhập
 
@@ -158,32 +150,24 @@ export const StorybookAgentState = Annotation.Root({
   error: Annotation<string | null>(),  // Lỗi nếu có
 });
 
-export type StorybookStateType = typeof StorybookAgentState.State;
+export type StoryShadowingStateType = typeof StoryShadowingAgentState.State;
 ```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/lib/agents/storybook-agent/state.ts
-git commit -m "feat(storybook): add LangGraph state definition for storybook-agent"
-```
-
 ---
 
 ### Task 3: Node 1 — Sentence Splitter (Gemini Flash)
 
 **Files:**
-- Create: `src/lib/agents/storybook-agent/nodes/sentence-splitter.node.ts`
+- Create: `src/lib/agents/story-shadowing-agent/nodes/sentence-splitter.node.ts`
 
 **Yêu cầu trước:** `GEMINI_API_KEY` phải có trong `.env.local`.
 
 - [ ] **Step 1: Viết node gọi Gemini Flash để chia câu**
 
 ```typescript
-// src/lib/agents/storybook-agent/nodes/sentence-splitter.node.ts
+// src/lib/agents/story-shadowing-agent/nodes/sentence-splitter.node.ts
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { GeminiSentenceListSchema } from "@/lib/schemas/storybook.schema";
-import { StorybookStateType } from "../state";
+import { GeminiSentenceListSchema } from "@/lib/schemas/story-shadowing.schema";
+import { StoryShadowingStateType } from "../state";
 
 const model = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash",
@@ -203,7 +187,7 @@ Rules:
 - Return ONLY valid JSON in this exact format:
 {"sentences": [{"id": 0, "text": "First sentence."}, {"id": 1, "text": "Second sentence."}]}`;
 
-export async function sentenceSplitterNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
+export async function sentenceSplitterNode(state: StoryShadowingStateType): Promise<Partial<StoryShadowingStateType>> {
   try {
     const response = await model.invoke([
       { role: "system", content: SYSTEM_PROMPT },
@@ -223,19 +207,12 @@ export async function sentenceSplitterNode(state: StorybookStateType): Promise<P
 }
 ```
 
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/lib/agents/storybook-agent/nodes/sentence-splitter.node.ts
-git commit -m "feat(storybook): add sentence-splitter node using Gemini Flash"
-```
-
 ---
 
 ### Task 4: Node 2 — TTS Generator (Google Cloud TTS)
 
 **Files:**
-- Create: `src/lib/agents/storybook-agent/nodes/tts-generator.node.ts`
+- Create: `src/lib/agents/story-shadowing-agent/nodes/tts-generator.node.ts`
 
 **Yêu cầu trước:** `GOOGLE_TTS_API_KEY` trong `.env.local`.
 
@@ -245,8 +222,8 @@ git commit -m "feat(storybook): add sentence-splitter node using Gemini Flash"
 - [ ] **Step 1: Viết node gọi Google Cloud TTS cho từng câu**
 
 ```typescript
-// src/lib/agents/storybook-agent/nodes/tts-generator.node.ts
-import { StorybookStateType } from "../state";
+// src/lib/agents/story-shadowing-agent/nodes/tts-generator.node.ts
+import { StoryShadowingStateType } from "../state";
 
 const TTS_URL = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`;
 
@@ -278,7 +255,7 @@ async function synthesize(text: string): Promise<string> {
   return data.audioContent as string;
 }
 
-export async function ttsGeneratorNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
+export async function ttsGeneratorNode(state: StoryShadowingStateType): Promise<Partial<StoryShadowingStateType>> {
   if (state.error || !state.rawSentences?.length) {
     return {}; // Dừng nếu Node trước gặp lỗi
   }
@@ -301,31 +278,24 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
 }
 ```
 
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/lib/agents/storybook-agent/nodes/tts-generator.node.ts
-git commit -m "feat(storybook): add tts-generator node using Google Cloud TTS REST API"
-```
-
 ---
 
 ### Task 5: LangGraph Graph Orchestrator
 
 **Files:**
-- Create: `src/lib/agents/storybook-agent/graph.ts`
+- Create: `src/lib/agents/story-shadowing-agent/graph.ts`
 
 - [ ] **Step 1: Kết nối 2 Node thành pipeline**
 
 ```typescript
-// src/lib/agents/storybook-agent/graph.ts
+// src/lib/agents/story-shadowing-agent/graph.ts
 import { StateGraph, START, END } from "@langchain/langgraph";
-import { StorybookAgentState } from "./state";
+import { StoryShadowingAgentState } from "./state";
 import { sentenceSplitterNode } from "./nodes/sentence-splitter.node";
 import { ttsGeneratorNode } from "./nodes/tts-generator.node";
 
 // 1. Khởi tạo Graph
-const graphBuilder = new StateGraph<typeof StorybookAgentState, any, any, string>(StorybookAgentState);
+const graphBuilder = new StateGraph<typeof StoryShadowingAgentState, any, any, string>(StoryShadowingAgentState);
 
 // 2. Thêm Node
 graphBuilder.addNode("sentenceSplitter", sentenceSplitterNode);
@@ -337,13 +307,13 @@ graphBuilder.addEdge("sentenceSplitter", "ttsGenerator");
 graphBuilder.addEdge("ttsGenerator", END);
 
 // 4. Compile
-export const storybookAgentGraph = graphBuilder.compile();
+export const storyShadowingAgentGraph = graphBuilder.compile();
 
 /**
  * Public API: Chạy toàn bộ pipeline cho 1 đoạn văn bản
  */
-export async function runStorybookPipeline(rawText: string) {
-  const finalState = await storybookAgentGraph.invoke({ rawText });
+export async function runStoryShadowingPipeline(rawText: string) {
+  const finalState = await storyShadowingAgentGraph.invoke({ rawText });
 
   if (finalState.error) {
     throw new Error(finalState.error);
@@ -353,52 +323,69 @@ export async function runStorybookPipeline(rawText: string) {
 }
 ```
 
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/lib/agents/storybook-agent/graph.ts
-git commit -m "feat(storybook): wire LangGraph graph: sentenceSplitter → ttsGenerator"
-```
-
 ---
 
-### Task 6: API Route — POST /api/storybook/process
+### Task 6: API Route — POST /api/story-shadowing/process
 
 **Files:**
-- Create: `src/app/api/storybook/process/route.ts`
+- Create: `src/app/api/story-shadowing/process/route.ts`
 
 - [ ] **Step 1: Viết API endpoint nhận text và chạy pipeline**
 
 ```typescript
-// src/app/api/storybook/process/route.ts
+// src/app/api/story-shadowing/process/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { runStorybookPipeline } from "@/lib/agents/storybook-agent/graph";
+import { runStoryShadowingPipeline } from "@/lib/agents/story-shadowing-agent/graph";
+import { connectDB } from "@/lib/db/mongoose";
+import Storybook from "@/lib/db/models/Storybook";
 
 // Validate input với Zod
 const RequestSchema = z.object({
   text: z.string()
     .min(10, "Văn bản quá ngắn (tối thiểu 10 ký tự)")
-    .max(2000, "Văn bản quá dài (tối đa 2000 ký tự)"),
+    .max(5000, "Văn bản quá dài (tối đa 5000 ký tự)"),
+  title: z.string().optional(),
+  thumbnail: z.string().url("URL ảnh không hợp lệ").optional().or(z.literal("")),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text } = RequestSchema.parse(body);
+    const { text, title, thumbnail } = RequestSchema.parse(body);
 
     // Chạy LangGraph pipeline (blocking ~5-10s do TTS)
-    const sentences = await runStorybookPipeline(text);
+    const sentences = await runStoryShadowingPipeline(text);
 
-    return NextResponse.json({ sentences, totalCount: sentences.length });
+    // Lưu vào database
+    await connectDB();
+
+    // Tự động tạo title từ 6 từ đầu tiên nếu không có title
+    let finalTitle = title?.trim();
+    if (!finalTitle) {
+      const words = text.split(/\s+/).filter(w => w.length > 0);
+      finalTitle = words.slice(0, 6).join(" ") + (words.length > 6 ? "..." : "");
+    }
+
+    const newStory = await Storybook.create({
+      title: finalTitle,
+      thumbnail: thumbnail || undefined,
+      originalText: text,
+      sentences: sentences,
+    });
+
+    return NextResponse.json({
+      id: newStory._id,
+      totalCount: sentences.length
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(
-        { error: err.errors[0].message },
+        { error: err.issues[0].message },
         { status: 400 }
       );
     }
-    console.error("[API/storybook/process]", err);
+    console.error("[API/story-shadowing/process]", err);
     return NextResponse.json(
       { error: "Đã có lỗi xảy ra. Vui lòng thử lại." },
       { status: 500 }
@@ -410,7 +397,7 @@ export async function POST(request: NextRequest) {
 - [ ] **Step 2: Test thủ công bằng curl**
 
 ```bash
-curl -X POST http://localhost:3000/api/storybook/process \
+curl -X POST http://localhost:3000/api/story-shadowing/process \
   -H "Content-Type: application/json" \
   -d '{"text": "The quick brown fox jumps over the lazy dog. It was a bright sunny day."}'
 ```
@@ -418,19 +405,9 @@ curl -X POST http://localhost:3000/api/storybook/process \
 Expected response:
 ```json
 {
-  "sentences": [
-    { "id": 0, "text": "The quick brown fox jumps over the lazy dog.", "audioBase64": "SUQzBAA..." },
-    { "id": 1, "text": "It was a bright sunny day.", "audioBase64": "SUQzBAA..." }
-  ],
+  "id": "60d5ecb8b392d700153c3d5a",
   "totalCount": 2
 }
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/app/api/storybook/process/route.ts
-git commit -m "feat(storybook): add POST /api/storybook/process API route"
 ```
 
 ---
@@ -449,7 +426,7 @@ git commit -m "feat(storybook): add POST /api/storybook/process API route"
 // src/lib/hooks/use-shadowing-player.ts
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { Sentence } from "@/lib/schemas/storybook.schema";
+import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
 
 type PlayerState = "IDLE" | "AI_SPEAKING" | "USER_SHADOWING" | "PAUSED" | "DONE";
 
@@ -565,30 +542,22 @@ export function useShadowingPlayer(sentences: Sentence[]) {
   };
 }
 ```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/lib/hooks/use-shadowing-player.ts
-git commit -m "feat(storybook): add useShadowingPlayer hook with state machine (IDLE/AI_SPEAKING/USER_SHADOWING)"
-```
-
 ---
 
 ### Task 8: UI Components
 
 **Files:**
-- Create: `src/components/storybook/sentence-card.tsx`
-- Create: `src/components/storybook/progress-countdown.tsx`
-- Create: `src/components/storybook/shadowing-player.tsx`
+- Create: `src/components/story-shadowing/sentence-card.tsx`
+- Create: `src/components/story-shadowing/progress-countdown.tsx`
+- Create: `src/components/story-shadowing/shadowing-player.tsx`
 
 - [ ] **Step 1: Viết SentenceCard — hiển thị 1 câu với highlight**
 
 ```typescript
-// src/components/storybook/sentence-card.tsx
+// src/components/story-shadowing/sentence-card.tsx
 "use client";
 import { cn } from "@/lib/utils";
-import type { Sentence } from "@/lib/schemas/storybook.schema";
+import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
 
 interface SentenceCardProps {
   sentence: Sentence;
@@ -616,7 +585,7 @@ export function SentenceCard({ sentence, isActive, isDone }: SentenceCardProps) 
 - [ ] **Step 2: Viết ProgressCountdown — thanh đếm ngược**
 
 ```typescript
-// src/components/storybook/progress-countdown.tsx
+// src/components/story-shadowing/progress-countdown.tsx
 "use client";
 
 interface ProgressCountdownProps {
@@ -648,12 +617,12 @@ export function ProgressCountdown({ totalMs, remainingMs, isActive }: ProgressCo
 - [ ] **Step 3: Viết ShadowingPlayer — component player tổng hợp**
 
 ```typescript
-// src/components/storybook/shadowing-player.tsx
+// src/components/story-shadowing/shadowing-player.tsx
 "use client";
 import { useShadowingPlayer } from "@/lib/hooks/use-shadowing-player";
 import { SentenceCard } from "./sentence-card";
 import { ProgressCountdown } from "./progress-countdown";
-import type { Sentence } from "@/lib/schemas/storybook.schema";
+import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
 
 interface ShadowingPlayerProps {
   sentences: Sentence[];
@@ -752,32 +721,30 @@ export function ShadowingPlayer({ sentences }: ShadowingPlayerProps) {
   );
 }
 ```
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add src/components/storybook/
-git commit -m "feat(storybook): add SentenceCard, ProgressCountdown, ShadowingPlayer UI components"
-```
-
 ---
 
-### Task 9: Pages — Text Input & Player
+### Task 9: Pages — Homepage, Text Input & Player
 
 **Files:**
-- Create: `src/app/apps/storybook/page.tsx`
-- Create: `src/app/apps/storybook/player/page.tsx`
+- Create: `src/app/apps/story-shadowing/page.tsx`
+- Create: `src/app/apps/story-shadowing/create/page.tsx`
+- Create: `src/app/apps/story-shadowing/player/[id]/page.tsx`
 
-- [ ] **Step 1: Viết trang nhập text (form)**
+- [ ] **Step 1: Viết trang chủ hiển thị danh sách bài tập**
+(File: `src/app/apps/story-shadowing/page.tsx` - Fetch từ `/api/story-shadowing` để lấy lịch sử)
+
+- [ ] **Step 2: Viết trang nhập text (form)**
 
 ```typescript
-// src/app/apps/storybook/page.tsx
+// src/app/apps/story-shadowing/create/page.tsx
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ProcessResponse } from "@/lib/schemas/storybook.schema";
+import Link from "next/link";
 
-export default function StorybookPage() {
+export default function CreatePlayerPage() {
+  const [title, setTitle] = useState("");
+  const [thumbnail, setThumbnail] = useState("");
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -789,10 +756,10 @@ export default function StorybookPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/storybook/process", {
+      const res = await fetch("/api/story-shadowing/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, title, thumbnail }),
       });
 
       if (!res.ok) {
@@ -800,10 +767,8 @@ export default function StorybookPage() {
         throw new Error(data.error ?? "Lỗi không xác định");
       }
 
-      const data: ProcessResponse = await res.json();
-      // Lưu vào sessionStorage để trang player đọc
-      sessionStorage.setItem("storybook_sentences", JSON.stringify(data.sentences));
-      router.push("/apps/storybook/player");
+      const data = await res.json();
+      router.push(`/apps/story-shadowing/player/${data.id}`);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -811,95 +776,15 @@ export default function StorybookPage() {
     }
   };
 
-  return (
-    <div className="max-w-2xl mx-auto space-y-8 py-12">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-slate-900">📖 AI Storybook Shadowing</h1>
-        <p className="text-slate-500">Nhập đoạn văn tiếng Anh, AI sẽ đọc mẫu và bạn luyện đọc theo.</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Dán đoạn văn tiếng Anh vào đây... (10–2000 ký tự)"
-          className="w-full h-48 p-4 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
-          maxLength={2000}
-        />
-        <div className="flex justify-between text-xs text-slate-400">
-          <span>{text.length} / 2000 ký tự</span>
-        </div>
-
-        {error && (
-          <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading || text.length < 10}
-          className="w-full py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? "⏳ Đang xử lý (5-15 giây)..." : "✨ Tạo bài luyện tập"}
-        </button>
-      </form>
-    </div>
-  );
+  return <div>{/* Form UI: Textarea 5000 ký tự, input Title, Thumbnail */}</div>;
 }
 ```
 
-- [ ] **Step 2: Viết trang Player**
+- [ ] **Step 3: Viết trang Player theo ID**
 
 ```typescript
-// src/app/apps/storybook/player/page.tsx
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ShadowingPlayer } from "@/components/storybook/shadowing-player";
-import { SentenceSchema } from "@/lib/schemas/storybook.schema";
-import { z } from "zod";
-
-export default function PlayerPage() {
-  const router = useRouter();
-  const [sentences, setSentences] = useState<z.infer<typeof SentenceSchema>[]>([]);
-
-  useEffect(() => {
-    const stored = sessionStorage.getItem("storybook_sentences");
-    if (!stored) {
-      router.replace("/apps/storybook");
-      return;
-    }
-    try {
-      setSentences(JSON.parse(stored));
-    } catch {
-      router.replace("/apps/storybook");
-    }
-  }, [router]);
-
-  if (!sentences.length) return null;
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-6 py-8">
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => router.push("/apps/storybook")}
-          className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
-        >
-          ← Bài mới
-        </button>
-        <h1 className="text-xl font-bold text-slate-800">Luyện Shadowing</h1>
-      </div>
-
-      <ShadowingPlayer sentences={sentences} />
-    </div>
-  );
-}
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/app/apps/storybook/
-git commit -m "feat(storybook): add text input page and player page"
+// src/app/apps/story-shadowing/player/[id]/page.tsx
+// Lấy data bằng cách gọi API fetch từ DB dựa trên params.id
 ```
 
 ---
@@ -915,18 +800,18 @@ git commit -m "feat(storybook): add text input page and player page"
 Trong `src/app/page.tsx`, thêm Card mới vào grid (sau card `aha-opta`):
 
 ```tsx
-{/* App 3: AI Storybook Shadowing */}
+{/* App 3: AI Story Shadowing */}
 <Card className="hover:shadow-lg transition-shadow duration-300 border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50">
   <CardHeader>
     <div className="text-4xl mb-2">📖</div>
-    <CardTitle className="text-indigo-800">AI Storybook Shadowing</CardTitle>
+    <CardTitle className="text-indigo-800">AI Story Shadowing</CardTitle>
     <CardDescription>
       Luyện phát âm tiếng Anh qua phương pháp Shadowing — AI đọc mẫu, bạn đọc theo.
     </CardDescription>
   </CardHeader>
   <CardContent>
     <Link
-      href="/apps/storybook"
+      href="/apps/story-shadowing"
       className={cn(buttonVariants({ variant: "default" }), "w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center")}
     >
       Bắt đầu luyện tập
@@ -943,18 +828,6 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_TTS_API_KEY=your_google_cloud_tts_api_key_here
 ```
 
-> [!WARNING]
-> `GOOGLE_TTS_API_KEY` phải là **API Key** của Google Cloud (không phải Service Account JSON). Tạo tại [Google Cloud Console → Credentials → Create API Key] và bật API "Cloud Text-to-Speech".
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/app/page.tsx
-git commit -m "feat(storybook): add Storybook Shadowing card to homepage"
-```
-
----
-
 ## ✅ Verification Plan
 
 ### Automated Build Check
@@ -965,29 +838,13 @@ npm run build
 
 ### Manual Verification Flow
 
-1. **Happy Path:** Chạy `npm run dev` → Vào `http://localhost:3000/apps/storybook` → Nhập đoạn văn 3-5 câu → Bấm "Tạo bài luyện" → Đợi ~5-10s → Chuyển sang trang Player → Bấm Play → Nghe AI đọc → Đọc theo trong khoảng dừng.
+1. **Happy Path:** Chạy `npm run dev` → Vào `http://localhost:3000/apps/story-shadowing` → Nhập đoạn văn 3-5 câu → Bấm "Tạo bài luyện" → Đợi ~5-10s → Chuyển sang trang Player → Bấm Play → Nghe AI đọc → Đọc theo trong khoảng dừng.
 
 2. **Edge Case — Pause:** Bấm Pause giữa chừng → kiểm tra audio dừng ngay lập tức (không có tiếng tiếp theo sau vài giây).
 
 3. **Edge Case — Navigate:** Bấm Next/Prev → kiểm tra câu highlight đổi đúng.
 
-4. **Edge Case — Empty return:** Vào trực tiếp `/apps/storybook/player` (không qua form) → kiểm tra redirect về `/apps/storybook`.
+4. **Edge Case — Empty return:** Vào trực tiếp `/apps/story-shadowing/player` (không qua form) → kiểm tra redirect về `/apps/story-shadowing`.
 
----
-
-## 📋 Open Questions
-
-> [!IMPORTANT]
-> **Q1: Google Cloud TTS hay ElevenLabs?**
-> Plan hiện tại dùng **Google Cloud TTS** (Standard voice) vì đơn giản hơn, không cần SDK, quota miễn phí 1 triệu ký tự/tháng. ElevenLabs cho giọng đọc tự nhiên hơn nhưng tốn phí ngay từ đầu. Anh Tú muốn dùng cái nào?
-
-> [!IMPORTANT]
-> **Q2: Lưu trữ session bằng `sessionStorage` hay URL params?**
-> Plan dùng `sessionStorage` để truyền dữ liệu giữa 2 trang (tránh URL quá dài). Nhược điểm: data mất khi refresh tab. Anh muốn lưu persistent hơn (MongoDB đã có trong workspace) không?
-
-> [!NOTE]
-> **Q3: Giai đoạn 1 không cần upload PDF** — plan đã confirm: chỉ nhập text thô. PDF sẽ là Giai đoạn 2.
-
----
 
 *Made by Anh Tu - Share to be share*

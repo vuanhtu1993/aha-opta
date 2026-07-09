@@ -21,12 +21,16 @@ export const storybookAgentGraph = graphBuilder.compile();
 /**
  * Public API: Chạy toàn bộ pipeline cho 1 đoạn văn bản
  */
-export async function runStorybookPipeline(rawText: string) {
-  const finalState = await storybookAgentGraph.invoke({ rawText });
+export async function runStorybookPipeline(rawText: string, voice: string = "en-US-Journey-F") {
+  const finalState = await storybookAgentGraph.invoke({ rawText, voice });
 
   if (finalState.error) {
     throw new Error(finalState.error);
   }
 
-  return finalState.sentences;
+  return {
+    sentences: finalState.sentences,
+    level: finalState.level,
+    speakingRate: finalState.speakingRate
+  };
 }

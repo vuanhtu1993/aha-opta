@@ -13,6 +13,7 @@ export type Sentence = z.infer<typeof SentenceSchema>;
 export const ProcessResponseSchema = z.object({
   sentences: z.array(SentenceSchema),
   totalCount: z.number(),
+  id: z.string(),
 });
 
 export type ProcessResponse = z.infer<typeof ProcessResponseSchema>;
@@ -25,6 +26,7 @@ export const TtsRequestSchema = z.object({
 
 // Schema trả về từ Gemini khi chia câu (raw, chưa có audio)
 export const GeminiSentenceListSchema = z.object({
+  level: z.enum(["easy", "medium", "hard"]),
   sentences: z.array(z.object({
     id: z.number(),
     text: z.string(),

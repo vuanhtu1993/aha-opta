@@ -7,6 +7,7 @@ export default function CreatePlayerPage() {
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState("");
   const [text, setText] = useState("");
+  const [voice, setVoice] = useState("en-US-Journey-F");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function CreatePlayerPage() {
       const res = await fetch("/api/story-shadowing/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, title, thumbnail }),
+        body: JSON.stringify({ text, title, thumbnail, voice }),
       });
 
       if (!res.ok) {
@@ -73,17 +74,39 @@ export default function CreatePlayerPage() {
         </div>
 
         <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-700">Giọng đọc (Voice)</label>
+          <select
+            value={voice}
+            onChange={(e) => setVoice(e.target.value)}
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700 bg-white"
+          >
+            <optgroup label="Giọng Cao Cấp (Journey)">
+              <option value="en-US-Journey-F">Nữ - Tự nhiên & Biểu cảm (Journey F)</option>
+              <option value="en-US-Journey-D">Nam - Tự nhiên & Biểu cảm (Journey D)</option>
+            </optgroup>
+            <optgroup label="Giọng Truyền Thống (Standard)">
+              <option value="en-US-Standard-C">Nữ - Tiêu chuẩn (Standard C)</option>
+              <option value="en-US-Standard-D">Nam - Tiêu chuẩn (Standard D)</option>
+            </optgroup>
+            <optgroup label="Giọng Neural (Chất lượng cao)">
+              <option value="en-US-Neural2-H">Nữ - Ấm áp (Neural2 H)</option>
+              <option value="en-US-Neural2-J">Nam - Trầm ấm (Neural2 J)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div className="space-y-2">
           <label className="block text-sm font-medium text-slate-700">Đoạn văn tiếng Anh <span className="text-red-500">*</span></label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Dán đoạn văn tiếng Anh vào đây... (10–2000 ký tự)"
+            placeholder="Dán đoạn văn tiếng Anh vào đây... (10–5000 ký tự)"
             className="w-full h-48 p-4 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
-            maxLength={2000}
+            maxLength={5000}
             required
           />
           <div className="flex justify-between text-xs text-slate-400">
-            <span>{text.length} / 2000 ký tự</span>
+            <span>{text.length} / 5000 ký tự</span>
           </div>
         </div>
 
@@ -96,7 +119,7 @@ export default function CreatePlayerPage() {
           disabled={loading || text.length < 10}
           className="w-full py-4 px-6 bg-[#FFBA49] text-slate-900 font-bold rounded-xl hover:bg-[#e6a640] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
         >
-          {loading ? "Đang xử lý (5-15 giây)..." : "Tạo bài luyện tập"}
+          {loading ? "Đang xử lý ..." : "Tạo bài luyện tập"}
         </button>
       </form>
     </div>

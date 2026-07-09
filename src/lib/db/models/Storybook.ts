@@ -11,6 +11,9 @@ export interface IStorybook extends Document {
   thumbnail?: string;
   originalText: string;
   sentences: IStorybookSentence[];
+  level: "easy" | "medium" | "hard";
+  voice: string;
+  speakingRate: number;
   createdAt: Date;
 }
 
@@ -26,6 +29,9 @@ const StorybookSchema = new Schema<IStorybook>(
     thumbnail: { type: String, required: false },
     originalText: { type: String, required: true },
     sentences: { type: [StorybookSentenceSchema], required: true },
+    level: { type: String, enum: ["easy", "medium", "hard"], required: true },
+    voice: { type: String, required: true },
+    speakingRate: { type: Number, required: true },
   },
   {
     timestamps: true,

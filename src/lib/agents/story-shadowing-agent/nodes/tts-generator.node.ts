@@ -13,8 +13,16 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
   const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
 
   try {
-    // Lấy tên Model giọng đọc từ env
-    const ttsModel = process.env.GOOGLE_CLOUD_TTS_MODEL || "en-US-Journey-F";
+    let speakingRate = 1.0;
+    if (state.level === "easy") speakingRate = 0.85;
+    if (state.level === "hard") speakingRate = 1.15;
+
+    let ttsModel = "en-US-Journey-F"; // Default Female
+    if (state.voice === "MALE") ttsModel = "en-US-Journey-D";
+    // Allow overriding from env if they pass an exact model name instead of just MALE/FEMALE
+    if (state.voice && state.voice.startsWith("en-")) {
+      ttsModel = state.voice;
+    }
 
     // Hàm gọi API có retry
     const fetchWithRetry = async (text: string, id: number, retries = 3, delay = 1000): Promise<any> => {
@@ -22,10 +30,10 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
         const response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+            body: JSON.stringify({
             input: { text },
             voice: { languageCode: "en-US", name: ttsModel },
-            audioConfig: { audioEncoding: "MP3" },
+            audioConfig: { audioEncoding: "MP3", speakingRate },
           }),
         });
 
@@ -73,7 +81,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
       }
     }
 
-    return { sentences: results };
+    return { sentences: results, speakingRate };
   } catch (err) {
     console.error("[TtsGenerator] Error:", err);
     return { error: "Lỗi trong quá trình tổng hợp âm thanh bằng Google Cloud TTS." };

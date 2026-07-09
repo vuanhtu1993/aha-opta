@@ -9,6 +9,7 @@ type StoryHistory = {
   originalText: string;
   createdAt: string;
   thumbnail?: string;
+  level?: "easy" | "medium" | "hard";
 };
 
 export default function StorybookPage() {
@@ -69,6 +70,15 @@ export default function StorybookPage() {
                     <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
+                  </div>
+                )}
+                {story.level && (
+                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                    story.level === 'easy' ? 'bg-green-100 text-green-700 border border-green-200' :
+                    story.level === 'medium' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+                    'bg-red-100 text-red-700 border border-red-200'
+                  }`}>
+                    {story.level.toUpperCase()}
                   </div>
                 )}
               </div>

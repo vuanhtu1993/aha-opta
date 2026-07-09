@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     // Lấy 20 bài mới nhất, chỉ lấy các trường cần thiết để hiển thị list
-    const stories = await Storybook.find({}, { title: 1, thumbnail: 1, originalText: 1, createdAt: 1 })
+    const stories = await Storybook.find({}, { title: 1, thumbnail: 1, originalText: 1, createdAt: 1, level: 1 })
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();

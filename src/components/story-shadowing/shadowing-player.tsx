@@ -58,19 +58,6 @@ export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPl
             {playerState === "DONE" && "Hoàn thành"}
           </div>
         </div>
-
-        {/* Tags */}
-        <div className="flex items-center flex-wrap gap-2 text-xs">
-          {level && (
-            <span className={`px-3 py-1 rounded-full font-bold shadow-sm ${
-              level === 'easy' ? 'bg-green-100 text-green-700 border border-green-200' :
-              level === 'medium' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
-              'bg-red-100 text-red-700 border border-red-200'
-            }`}>
-              {level.toUpperCase()}
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Danh sách câu */}
@@ -80,7 +67,7 @@ export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPl
             key={s.id}
             id={`sentence-${i}`}
             sentence={s}
-            isActive={i === currentIndex && isPlaying}
+            isActive={i === currentIndex}
             isDone={i < currentIndex}
             shadowingProgress={
               i === currentIndex && playerState === "USER_SHADOWING"

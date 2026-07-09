@@ -13,9 +13,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
   const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
 
   try {
-    let speakingRate = 1.0;
-    if (state.level === "easy") speakingRate = 0.85;
-    if (state.level === "hard") speakingRate = 1.15;
+    const speakingRate = 1.0;
 
     let ttsModel = "en-US-Journey-F"; // Default Female
     if (state.voice === "MALE") ttsModel = "en-US-Journey-D";

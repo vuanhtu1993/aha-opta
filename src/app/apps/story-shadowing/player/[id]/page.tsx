@@ -10,7 +10,6 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [title, setTitle] = useState<string>("");
   const [level, setLevel] = useState<"easy" | "medium" | "hard" | null>(null);
-  const [speakingRate, setSpeakingRate] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +23,6 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         setSentences(data.sentences);
         setTitle(data.title);
         setLevel(data.level);
-        setSpeakingRate(data.speakingRate);
       })
       .catch((err) => {
         setError(err.message);
@@ -58,7 +56,6 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         sentences={sentences} 
         title={title}
         level={level}
-        speakingRate={speakingRate}
         onBack={() => router.push("/apps/story-shadowing")}
       />
     </div>

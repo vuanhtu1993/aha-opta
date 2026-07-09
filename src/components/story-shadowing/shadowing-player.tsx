@@ -8,11 +8,10 @@ interface ShadowingPlayerProps {
   sentences: Sentence[];
   title?: string;
   level?: "easy" | "medium" | "hard" | null;
-  speakingRate?: number;
   onBack?: () => void;
 }
 
-export function ShadowingPlayer({ sentences, title, level, speakingRate, onBack }: ShadowingPlayerProps) {
+export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPlayerProps) {
   const { playerState, currentIndex, countdown, play, pause, goToNext, goToPrev, isPlaying } =
     useShadowingPlayer(sentences);
 
@@ -69,11 +68,6 @@ export function ShadowingPlayer({ sentences, title, level, speakingRate, onBack 
               'bg-red-100 text-red-700 border border-red-200'
             }`}>
               {level.toUpperCase()}
-            </span>
-          )}
-          {speakingRate && (
-            <span className="text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-              Tốc độ: {speakingRate}x
             </span>
           )}
         </div>

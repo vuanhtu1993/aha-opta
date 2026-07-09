@@ -1,9 +1,15 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+export interface IStorybookSentenceWord {
+  word: string;
+  ipa: string;
+}
+
 export interface IStorybookSentence {
   id: string;
   text: string;
   audioBase64: string;
+  words?: IStorybookSentenceWord[];
 }
 
 export interface IStorybook extends Document {
@@ -21,6 +27,12 @@ const StorybookSentenceSchema = new Schema<IStorybookSentence>({
   id: { type: String, required: true },
   text: { type: String, required: true },
   audioBase64: { type: String, required: true },
+  // Mảng từ kèm IPA — optional vì các bài cũ chưa có
+  words: {
+    type: [{ word: String, ipa: String }],
+    required: false,
+    default: undefined,
+  },
 }, { _id: false });
 
 const StorybookSchema = new Schema<IStorybook>(

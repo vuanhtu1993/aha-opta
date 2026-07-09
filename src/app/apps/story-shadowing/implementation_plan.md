@@ -4,9 +4,9 @@
 
 **Goal:** Thêm một micro-app "Story Shadowing" vào workspace `aha-tools`, cho phép người dùng nhập đoạn văn bản tiếng Anh, AI sẽ chia câu, tổng hợp giọng đọc (TTS), và phát theo kiểu Shadowing (AI đọc → dừng → người dùng lặp lại).
 
-**Architecture:** Frontend dùng Next.js App Router với một Custom Hook `useShadowingPlayer` quản lý State Machine. Backend dùng Next.js API Routes để gọi Gemini Flash (chia câu) và Google Cloud TTS (tổng hợp âm thanh). LangGraph orchestrate pipeline AI 2 bước: sentence-splitter → tts-fetcher.
+**Architecture:** Frontend dùng Next.js App Router với một Custom Hook `useShadowingPlayer` quản lý State Machine. Backend dùng Next.js API Routes để gọi Gemini Flash (chia câu + phân tích độ khó) và Google Cloud TTS (tổng hợp âm thanh). LangGraph orchestrate pipeline AI 2 bước: sentence-splitter → tts-generator.
 
-**Tech Stack:** Next.js 16 (App Router), React 19, TailwindCSS v4, `@langchain/langgraph` v1.3.6, `@langchain/google-genai` v2, Google Cloud TTS API, Zod v4, SWR v2.
+**Tech Stack:** Next.js 16 (App Router), React 19, TailwindCSS v4, `@langchain/langgraph` v1.3.6, `@langchain/google-genai` v2, Google Cloud TTS API, Zod v4, SWR v2, MongoDB (Mongoose).
 
 ---
 
@@ -70,6 +70,18 @@ src/
 
 **File bị modify:**
 - `src/app/page.tsx` — Thêm card "AI Story Shadowing" vào danh sách micro-apps
+- `src/app/api/story-shadowing/route.ts` — Thêm field `level` vào projection
+- `src/lib/db/models/Storybook.ts` — Thêm fields `level`, `voice`
+- `src/lib/schemas/story-shadowing.schema.ts` — Thêm `level` vào Gemini schema
+- `src/lib/agents/story-shadowing-agent/state.ts` — Thêm `voice`, `level` vào State
+- `src/lib/agents/story-shadowing-agent/graph.ts` — Nhận `voice` input, trả về `level`
+- `src/lib/agents/story-shadowing-agent/nodes/sentence-splitter.node.ts` — Cập nhật prompt phân tích độ khó
+- `src/lib/agents/story-shadowing-agent/nodes/tts-generator.node.ts` — Dynamic voice selection
+- `src/app/api/story-shadowing/process/route.ts` — Nhận `voice`, lưu metadata
+- `src/app/apps/story-shadowing/create/page.tsx` — Thêm voice select dropdown
+- `src/app/apps/story-shadowing/page.tsx` — Hiển thị badge level
+- `src/app/apps/story-shadowing/player/[id]/page.tsx` — Hiển thị title, level
+- `src/components/story-shadowing/shadowing-player.tsx` — Tích hợp header + sticky controls
 
 ---
 
@@ -828,23 +840,243 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_TTS_API_KEY=your_google_cloud_tts_api_key_here
 ```
 
+---
+
+## 🆕 Phase 2: Voice Metadata & AI Leveling
+
+> Nâng cấp thêm sau khi Phase 1 hoàn thành. Thêm khả năng chọn giọng đọc và AI tự động đánh giá độ khó văn bản.
+
+### Approach: Option A — AI-driven Labeling
+
+Gemini đảm nhận vai trò **chuyên gia ngôn ngữ**: phân tích từ vựng và ngữ pháp, tự động gán nhãn `level` cho toàn bộ đoạn văn. Frontend chỉ việc hiển thị kết quả.
+
+**Trade-off đã chọn:**
+- ✅ Không thay đổi tốc độ đọc (speakingRate luôn = 1.0) — vì tốc độ cao gây mất chữ, không tự nhiên.
+- ✅ Độ khó chỉ phản ánh qua từ vựng & ngữ pháp (Easy/Medium/Hard), không ảnh hưởng audio.
+
+### Task 11: DB Model Update
+
+**Files:**
+- Modify: `src/lib/db/models/Storybook.ts`
+
+- [x] Thêm fields: `level: String (enum: easy/medium/hard)`, `voice: String`
+
+### Task 12: Schema & State Update
+
+**Files:**
+- Modify: `src/lib/schemas/story-shadowing.schema.ts`
+- Modify: `src/lib/agents/story-shadowing-agent/state.ts`
+
+- [x] Thêm `level` vào `GeminiSentenceListSchema` (Zod)
+- [x] Thêm `voice`, `level` vào `StorybookAgentState`
+
+### Task 13: AI Leveling — Sentence Splitter Upgrade
+
+**Files:**
+- Modify: `src/lib/agents/story-shadowing-agent/nodes/sentence-splitter.node.ts`
+
+- [x] Cập nhật System Prompt: yêu cầu Gemini đóng vai chuyên gia ngôn ngữ, phân tích và trả về thêm trường `level` (`easy` / `medium` / `hard`) cho toàn bộ đoạn văn.
+
+**Tiêu chí đánh giá level:**
+| Level | Tiêu chí |
+|---|---|
+| `easy` | Từ vựng A1–A2, câu ngắn, cấu trúc đơn giản |
+| `medium` | Từ vựng B1–B2, một số idiom, câu phức |
+| `hard` | Từ vựng C1+, thuật ngữ chuyên ngành, câu phức tạp |
+
+### Task 14: Voice Selection — TTS Generator Upgrade
+
+**Files:**
+- Modify: `src/lib/agents/story-shadowing-agent/nodes/tts-generator.node.ts`
+
+- [x] Nhận `state.voice` từ Pipeline State và map sang Google Cloud TTS model name.
+- [x] `speakingRate` cố định = `1.0` (bỏ điều chỉnh theo level để giữ chất lượng audio tự nhiên).
+
+**Danh sách Voice được hỗ trợ (UI):**
+| Nhóm | Voice ID | Mô tả |
+|---|---|---|
+| Journey (Cao cấp) | `en-US-Journey-F` | Nữ - Tự nhiên, biểu cảm (Default) |
+| Journey (Cao cấp) | `en-US-Journey-D` | Nam - Tự nhiên, biểu cảm |
+| Standard | `en-US-Standard-C` | Nữ - Tiêu chuẩn |
+| Standard | `en-US-Standard-D` | Nam - Tiêu chuẩn |
+| Neural2 | `en-US-Neural2-H` | Nữ - Ấm áp |
+| Neural2 | `en-US-Neural2-J` | Nam - Trầm ấm |
+
+### Task 15: API Route & Graph Update
+
+**Files:**
+- Modify: `src/app/api/story-shadowing/process/route.ts`
+- Modify: `src/lib/agents/story-shadowing-agent/graph.ts`
+
+- [x] API nhận thêm `voice` từ request body (default: `en-US-Journey-F`).
+- [x] Pipeline trả về `level` từ Gemini để lưu vào DB.
+- [x] Thêm **console.log chi tiết** tại các bước để dễ theo dõi tiến trình (cần thiết vì quá trình TTS có thể mất 3-4 phút với bài dài).
+
+**Log format:**
+```
+==========================================
+[API Process] Nhận yêu cầu tạo bài mới...
+[Sentence Splitter] Bắt đầu phân tích (1200 ký tự)...
+[Sentence Splitter] ✅ 45 câu. Độ khó: HARD
+[TTS Generator] Bắt đầu (45 câu, Journey-D, 1.0x)...
+[TTS Generator] Đang xử lý câu 1/45...
+...
+[TTS Generator] ✅ Hoàn thành!
+[API Process] ✅ Đã lưu DB (ID: ...)
+==========================================
+```
+
+### Task 16: UI/UX Upgrades
+
+**Files:**
+- Modify: `src/app/apps/story-shadowing/create/page.tsx`
+- Modify: `src/app/apps/story-shadowing/page.tsx`
+- Modify: `src/components/story-shadowing/shadowing-player.tsx`
+- Modify: `src/app/api/story-shadowing/route.ts`
+
+- [x] **Create Page:** Thêm Dropdown chọn Voice (6 options, chia nhóm bằng `<optgroup>`).
+- [x] **History List (page.tsx):** Hiển thị badge màu Easy/Medium/Hard trên mỗi card bài học.
+- [x] **Player Component Refactor:** Gộp toàn bộ Header (Back, Title, PlayerState, Level) vào trong `ShadowingPlayer`.
+  - `playerState` badge nằm **ngang hàng với Title** (cùng 1 dòng).
+  - Controls (Play/Pause, Prev/Next) **ghim cứng (sticky/fixed) ở đáy màn hình** trên Mobile — người dùng không cần scroll để tìm nút.
+  - Vùng hiển thị câu được tối ưu: `max-h-[calc(100vh-320px)]` trên mobile.
+
+---
+
 ## ✅ Verification Plan
 
 ### Automated Build Check
 ```bash
-npm run build
+npx tsc --noEmit
 # Expected: exit code 0, no TypeScript errors
 ```
 
 ### Manual Verification Flow
 
-1. **Happy Path:** Chạy `npm run dev` → Vào `http://localhost:3000/apps/story-shadowing` → Nhập đoạn văn 3-5 câu → Bấm "Tạo bài luyện" → Đợi ~5-10s → Chuyển sang trang Player → Bấm Play → Nghe AI đọc → Đọc theo trong khoảng dừng.
+1. **Happy Path:** Chạy `pnpm dev` → Vào `http://localhost:3000/apps/story-shadowing` → Bấm "Tạo bài luyện tập" → Nhập đoạn văn 3-5 câu → Chọn giọng → Bấm Submit → Đợi theo dõi log Terminal → Chuyển sang trang Player → Bấm Play → Nghe AI đọc → Đọc theo trong khoảng dừng.
 
-2. **Edge Case — Pause:** Bấm Pause giữa chừng → kiểm tra audio dừng ngay lập tức (không có tiếng tiếp theo sau vài giây).
+2. **AI Leveling:** Tạo 2 bài: 1 bài text đơn giản (trẻ em), 1 bài text IELTS. Kiểm tra badge level trên card và trong Player có đúng không.
 
-3. **Edge Case — Navigate:** Bấm Next/Prev → kiểm tra câu highlight đổi đúng.
+3. **Voice Selection:** Tạo bài với các giọng khác nhau (Journey-F, Neural2-J...). Kiểm tra âm thanh phát ra đúng giọng.
 
-4. **Edge Case — Empty return:** Vào trực tiếp `/apps/story-shadowing/player` (không qua form) → kiểm tra redirect về `/apps/story-shadowing`.
+4. **Mobile UX:** Thu nhỏ trình duyệt hoặc dùng DevTools (iPhone SE). Kiểm tra Controls luôn hiển thị ở dưới màn hình, không cần scroll.
+
+5. **Edge Case — Pause:** Bấm Pause giữa chừng → kiểm tra audio dừng ngay lập tức.
+
+6. **Edge Case — Navigate:** Bấm Next/Prev → kiểm tra câu highlight đổi đúng.
+
+
+---
+
+## 🆕 Phase 3: IPA Phonetic Transcription
+
+> Mỗi từ trong câu được Gemini phiên âm IPA. Khi câu đang active (AI đang đọc / User lặp lại), các từ hiển thị theo kiểu Ruby annotation (từ ở trên, IPA nhỏ ở dưới) — giúp người học đọc chuẩn phát âm ngay khi nghe.
+
+### Architecture Decision: Gemini làm nguồn IPA
+
+**Lý do chọn Gemini thay vì Dictionary API hay npm package:**
+- ✅ Đã tích hợp sẵn, không cần API key mới
+- ✅ Hiểu ngữ cảnh: "read" (present /riːd/) vs "read" (past /rɛd/) phiên âm đúng
+- ✅ Cover tên riêng, từ mới, slang (Dictionary API không có)
+- ⚠️ Trade-off: Response lớn hơn (~2-3s chậm hơn) — chấp nhận được vì TTS mới là bottleneck chính
+
+### Task 17: Schema & DB Update
+
+**Files:**
+- Modify: `src/lib/schemas/story-shadowing.schema.ts`
+- Modify: `src/lib/db/models/Storybook.ts`
+
+- [x] Thêm `WordSchema: {word, ipa}` vào Zod schemas.
+- [x] Thêm `words?: WordSchema[]` vào `SentenceSchema` (optional để backward-compatible với bài cũ).
+- [x] Thêm `GeminiSentenceListSchema` yêu cầu `words[]` từ Gemini.
+- [x] Thêm `words` field vào Mongoose `StorybookSentenceSchema`.
+
+### Task 18: LangGraph State Update
+
+**Files:**
+- Modify: `src/lib/agents/story-shadowing-agent/state.ts`
+
+- [x] Cập nhật kiểu `rawSentences` để bao gồm `words: {word, ipa}[]`.
+- [x] Cập nhật kiểu `sentences` output để bao gồm `words?: {word, ipa}[]`.
+
+### Task 19: Sentence Splitter Prompt Upgrade
+
+**Files:**
+- Modify: `src/lib/agents/story-shadowing-agent/nodes/sentence-splitter.node.ts`
+
+- [x] Cập nhật System Prompt: Gemini đóng vai **chuyên gia ngữ âm học**, yêu cầu trả về `words: [{word, ipa}]` cho mỗi câu.
+- [x] Sử dụng **broad transcription** (phiên âm rộng, chuẩn từ điển quốc tế).
+- [x] Quy tắc xử lý dấu câu: dấu câu gắn vào từ đứng trước.
+
+**JSON format mẫu Gemini trả về:**
+```json
+{
+  "level": "medium",
+  "sentences": [{
+    "id": 0,
+    "text": "Hello world.",
+    "words": [
+      {"word": "Hello", "ipa": "/həˈləʊ/"},
+      {"word": "world", "ipa": "/wɜːld/"}
+    ]
+  }]
+}
+```
+
+### Task 20: TTS Generator — Pass-through IPA
+
+**Files:**
+- Modify: `src/lib/agents/story-shadowing-agent/nodes/tts-generator.node.ts`
+
+- [x] Sau khi fetch TTS audio xong, merge `words[]` từ `rawSentences` vào object kết quả.
+- [x] Không có thay đổi gì về logic TTS — chỉ truyền dữ liệu qua.
+
+### Task 21: UI — Ruby Annotation trong SentenceCard
+
+**Files:**
+- Modify: `src/components/story-shadowing/sentence-card.tsx`
+
+- [x] Khi `isActive = true` VÀ `sentence.words` có dữ liệu → render **Ruby annotation**.
+- [x] Khi không active → render text thông thường (performance).
+- [x] Dùng HTML `<ruby>/<rt>` chuẩn, hỗ trợ tốt trên mọi trình duyệt.
+
+**Ruby UI Structure:**
+```html
+<ruby>
+  beautiful
+  <rt>/ˈbjuːtɪfəl/</rt>
+</ruby>
+```
+
+**Visual:** Từ gốc `text-xl font-bold`, IPA `text-[11px] text-slate-700/70` — hiển thị phía dưới khi câu đang được phát.
+
+---
+
+## ✅ Verification Plan
+
+### Automated Build Check
+```bash
+npx tsc --noEmit
+# Expected: exit code 0, no TypeScript errors
+```
+
+### Manual Verification Flow
+
+1. **Happy Path:** Chạy `pnpm dev` → Vào `http://localhost:3000/apps/story-shadowing` → Bấm "Tạo bài luyện tập" → Nhập đoạn văn 3-5 câu → Chọn giọng → Bấm Submit → Đợi theo dõi log Terminal → Chuyển sang trang Player → Bấm Play → Nghe AI đọc → Đọc theo trong khoảng dừng.
+
+2. **IPA Verification:** Trong Player, khi câu đang active → kiểm tra mỗi từ hiển thị IPA nhỏ bên dưới dạng ruby annotation. Khi câu kết thúc (chuyển sang câu tiếp) → IPA biến mất, trở về text thường.
+
+3. **AI Leveling:** Tạo 2 bài: 1 bài text đơn giản (trẻ em), 1 bài text IELTS. Kiểm tra badge level trên card và trong Player có đúng không.
+
+4. **Voice Selection:** Tạo bài với các giọng khác nhau (Journey-F, Neural2-J...). Kiểm tra âm thanh phát ra đúng giọng.
+
+5. **Mobile UX:** Thu nhỏ trình duyệt hoặc dùng DevTools (iPhone SE). Kiểm tra Controls luôn hiển thị ở dưới màn hình, không cần scroll.
+
+6. **Edge Case — Pause:** Bấm Pause giữa chừng → kiểm tra audio dừng ngay lập tức.
+
+7. **Edge Case — Navigate:** Bấm Next/Prev → kiểm tra câu highlight đổi đúng.
+
+8. **Backward Compatibility:** Mở bài luyện tập cũ (tạo trước khi có IPA) → Kiểm tra vẫn phát bình thường, không bị crash (do `words` là optional).
 
 
 *Made by Anh Tu - Share to be share*

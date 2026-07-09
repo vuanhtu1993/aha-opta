@@ -73,7 +73,8 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
       const s = state.rawSentences[i];
       console.log(`[TTS Generator] Đang xử lý câu ${i + 1}/${state.rawSentences.length}...`);
       const result = await fetchWithRetry(s.text, s.id);
-      results.push(result);
+      // Truyền words[] (IPA) từ Gemini vào output của TTS generator
+      results.push({ ...result, words: s.words });
       
       // Nghỉ một khoảng thời gian tính toán được trước khi gửi request tiếp theo
       if (i < state.rawSentences.length - 1) {

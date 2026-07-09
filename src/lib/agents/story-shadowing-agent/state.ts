@@ -8,15 +8,15 @@ export const StorybookAgentState = Annotation.Root({
 
   // === Node 1 Output: SentenceSplitter ===
   level: Annotation<"easy" | "medium" | "hard">(), // Độ khó do AI đánh giá
-  rawSentences: Annotation<Array<{ id: number; text: string }>>({
+  rawSentences: Annotation<Array<{ id: number; text: string; words: { word: string; ipa: string }[] }>>({
     reducer: (_, y) => y,              // Overwrite toàn bộ mảng (không concat)
   }),
 
   // === Node 2 Output: TtsGenerator ===
   speakingRate: Annotation<number>(),  // Tốc độ đọc tương ứng
 
-  // Mảng câu đã kèm audio base64
-  sentences: Annotation<Array<{ id: number; text: string; audioBase64: string }>>({
+  // Mảng câu đã kèm audio base64 và IPA
+  sentences: Annotation<Array<{ id: number; text: string; audioBase64: string; words?: { word: string; ipa: string }[] }>>({
     reducer: (_, y) => y,
   }),
 

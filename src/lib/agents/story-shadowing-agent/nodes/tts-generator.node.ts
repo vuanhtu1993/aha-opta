@@ -69,9 +69,11 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
 
     const results = [];
 
+    console.log(`[TTS Generator] Bắt đầu tổng hợp âm thanh cho ${state.rawSentences.length} câu (Model: ${ttsModel}, Tốc độ: ${speakingRate}x)...`);
     // Chạy tuần tự từng request để đảm bảo tuyệt đối không vượt quá Rate Limit Burst
     for (let i = 0; i < state.rawSentences.length; i++) {
       const s = state.rawSentences[i];
+      console.log(`[TTS Generator] Đang xử lý câu ${i + 1}/${state.rawSentences.length}...`);
       const result = await fetchWithRetry(s.text, s.id);
       results.push(result);
       
@@ -81,6 +83,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
       }
     }
 
+    console.log(`[TTS Generator] ✅ Hoàn thành tổng hợp âm thanh!`);
     return { sentences: results, speakingRate };
   } catch (err) {
     console.error("[TtsGenerator] Error:", err);

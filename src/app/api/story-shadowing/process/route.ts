@@ -19,6 +19,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { text, title, thumbnail, voice } = RequestSchema.parse(body);
 
+    console.log(`\n==========================================`);
+    console.log(`[API Process] Nhận yêu cầu tạo bài mới...`);
+    console.log(`[API Process] Đang bắt đầu LangGraph Pipeline...`);
     // Chạy LangGraph pipeline (blocking ~5-10s do TTS)
     const { sentences, level, speakingRate } = await runStorybookPipeline(text, voice);
 
@@ -41,6 +44,9 @@ export async function POST(request: NextRequest) {
       voice: voice,
       speakingRate: speakingRate,
     });
+
+    console.log(`[API Process] ✅ Đã lưu thành công vào Database (ID: ${newStory._id})`);
+    console.log(`==========================================\n`);
 
     return NextResponse.json({
       id: newStory._id,

@@ -25,10 +25,13 @@ Rules:
 
 export async function sentenceSplitterNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
   try {
+    console.log(`[Sentence Splitter] Bắt đầu phân tích văn bản (Độ dài: ${state.rawText.length} ký tự)...`);
     const parsed = await structuredLlm.invoke([
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: state.rawText },
     ]);
+    
+    console.log(`[Sentence Splitter] ✅ Đã chia thành ${parsed.sentences.length} câu. Đánh giá độ khó: ${parsed.level.toUpperCase()}`);
 
     return { 
       level: parsed.level,

@@ -54,36 +54,13 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/apps/story-shadowing")}
-            className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
-          >
-            ← Danh sách bài
-          </button>
-          <h1 className="text-xl font-bold text-slate-800 line-clamp-1">
-            {title || "Luyện Shadowing"}
-          </h1>
-        </div>
-        
-        {level && (
-          <div className="flex items-center gap-3 text-sm">
-            <span className={`px-3 py-1 rounded-full font-bold shadow-sm ${
-              level === 'easy' ? 'bg-green-100 text-green-700 border border-green-200' :
-              level === 'medium' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
-              'bg-red-100 text-red-700 border border-red-200'
-            }`}>
-              {level.toUpperCase()}
-            </span>
-            <span className="text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-              Tốc độ: {speakingRate}x
-            </span>
-          </div>
-        )}
-      </div>
-
-      <ShadowingPlayer sentences={sentences} />
+      <ShadowingPlayer 
+        sentences={sentences} 
+        title={title}
+        level={level}
+        speakingRate={speakingRate}
+        onBack={() => router.push("/apps/story-shadowing")}
+      />
     </div>
   );
 }

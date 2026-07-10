@@ -8,7 +8,7 @@ import Storybook from "@/lib/db/models/Storybook";
 const RequestSchema = z.object({
   text: z.string()
     .min(10, "Văn bản quá ngắn (tối thiểu 10 ký tự)")
-    .max(5000, "Văn bản quá dài (tối đa 5000 ký tự)"),
+    .max(10000, "Văn bản quá dài (tối đa 10000 ký tự)"),
   title: z.string().optional(),
   thumbnail: z.string().url("URL ảnh không hợp lệ").optional().or(z.literal("")),
   voice: z.string().default("en-US-Journey-F"),

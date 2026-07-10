@@ -71,10 +71,23 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
     // Chạy tuần tự từng request để đảm bảo tuyệt đối không vượt quá Rate Limit Burst
     for (let i = 0; i < state.rawSentences.length; i++) {
       const s = state.rawSentences[i];
+      const textToSynthesize = s.text?.trim();
+
+      if (!textToSynthesize) {
+        console.warn(`[TTS Generator] Cảnh báo: Câu ${i + 1}/${state.rawSentences.length} có nội dung trống, bỏ qua tổng hợp âm thanh...`);
+        results.push({
+          id: s.id,
+          text: s.text,
+          audioBase64: "",
+          words: s.words,
+        });
+        continue;
+      }
+
       console.log(`[TTS Generator] Đang xử lý câu ${i + 1}/${state.rawSentences.length}...`);
-      const result = await fetchWithRetry(s.text, s.id);
+      const result = await fetchWithRetry(textToSynthesize, s.id);
       // Truyền words[] (IPA) từ Gemini vào output của TTS generator
-      results.push({ ...result, words: s.words });
+      results.push({ ...result, text: s.text, words: s.words });
       
       // Nghỉ một khoảng thời gian tính toán được trước khi gửi request tiếp theo
       if (i < state.rawSentences.length - 1) {

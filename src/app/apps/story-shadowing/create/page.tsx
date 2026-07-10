@@ -100,13 +100,13 @@ export default function CreatePlayerPage() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Dán đoạn văn tiếng Anh vào đây... (10–5000 ký tự)"
+            placeholder="Dán đoạn văn tiếng Anh vào đây... (10–10000 ký tự)"
             className="w-full h-48 p-4 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
-            maxLength={5000}
+            maxLength={10000}
             required
           />
           <div className="flex justify-between text-xs text-slate-400">
-            <span>{text.length} / 5000 ký tự</span>
+            <span>{text.length} / 10000 ký tự</span>
           </div>
         </div>
 

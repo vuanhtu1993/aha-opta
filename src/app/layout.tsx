@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { GlobalFooter } from "@/components/layout/GlobalFooter";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,9 +44,7 @@ export default function RootLayout({
           {children}
         </main>
 
-        <footer className="py-6 text-center text-sm text-slate-500 mt-auto border-t">
-          <p>Made by Anh Tu - Share to be share</p>
-        </footer>
+        <GlobalFooter />
       </body>
     </html>
   );

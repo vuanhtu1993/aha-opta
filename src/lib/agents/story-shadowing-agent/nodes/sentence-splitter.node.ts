@@ -1,6 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { GeminiSentenceListSchema } from "@/lib/schemas/story-shadowing.schema";
 import { StorybookStateType } from "../state";
+import { RunnableConfig } from "@langchain/core/runnables";
 
 const model = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash",
@@ -25,15 +26,17 @@ Rules:
 - Return ONLY valid JSON in this exact format:
 {"level": "easy", "sentences": [{"id": 0, "text": "Hello world.", "words": [{"word": "Hello", "ipa": "/həˈləʊ/"}, {"word": "world", "ipa": "/wɜːld/"}]}]}`;
 
-export async function sentenceSplitterNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
+export async function sentenceSplitterNode(state: StorybookStateType, config?: RunnableConfig): Promise<Partial<StorybookStateType>> {
+  const log = config?.configurable?.logCallback || console.log;
+
   try {
-    console.log(`[Sentence Splitter] Bắt đầu phân tích văn bản (Độ dài: ${state.rawText.length} ký tự)...`);
+    log(`[Sentence Splitter] Bắt đầu phân tích văn bản (Độ dài: ${state.rawText.length} ký tự)...`);
     const parsed = await structuredLlm.invoke([
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: state.rawText },
     ]);
     
-    console.log(`[Sentence Splitter] ✅ Đã chia thành ${parsed.sentences.length} câu. Đánh giá độ khó: ${parsed.level.toUpperCase()}. Đang tạo phiên âm IPA...`);
+    log(`[Sentence Splitter] ✅ Đã chia thành ${parsed.sentences.length} câu. Đánh giá độ khó: ${parsed.level.toUpperCase()}. Đang tạo phiên âm IPA...`);
 
     return { 
       level: parsed.level,
@@ -41,6 +44,7 @@ export async function sentenceSplitterNode(state: StorybookStateType): Promise<P
     };
   } catch (err) {
     console.error("[SentenceSplitter] Error:", err);
+    log("[Sentence Splitter] Lỗi: Không thể chia câu.");
     return { error: "Không thể chia câu. Vui lòng thử lại." };
   }
 }

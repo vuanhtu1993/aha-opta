@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { runStorybookPipeline } from "@/lib/agents/story-shadowing-agent/graph";
 import { connectDB } from "@/lib/db/mongoose";
 import Storybook from "@/lib/db/models/Storybook";
+import { withAgentSSE } from "@/lib/utils/sse-wrapper";
 
 // Validate input với Zod
 const RequestSchema = z.object({
@@ -14,18 +15,18 @@ const RequestSchema = z.object({
   voice: z.string().default("en-US-Journey-F"),
 });
 
-export async function POST(request: NextRequest) {
+export const POST = withAgentSSE(async (request: NextRequest, log) => {
   try {
     const body = await request.json();
     const { text, title, thumbnail, voice } = RequestSchema.parse(body);
 
-    console.log(`\n==========================================`);
-    console.log(`[API Process] Nhận yêu cầu tạo bài mới...`);
-    console.log(`[API Process] Đang bắt đầu LangGraph Pipeline...`);
+    log(`[API Process] Nhận yêu cầu tạo bài mới...`);
+    log(`[API Process] Đang bắt đầu LangGraph Pipeline...`);
     // Chạy LangGraph pipeline (blocking ~5-10s do TTS)
-    const { sentences, level, speakingRate } = await runStorybookPipeline(text, voice);
+    const { sentences, level, speakingRate } = await runStorybookPipeline(text, voice, log);
 
     // Lưu vào database
+    log(`[API Process] Đang lưu vào cơ sở dữ liệu...`);
     await connectDB();
 
     // Tự động tạo title từ 6 từ đầu tiên nếu không có title
@@ -45,24 +46,17 @@ export async function POST(request: NextRequest) {
       speakingRate: speakingRate,
     });
 
-    console.log(`[API Process] ✅ Đã lưu thành công vào Database (ID: ${newStory._id})`);
-    console.log(`==========================================\n`);
+    log(`[API Process] ✅ Đã lưu thành công vào Database (ID: ${newStory._id})`);
 
-    return NextResponse.json({
+    return {
       id: newStory._id,
       totalCount: sentences.length
-    });
+    };
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: err.issues[0].message },
-        { status: 400 }
-      );
+      throw new Error(err.issues[0].message);
     }
     console.error("[API/story-shadowing/process]", err);
-    return NextResponse.json(
-      { error: "Đã có lỗi xảy ra. Vui lòng thử lại." },
-      { status: 500 }
-    );
+    throw new Error("Đã có lỗi xảy ra. Vui lòng thử lại.");
   }
-}
+});

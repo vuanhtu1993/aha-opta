@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
 
 export default function CreatePlayerPage() {
   const [title, setTitle] = useState("");
@@ -11,6 +12,7 @@ export default function CreatePlayerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { fetchSSE } = useAgentFetch();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,18 +20,12 @@ export default function CreatePlayerPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/story-shadowing/process", {
+      const data = await fetchSSE("/api/story-shadowing/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, title, thumbnail, voice }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Lỗi không xác định");
-      }
-
-      const data = await res.json();
       router.push(`/apps/story-shadowing/player/${data.id}`);
     } catch (err) {
       setError((err as Error).message);

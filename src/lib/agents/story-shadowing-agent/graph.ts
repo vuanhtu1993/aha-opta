@@ -4,7 +4,7 @@ import { sentenceSplitterNode } from "./nodes/sentence-splitter.node";
 import { ttsGeneratorNode } from "./nodes/tts-generator.node";
 
 // 1. Khởi tạo Graph
-const graphBuilder = new StateGraph<typeof StorybookAgentState, any, any, string>(StorybookAgentState);
+const graphBuilder = new StateGraph<typeof StorybookAgentState, unknown, unknown, string>(StorybookAgentState);
 
 // 2. Thêm Node
 graphBuilder.addNode("sentenceSplitter", sentenceSplitterNode);
@@ -21,8 +21,11 @@ export const storybookAgentGraph = graphBuilder.compile();
 /**
  * Public API: Chạy toàn bộ pipeline cho 1 đoạn văn bản
  */
-export async function runStorybookPipeline(rawText: string, voice: string = "en-US-Journey-F") {
-  const finalState = await storybookAgentGraph.invoke({ rawText, voice });
+export async function runStorybookPipeline(rawText: string, voice: string = "en-US-Journey-F", logCallback?: (msg: string) => void) {
+  const finalState = await storybookAgentGraph.invoke(
+    { rawText, voice },
+    { configurable: { logCallback } }
+  );
 
   if (finalState.error) {
     throw new Error(finalState.error);

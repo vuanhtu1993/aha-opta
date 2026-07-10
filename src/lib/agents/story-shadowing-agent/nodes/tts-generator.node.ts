@@ -1,6 +1,9 @@
 import { StorybookStateType } from "../state";
+import { RunnableConfig } from "@langchain/core/runnables";
 
-export async function ttsGeneratorNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
+export async function ttsGeneratorNode(state: StorybookStateType, config?: RunnableConfig): Promise<Partial<StorybookStateType>> {
+  const log = config?.configurable?.logCallback || console.log;
+
   if (state.error || !state.rawSentences?.length) {
     return {};
   }
@@ -23,7 +26,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
     }
 
     // Hàm gọi API có retry
-    const fetchWithRetry = async (text: string, id: number, retries = 3, delay = 1000): Promise<any> => {
+    const fetchWithRetry = async (text: string, id: number, retries = 3, delay = 1000): Promise<{ id: number, text: string, audioBase64: string }> => {
       try {
         const response = await fetch(url, {
           method: "POST",
@@ -37,7 +40,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
 
         if (!response.ok) {
           if (response.status === 429 && retries > 0) {
-            console.warn(`[TTS] 429 Rate Limit. Retrying in ${delay}ms...`);
+            log(`[TTS] 429 Rate Limit. Retrying in ${delay}ms...`);
             await new Promise(r => setTimeout(r, delay));
             return fetchWithRetry(text, id, retries - 1, delay * 2);
           }
@@ -67,14 +70,14 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
 
     const results = [];
 
-    console.log(`[TTS Generator] Bắt đầu tổng hợp âm thanh cho ${state.rawSentences.length} câu (Model: ${ttsModel}, Tốc độ: ${speakingRate}x)...`);
+    log(`[TTS Generator] Bắt đầu tổng hợp âm thanh cho ${state.rawSentences.length} câu (Model: ${ttsModel}, Tốc độ: ${speakingRate}x)...`);
     // Chạy tuần tự từng request để đảm bảo tuyệt đối không vượt quá Rate Limit Burst
     for (let i = 0; i < state.rawSentences.length; i++) {
       const s = state.rawSentences[i];
       const textToSynthesize = s.text?.trim();
 
       if (!textToSynthesize) {
-        console.warn(`[TTS Generator] Cảnh báo: Câu ${i + 1}/${state.rawSentences.length} có nội dung trống, bỏ qua tổng hợp âm thanh...`);
+        log(`[TTS Generator] Cảnh báo: Câu ${i + 1}/${state.rawSentences.length} có nội dung trống, bỏ qua tổng hợp âm thanh...`);
         results.push({
           id: s.id,
           text: s.text,
@@ -84,7 +87,7 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
         continue;
       }
 
-      console.log(`[TTS Generator] Đang xử lý câu ${i + 1}/${state.rawSentences.length}...`);
+      log(`[TTS Generator] Đang xử lý câu ${i + 1}/${state.rawSentences.length}...`);
       const result = await fetchWithRetry(textToSynthesize, s.id);
       // Truyền words[] (IPA) từ Gemini vào output của TTS generator
       results.push({ ...result, text: s.text, words: s.words });
@@ -95,10 +98,11 @@ export async function ttsGeneratorNode(state: StorybookStateType): Promise<Parti
       }
     }
 
-    console.log(`[TTS Generator] ✅ Hoàn thành tổng hợp âm thanh!`);
+    log(`[TTS Generator] ✅ Hoàn thành tổng hợp âm thanh!`);
     return { sentences: results, speakingRate };
   } catch (err) {
     console.error("[TtsGenerator] Error:", err);
+    log("[TTS Generator] Lỗi trong quá trình tổng hợp âm thanh.");
     return { error: "Lỗi trong quá trình tổng hợp âm thanh bằng Google Cloud TTS." };
   }
 }

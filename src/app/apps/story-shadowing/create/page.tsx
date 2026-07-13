@@ -20,7 +20,7 @@ export default function CreatePlayerPage() {
     setError(null);
 
     try {
-      const data = await fetchSSE("/api/story-shadowing/process", {
+      const data = await fetchSSE<{ id: string }>("/api/story-shadowing/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, title, thumbnail, voice }),

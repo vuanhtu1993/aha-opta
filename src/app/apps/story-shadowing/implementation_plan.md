@@ -92,7 +92,7 @@ src/
 **Files:**
 - Create: `src/lib/schemas/story-shadowing.schema.ts`
 
-- [ ] **Step 1: Viết Zod schema cho toàn bộ domain**
+- [x] **Step 1: Viết Zod schema cho toàn bộ domain**
 
 ```typescript
 // src/lib/schemas/story-shadowing.schema.ts
@@ -136,7 +136,7 @@ export const GeminiSentenceListSchema = z.object({
 **Files:**
 - Create: `src/lib/agents/story-shadowing-agent/state.ts`
 
-- [ ] **Step 1: Viết State cho story-shadowing-agent**
+- [x] **Step 1: Viết State cho story-shadowing-agent**
 
 ```typescript
 // src/lib/agents/story-shadowing-agent/state.ts
@@ -173,7 +173,7 @@ export type StoryShadowingStateType = typeof StoryShadowingAgentState.State;
 
 **Yêu cầu trước:** `GEMINI_API_KEY` phải có trong `.env.local`.
 
-- [ ] **Step 1: Viết node gọi Gemini Flash để chia câu**
+- [x] **Step 1: Viết node gọi Gemini Flash để chia câu**
 
 ```typescript
 // src/lib/agents/story-shadowing-agent/nodes/sentence-splitter.node.ts
@@ -231,7 +231,7 @@ export async function sentenceSplitterNode(state: StoryShadowingStateType): Prom
 > [!IMPORTANT]
 > Dùng Google Cloud TTS REST API (không cần SDK nặng). Voice được dùng: `en-US-Standard-D` (nam, tự nhiên, miễn phí trong quota).
 
-- [ ] **Step 1: Viết node gọi Google Cloud TTS cho từng câu**
+- [x] **Step 1: Viết node gọi Google Cloud TTS cho từng câu**
 
 ```typescript
 // src/lib/agents/story-shadowing-agent/nodes/tts-generator.node.ts
@@ -297,7 +297,7 @@ export async function ttsGeneratorNode(state: StoryShadowingStateType): Promise<
 **Files:**
 - Create: `src/lib/agents/story-shadowing-agent/graph.ts`
 
-- [ ] **Step 1: Kết nối 2 Node thành pipeline**
+- [x] **Step 1: Kết nối 2 Node thành pipeline**
 
 ```typescript
 // src/lib/agents/story-shadowing-agent/graph.ts
@@ -342,7 +342,7 @@ export async function runStoryShadowingPipeline(rawText: string) {
 **Files:**
 - Create: `src/app/api/story-shadowing/process/route.ts`
 
-- [ ] **Step 1: Viết API endpoint nhận text và chạy pipeline**
+- [x] **Step 1: Viết API endpoint nhận text và chạy pipeline**
 
 ```typescript
 // src/app/api/story-shadowing/process/route.ts
@@ -406,7 +406,7 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Test thủ công bằng curl**
+- [x] **Step 2: Test thủ công bằng curl**
 
 ```bash
 curl -X POST http://localhost:3000/api/story-shadowing/process \
@@ -432,7 +432,7 @@ Expected response:
 > [!IMPORTANT]
 > Đây là **trái tim của ứng dụng**. State Machine có 3 trạng thái: `IDLE` → `AI_SPEAKING` → `USER_SHADOWING` → (lặp lại).
 
-- [ ] **Step 1: Viết Custom Hook với State Machine**
+- [x] **Step 1: Viết Custom Hook với State Machine**
 
 ```typescript
 // src/lib/hooks/use-shadowing-player.ts
@@ -563,7 +563,7 @@ export function useShadowingPlayer(sentences: Sentence[]) {
 - Create: `src/components/story-shadowing/progress-countdown.tsx`
 - Create: `src/components/story-shadowing/shadowing-player.tsx`
 
-- [ ] **Step 1: Viết SentenceCard — hiển thị 1 câu với highlight**
+- [x] **Step 1: Viết SentenceCard — hiển thị 1 câu với highlight**
 
 ```typescript
 // src/components/story-shadowing/sentence-card.tsx
@@ -594,7 +594,7 @@ export function SentenceCard({ sentence, isActive, isDone }: SentenceCardProps) 
 }
 ```
 
-- [ ] **Step 2: Viết ProgressCountdown — thanh đếm ngược**
+- [x] **Step 2: Viết ProgressCountdown — thanh đếm ngược**
 
 ```typescript
 // src/components/story-shadowing/progress-countdown.tsx
@@ -626,7 +626,7 @@ export function ProgressCountdown({ totalMs, remainingMs, isActive }: ProgressCo
 }
 ```
 
-- [ ] **Step 3: Viết ShadowingPlayer — component player tổng hợp**
+- [x] **Step 3: Viết ShadowingPlayer — component player tổng hợp**
 
 ```typescript
 // src/components/story-shadowing/shadowing-player.tsx
@@ -742,10 +742,10 @@ export function ShadowingPlayer({ sentences }: ShadowingPlayerProps) {
 - Create: `src/app/apps/story-shadowing/create/page.tsx`
 - Create: `src/app/apps/story-shadowing/player/[id]/page.tsx`
 
-- [ ] **Step 1: Viết trang chủ hiển thị danh sách bài tập**
+- [x] **Step 1: Viết trang chủ hiển thị danh sách bài tập**
 (File: `src/app/apps/story-shadowing/page.tsx` - Fetch từ `/api/story-shadowing` để lấy lịch sử)
 
-- [ ] **Step 2: Viết trang nhập text (form)**
+- [x] **Step 2: Viết trang nhập text (form)**
 
 ```typescript
 // src/app/apps/story-shadowing/create/page.tsx
@@ -792,7 +792,7 @@ export default function CreatePlayerPage() {
 }
 ```
 
-- [ ] **Step 3: Viết trang Player theo ID**
+- [x] **Step 3: Viết trang Player theo ID**
 
 ```typescript
 // src/app/apps/story-shadowing/player/[id]/page.tsx
@@ -807,7 +807,7 @@ export default function CreatePlayerPage() {
 - Modify: `src/app/page.tsx`
 - Modify: `.env.local` (thêm keys)
 
-- [ ] **Step 1: Thêm card vào trang chủ**
+- [x] **Step 1: Thêm card vào trang chủ**
 
 Trong `src/app/page.tsx`, thêm Card mới vào grid (sau card `aha-opta`):
 
@@ -832,7 +832,7 @@ Trong `src/app/page.tsx`, thêm Card mới vào grid (sau card `aha-opta`):
 </Card>
 ```
 
-- [ ] **Step 2: Thêm API Keys vào .env.local**
+- [x] **Step 2: Thêm API Keys vào .env.local**
 
 ```bash
 # .env.local (thêm 2 dòng sau)
@@ -1078,5 +1078,45 @@ npx tsc --noEmit
 
 8. **Backward Compatibility:** Mở bài luyện tập cũ (tạo trước khi có IPA) → Kiểm tra vẫn phát bình thường, không bị crash (do `words` là optional).
 
+
+---
+
+## 🆕 Phase 4: Import from Article URL
+
+> Thay vì phải điền từng trường (Title, Image, Content), người dùng chỉ cần dán link một bài báo (article). Hệ thống sẽ tự động trích xuất nội dung (Scrape) và điền vào form để người dùng duyệt (Review) trước khi tạo bài luyện tập.
+
+### Architecture Decision: Web Scraping
+Sử dụng thư viện `@mozilla/readability` và `jsdom` để bóc tách nội dung tĩnh từ URL. Đây là công nghệ đằng sau tính năng "Reader View" của Firefox, đảm bảo bóc tách chính xác nội dung bài viết, loại bỏ hoàn toàn quảng cáo, menu, và footer.
+- Cài đặt thêm: `pnpm add @mozilla/readability jsdom` và types tương ứng.
+- Phân tích DOM bằng `JSDOM`.
+- Lấy Title, Text Content thông qua `Readability(doc).parse()`.
+- Lấy Thumbnail thông qua fallback DOM query (`<meta property="og:image">`) vì Readability không cung cấp ảnh cover.
+
+### Task 22: API Route — GET /api/story-shadowing/scrape
+
+**Files:**
+- Create: `src/app/api/story-shadowing/scrape/route.ts`
+
+- [ ] **Step 1: Viết API endpoint nhận tham số `?url=...`**
+- [ ] **Step 2: Lấy dữ liệu với fetch + Readability**
+  - Fetch HTML thô, nạp vào `JSDOM`.
+  - Dùng `Readability` parse để lấy `title`, `textContent`.
+  - Fallback query ảnh thumbnail.
+  - Trả về JSON `{ title, thumbnail, text }`.
+
+### Task 23: UI — Cập nhật Create Page
+
+**Files:**
+- Modify: `src/app/apps/story-shadowing/create/page.tsx`
+
+- [ ] **Step 1: Thêm Toggle/Tab chọn phương thức nhập liệu**
+  - Chia UI làm 2 phần: "Nhập thủ công" và "Nhập từ Link".
+- [ ] **Step 2: Flow "Nhập từ Link"**
+  - Hiển thị Input nhập URL + Nút "Phân tích link".
+  - Gọi API `/scrape` với hiệu ứng loading.
+- [ ] **Step 3: Bước duyệt nội dung (Review)**
+  - Tự động điền dữ liệu trả về từ API vào form (Title, Thumbnail, Text).
+  - Người dùng xem trước, có thể chỉnh sửa lại text (xóa bớt rác/quảng cáo nếu có).
+  - Bấm "Tạo bài luyện tập" để gọi flow tạo agent như cũ.
 
 *Made by Anh Tu - Share to be share*

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
 
 export default function CreatePlayerPage() {
+  const [inputType, setInputType] = useState<"manual" | "url">("url");
+  const [urlInput, setUrlInput] = useState("");
+  const [scraping, setScraping] = useState(false);
+
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState("");
   const [text, setText] = useState("");
@@ -13,6 +17,28 @@ export default function CreatePlayerPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { fetchSSE } = useAgentFetch();
+
+  const handleScrape = async () => {
+    if (!urlInput) return;
+    setScraping(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/story-shadowing/scrape?url=${encodeURIComponent(urlInput)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi khi phân tích link");
+
+      setTitle(data.title || "");
+      setThumbnail(data.thumbnail || "");
+      setText(data.text || "");
+
+      // Chuyển về tab manual để user review
+      setInputType("manual");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setScraping(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,78 +72,128 @@ export default function CreatePlayerPage() {
         <h1 className="text-2xl font-bold text-slate-900">Tạo bài luyện tập mới</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-700">Tiêu đề (Tùy chọn)</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ví dụ: Luyện đọc 10/10/2026"
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-700">Ảnh bìa / Thumbnail URL (Tùy chọn)</label>
-          <input
-            type="url"
-            value={thumbnail}
-            onChange={(e) => setThumbnail(e.target.value)}
-            placeholder="https://example.com/image.jpg"
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-700">Giọng đọc (Voice)</label>
-          <select
-            value={voice}
-            onChange={(e) => setVoice(e.target.value)}
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700 bg-white"
-          >
-            <optgroup label="Giọng Cao Cấp (Journey)">
-              <option value="en-US-Journey-F">Nữ - Tự nhiên & Biểu cảm (Journey F)</option>
-              <option value="en-US-Journey-D">Nam - Tự nhiên & Biểu cảm (Journey D)</option>
-            </optgroup>
-            <optgroup label="Giọng Truyền Thống (Standard)">
-              <option value="en-US-Standard-C">Nữ - Tiêu chuẩn (Standard C)</option>
-              <option value="en-US-Standard-D">Nam - Tiêu chuẩn (Standard D)</option>
-            </optgroup>
-            <optgroup label="Giọng Neural (Chất lượng cao)">
-              <option value="en-US-Neural2-H">Nữ - Ấm áp (Neural2 H)</option>
-              <option value="en-US-Neural2-J">Nam - Trầm ấm (Neural2 J)</option>
-            </optgroup>
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-700">Đoạn văn tiếng Anh <span className="text-red-500">*</span></label>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Dán đoạn văn tiếng Anh vào đây... (10–10000 ký tự)"
-            className="w-full h-48 p-4 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
-            maxLength={10000}
-            required
-          />
-          <div className="flex justify-between text-xs text-slate-400">
-            <span>{text.length} / 10000 ký tự</span>
-          </div>
-        </div>
-
-        {error && (
-          <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
-        )}
-
+      {/* Tabs */}
+      <div className="flex p-1 bg-slate-100 rounded-xl">
         <button
-          type="submit"
-          disabled={loading || text.length < 10}
-          className="w-full py-4 px-6 bg-[#FFBA49] text-slate-900 font-bold rounded-xl hover:bg-[#e6a640] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+          onClick={() => setInputType("manual")}
+          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "manual" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
         >
-          {loading ? "Đang xử lý ..." : "Tạo bài luyện tập"}
+          Nhập thủ công
         </button>
-      </form>
+        <button
+          onClick={() => setInputType("url")}
+          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "url" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
+        >
+          Nhập từ Link bài báo
+        </button>
+      </div>
+
+      {inputType === "url" && (
+        <div className="space-y-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Đường dẫn bài viết (URL)</label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder="https://example.com/article..."
+                className="flex-1 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
+                onKeyDown={(e) => e.key === 'Enter' && handleScrape()}
+              />
+              <button
+                onClick={handleScrape}
+                disabled={!urlInput || scraping}
+                className="px-6 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                {scraping ? "Đang xử lý..." : "Phân tích"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">Hệ thống sẽ tự động bóc tách Tiêu đề, Hình ảnh và Nội dung bài viết từ link bạn cung cấp.</p>
+          </div>
+
+          {error && (
+            <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
+          )}
+        </div>
+      )}
+
+      {inputType === "manual" && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Tiêu đề (Tùy chọn)</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ví dụ: Luyện đọc 10/10/2026"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Ảnh bìa / Thumbnail URL (Tùy chọn)</label>
+            <input
+              type="url"
+              value={thumbnail}
+              onChange={(e) => setThumbnail(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Giọng đọc (Voice)</label>
+            <select
+              value={voice}
+              onChange={(e) => setVoice(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700 bg-white"
+            >
+              <optgroup label="Giọng Cao Cấp (Journey)">
+                <option value="en-US-Journey-F">Nữ - Tự nhiên & Biểu cảm (Journey F)</option>
+                <option value="en-US-Journey-D">Nam - Tự nhiên & Biểu cảm (Journey D)</option>
+              </optgroup>
+              <optgroup label="Giọng Truyền Thống (Standard)">
+                <option value="en-US-Standard-C">Nữ - Tiêu chuẩn (Standard C)</option>
+                <option value="en-US-Standard-D">Nam - Tiêu chuẩn (Standard D)</option>
+              </optgroup>
+              <optgroup label="Giọng Neural (Chất lượng cao)">
+                <option value="en-US-Neural2-H">Nữ - Ấm áp (Neural2 H)</option>
+                <option value="en-US-Neural2-J">Nam - Trầm ấm (Neural2 J)</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Đoạn văn tiếng Anh <span className="text-red-500">*</span></label>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Dán đoạn văn tiếng Anh vào đây... (10–10000 ký tự)"
+              className="w-full h-48 p-4 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
+              maxLength={10000}
+              required
+            />
+            <div className="flex justify-between text-xs text-slate-400">
+              <span>{text.length} / 10000 ký tự</span>
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || text.length < 10}
+            className="w-full py-4 px-6 bg-[#FFBA49] text-slate-900 font-bold rounded-xl hover:bg-[#e6a640] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+          >
+            {loading ? "Đang xử lý ..." : "Tạo bài luyện tập"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

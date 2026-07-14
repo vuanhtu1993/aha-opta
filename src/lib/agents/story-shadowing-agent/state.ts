@@ -21,6 +21,9 @@ export const StorybookAgentState = Annotation.Root({
   }),
 
   // === Metadata ===
+  keywords: Annotation<Array<{ word: string; explanation: string; level: "medium" | "hard" }>>({
+    reducer: (_, y) => y,
+  }),
   error: Annotation<string | null>(),  // Lỗi nếu có
 });
 

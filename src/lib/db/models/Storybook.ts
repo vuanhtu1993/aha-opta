@@ -12,11 +12,18 @@ export interface IStorybookSentence {
   words?: IStorybookSentenceWord[];
 }
 
+export interface IStorybookKeyword {
+  word: string;
+  explanation: string;
+  level: "medium" | "hard";
+}
+
 export interface IStorybook extends Document {
   title: string;
   thumbnail?: string;
   originalText: string;
   sentences: IStorybookSentence[];
+  keywords?: IStorybookKeyword[];
   level: "easy" | "medium" | "hard";
   voice: string;
   speakingRate: number;
@@ -35,12 +42,19 @@ const StorybookSentenceSchema = new Schema<IStorybookSentence>({
   },
 }, { _id: false });
 
+const StorybookKeywordSchema = new Schema<IStorybookKeyword>({
+  word: { type: String, required: true },
+  explanation: { type: String, required: true },
+  level: { type: String, enum: ["medium", "hard"], required: true }
+}, { _id: false });
+
 const StorybookSchema = new Schema<IStorybook>(
   {
     title: { type: String, required: true },
     thumbnail: { type: String, required: false },
     originalText: { type: String, required: true },
     sentences: { type: [StorybookSentenceSchema], required: true },
+    keywords: { type: [StorybookKeywordSchema], required: false, default: undefined },
     level: { type: String, enum: ["easy", "medium", "hard"], required: true },
     voice: { type: String, required: true },
     speakingRate: { type: Number, required: true },
@@ -50,7 +64,10 @@ const StorybookSchema = new Schema<IStorybook>(
   }
 );
 
-// Tránh lỗi overwrite model trong môi trường dev Next.js
-const Storybook = mongoose.models.Storybook || mongoose.model<IStorybook>("Storybook", StorybookSchema);
+// Tránh lỗi overwrite model và cập nhật schema mới nhất trong môi trường dev Next.js
+if (mongoose.models.Storybook_v2) {
+  delete mongoose.models.Storybook_v2;
+}
+const Storybook = mongoose.model<IStorybook>("Storybook_v2", StorybookSchema, "storybooks");
 
 export default Storybook;

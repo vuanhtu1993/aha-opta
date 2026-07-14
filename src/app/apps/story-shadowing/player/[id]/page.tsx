@@ -13,6 +13,9 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [keywords, setKeywords] = useState<any[]>([]);
+  const [step, setStep] = useState<"vocab" | "shadowing">("shadowing");
+
   useEffect(() => {
     fetch(`/api/story-shadowing/${id}`)
       .then((res) => {
@@ -23,6 +26,10 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         setSentences(data.sentences);
         setTitle(data.title);
         setLevel(data.level);
+        if (data.keywords && data.keywords.length > 0) {
+          setKeywords(data.keywords);
+          setStep("vocab");
+        }
       })
       .catch((err) => {
         setError(err.message);
@@ -45,6 +52,48 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
           className="text-indigo-600 underline"
         >
           Quay lại trang chủ
+        </button>
+      </div>
+    );
+  }
+
+  if (step === "vocab") {
+    return (
+      <div className="max-w-2xl mx-auto space-y-8 py-12">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Từ vựng cần nhớ</h1>
+            <p className="text-slate-500 mt-1">Nắm vững các từ khoá này sẽ giúp bạn hiểu bài đọc dễ dàng hơn.</p>
+          </div>
+          <button
+            onClick={() => router.push("/apps/story-shadowing")}
+            className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            ← Thoát
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {keywords.map((kw, i) => (
+            <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">{kw.word}</h3>
+                <p className="text-slate-600 mt-1">{kw.explanation}</p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
+                kw.level === "hard" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+              }`}>
+                {kw.level.toUpperCase()}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setStep("shadowing")}
+          className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors text-lg shadow-md"
+        >
+          Tôi đã hiểu, bắt đầu luyện tập!
         </button>
       </div>
     );

@@ -8,6 +8,15 @@ export const WordSchema = z.object({
 
 export type Word = z.infer<typeof WordSchema>;
 
+// Schema cho từ vựng khó được trích xuất
+export const KeywordSchema = z.object({
+  word: z.string(),
+  explanation: z.string(),
+  level: z.enum(["medium", "hard"]),
+});
+
+export type Keyword = z.infer<typeof KeywordSchema>;
+
 // Schema cho 1 câu đã được xử lý (có text + audio + IPA)
 export const SentenceSchema = z.object({
   id: z.number(),           // Thứ tự câu (0-indexed)
@@ -21,6 +30,7 @@ export type Sentence = z.infer<typeof SentenceSchema>;
 // Schema response từ API /api/story-shadowing/process
 export const ProcessResponseSchema = z.object({
   sentences: z.array(SentenceSchema),
+  keywords: z.array(KeywordSchema).optional(),
   totalCount: z.number(),
   id: z.string(),
 });
@@ -42,4 +52,9 @@ export const GeminiSentenceListSchema = z.object({
     // Mảng từ kèm phiên âm IPA — Gemini tự động generate
     words: z.array(WordSchema),
   })),
+});
+
+// Schema trả về từ Gemini khi trích xuất từ vựng
+export const GeminiKeywordListSchema = z.object({
+  keywords: z.array(KeywordSchema),
 });

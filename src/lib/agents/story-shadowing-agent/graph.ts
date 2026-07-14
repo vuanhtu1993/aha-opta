@@ -2,6 +2,7 @@ import { StateGraph, START, END } from "@langchain/langgraph";
 import { StorybookAgentState } from "./state";
 import { sentenceSplitterNode } from "./nodes/sentence-splitter.node";
 import { ttsGeneratorNode } from "./nodes/tts-generator.node";
+import { keywordExtractorNode } from "./nodes/keyword-extractor.node";
 
 // 1. Khởi tạo Graph
 const graphBuilder = new StateGraph<typeof StorybookAgentState, unknown, unknown, string>(StorybookAgentState);
@@ -9,11 +10,19 @@ const graphBuilder = new StateGraph<typeof StorybookAgentState, unknown, unknown
 // 2. Thêm Node
 graphBuilder.addNode("sentenceSplitter", sentenceSplitterNode);
 graphBuilder.addNode("ttsGenerator", ttsGeneratorNode);
+graphBuilder.addNode("keywordExtractor", keywordExtractorNode);
 
-// 3. Định nghĩa luồng: START → chia câu → tạo audio → END
+// 3. Định nghĩa luồng
+// Từ START tẽ ra 2 nhánh song song
 graphBuilder.addEdge(START, "sentenceSplitter");
+graphBuilder.addEdge(START, "keywordExtractor");
+
+// Nhánh 1: sentenceSplitter -> ttsGenerator -> END
 graphBuilder.addEdge("sentenceSplitter", "ttsGenerator");
 graphBuilder.addEdge("ttsGenerator", END);
+
+// Nhánh 2: keywordExtractor -> END
+graphBuilder.addEdge("keywordExtractor", END);
 
 // 4. Compile
 export const storybookAgentGraph = graphBuilder.compile();
@@ -34,6 +43,7 @@ export async function runStorybookPipeline(rawText: string, voice: string = "en-
   return {
     sentences: finalState.sentences,
     level: finalState.level,
-    speakingRate: finalState.speakingRate
+    speakingRate: finalState.speakingRate,
+    keywords: finalState.keywords || []
   };
 }

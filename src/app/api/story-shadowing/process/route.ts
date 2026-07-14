@@ -23,7 +23,7 @@ export const POST = withAgentSSE(async (request: NextRequest, log) => {
     log(`[API Process] Nhận yêu cầu tạo bài mới...`);
     log(`[API Process] Đang bắt đầu LangGraph Pipeline...`);
     // Chạy LangGraph pipeline (blocking ~5-10s do TTS)
-    const { sentences, level, speakingRate } = await runStorybookPipeline(text, voice, log);
+    const { sentences, level, speakingRate, keywords } = await runStorybookPipeline(text, voice, log);
 
     // Lưu vào database
     log(`[API Process] Đang lưu vào cơ sở dữ liệu...`);
@@ -41,6 +41,7 @@ export const POST = withAgentSSE(async (request: NextRequest, log) => {
       thumbnail: thumbnail || undefined,
       originalText: text,
       sentences: sentences,
+      keywords: keywords,
       level: level,
       voice: voice,
       speakingRate: speakingRate,

@@ -23,15 +23,23 @@ export function withAgentSSE(handler: AgentSSEHandler) {
         try {
           const result = await handler(req, log);
           const data = JSON.stringify({ result });
-          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-          controller.close();
+          try {
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            controller.close();
+          } catch (e) {
+            console.error("[SSE] Stream already closed by client before completion.");
+          }
         } catch (error: unknown) {
           console.error("[SSE Error]", error);
           const errData = JSON.stringify({ 
             error: error instanceof Error ? error.message : "Lỗi không xác định" 
           });
-          controller.enqueue(encoder.encode(`data: ${errData}\n\n`));
-          controller.close();
+          try {
+            controller.enqueue(encoder.encode(`data: ${errData}\n\n`));
+            controller.close();
+          } catch (e) {
+            // Ignore if already closed
+          }
         }
       },
     });

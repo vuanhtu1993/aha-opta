@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
 
 export default function CreatePlayerPage() {
-  const [inputType, setInputType] = useState<"manual" | "url">("url");
+  const [inputType, setInputType] = useState<"manual" | "url" | "youtube">("url");
   const [urlInput, setUrlInput] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [scraping, setScraping] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -37,6 +38,27 @@ export default function CreatePlayerPage() {
       setError((err as Error).message);
     } finally {
       setScraping(false);
+    }
+  };
+
+  const handleYoutubeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!youtubeUrl) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchSSE<{ id: string }>("/api/story-shadowing/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ youtubeUrl }),
+      });
+
+      router.push(`/apps/story-shadowing/player/${data.id}`);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,14 +101,21 @@ export default function CreatePlayerPage() {
           className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "manual" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
             }`}
         >
-          Nhập thủ công
+          Nhập Text
         </button>
         <button
           onClick={() => setInputType("url")}
           className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "url" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
             }`}
         >
-          Nhập từ Link bài báo
+          Nhập Article URL
+        </button>
+        <button
+          onClick={() => setInputType("youtube")}
+          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "youtube" ? "bg-[#FF0000] text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
+        >
+          Nhập YouTube
         </button>
       </div>
 
@@ -117,6 +146,37 @@ export default function CreatePlayerPage() {
           {error && (
             <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
           )}
+        </div>
+      )}
+
+      {inputType === "youtube" && (
+        <div className="space-y-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <form onSubmit={handleYoutubeSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Đường dẫn video YouTube</label>
+              <input
+                type="url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF0000] text-slate-700"
+                required
+              />
+              <p className="text-xs text-slate-500">Video phải có tính năng hiển thị phụ đề (CC) tiếng Anh.</p>
+            </div>
+
+            {error && (
+              <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !youtubeUrl}
+              className="w-full py-4 px-6 bg-[#FF0000] text-white font-bold rounded-xl hover:bg-[#cc0000] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+            >
+              {loading ? "Đang xử lý Video ..." : "Phân tích Video"}
+            </button>
+          </form>
         </div>
       )}
 

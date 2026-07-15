@@ -1,6 +1,8 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
+import YouTube, { YouTubePlayer } from "react-youtube";
 import { useShadowingPlayer } from "@/lib/hooks/use-shadowing-player";
+import { useYouTubeShadowingPlayer } from "@/lib/hooks/useYouTubeShadowingPlayer";
 import { SentenceCard } from "./sentence-card";
 import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
 
@@ -9,11 +11,43 @@ interface ShadowingPlayerProps {
   title?: string;
   level?: "easy" | "medium" | "hard" | null;
   onBack?: () => void;
+  sourceType?: "text" | "youtube";
+  youtubeVideoId?: string;
 }
 
-export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPlayerProps) {
-  const { playerState, currentIndex, countdown, play, pause, goToNext, goToPrev, isPlaying } =
-    useShadowingPlayer(sentences);
+export function ShadowingPlayer({ sentences, title, level, onBack, sourceType = "text", youtubeVideoId }: ShadowingPlayerProps) {
+  // === Text Player Hook ===
+  const textPlayer = useShadowingPlayer(sourceType === "text" ? sentences : []);
+
+  // === YouTube Player Hook ===
+  const [ytPlayer, setYtPlayer] = useState<YouTubePlayer | null>(null);
+  const youtubePlayer = useYouTubeShadowingPlayer(sourceType === "youtube" ? sentences : [], ytPlayer);
+
+  // Chọn player phù hợp
+  const isYoutube = sourceType === "youtube";
+  const player = isYoutube ? youtubePlayer : textPlayer;
+
+  // Ánh xạ State (Text dùng "AI_SPEAKING", YT dùng "PLAYING_AUDIO")
+  const currentState = isYoutube ? (player.playerState === "PLAYING_AUDIO" ? "AI_SPEAKING" : player.playerState) : player.playerState;
+
+  const currentIndex = isYoutube ? youtubePlayer.currentSentenceIndex : textPlayer.currentIndex;
+  const countdown = isYoutube ? youtubePlayer.countdownMs : textPlayer.countdown;
+  const isPlaying = isYoutube ? youtubePlayer.playerState === "PLAYING_AUDIO" || youtubePlayer.playerState === "USER_SHADOWING" : textPlayer.isPlaying;
+
+  const play = isYoutube ? () => youtubePlayer.playSentence(currentIndex) : textPlayer.play;
+  const pause = isYoutube ? youtubePlayer.pause : textPlayer.pause;
+
+  const goToNext = useCallback(() => {
+    if (currentIndex < sentences.length - 1) {
+      isYoutube ? youtubePlayer.playSentence(currentIndex + 1) : textPlayer.goToNext();
+    }
+  }, [currentIndex, sentences.length, isYoutube, youtubePlayer, textPlayer]);
+
+  const goToPrev = useCallback(() => {
+    if (currentIndex > 0) {
+      isYoutube ? youtubePlayer.playSentence(currentIndex - 1) : textPlayer.goToPrev();
+    }
+  }, [currentIndex, isYoutube, youtubePlayer, textPlayer]);
 
   // Auto-scroll tới câu đang đọc
   useEffect(() => {
@@ -23,8 +57,23 @@ export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPl
     }
   }, [currentIndex]);
 
+  const handleYtReady = (e: { target: YouTubePlayer }) => {
+    setYtPlayer(e.target);
+  };
+
   return (
     <div className="space-y-4">
+      {/* Ẩn YouTube Iframe theo Option 2 */}
+      {isYoutube && youtubeVideoId && (
+        <div style={{ display: 'none' }}>
+          <YouTube
+            videoId={youtubeVideoId}
+            opts={{ height: '0', width: '0', playerVars: { controls: 0, disablekb: 1 } }}
+            onReady={handleYtReady}
+          />
+        </div>
+      )}
+
       {/* Header (Title, Back Button, Player State, Level) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -39,23 +88,22 @@ export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPl
               </svg>
             </button>
           )}
-          
+
           <h1 className="text-xl font-bold text-slate-800 truncate" title={title || "Luyện Shadowing"}>
             {title || "Luyện Shadowing"}
           </h1>
 
           {/* Trạng thái Player Inline */}
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${
-            playerState === "AI_SPEAKING" ? "bg-blue-50 text-blue-700" :
-            playerState === "USER_SHADOWING" ? "bg-[#FFBA49]/10 text-[#d9962a]" :
-            playerState === "DONE" ? "bg-green-50 text-green-700" :
-            "bg-slate-50 text-slate-600"
-          }`}>
-            {playerState === "AI_SPEAKING" && <><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> AI đang đọc</>}
-            {playerState === "USER_SHADOWING" && <><span className="w-1.5 h-1.5 rounded-full bg-[#FFBA49] animate-bounce" /> Lặp lại theo AI</>}
-            {playerState === "IDLE" && "Sẵn sàng"}
-            {playerState === "PAUSED" && "Tạm dừng"}
-            {playerState === "DONE" && "Hoàn thành"}
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${currentState === "AI_SPEAKING" ? "bg-blue-50 text-blue-700" :
+              currentState === "USER_SHADOWING" ? "bg-[#FFBA49]/10 text-[#d9962a]" :
+                currentState === "DONE" ? "bg-green-50 text-green-700" :
+                  "bg-slate-50 text-slate-600"
+            }`}>
+            {currentState === "AI_SPEAKING" && <><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> {isYoutube ? "Speaker đang đọc" : "AI đang đọc"}</>}
+            {currentState === "USER_SHADOWING" && <><span className="w-1.5 h-1.5 rounded-full bg-[#FFBA49] animate-bounce" /> Lặp lại theo {isYoutube ? "Speaker" : "AI"}</>}
+            {currentState === "IDLE" || currentState === "WAITING" ? "Sẵn sàng" : ""}
+            {currentState === "PAUSED" && "Tạm dừng"}
+            {currentState === "DONE" && "Hoàn thành"}
           </div>
         </div>
       </div>
@@ -70,7 +118,7 @@ export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPl
             isActive={i === currentIndex}
             isDone={i < currentIndex}
             shadowingProgress={
-              i === currentIndex && playerState === "USER_SHADOWING"
+              i === currentIndex && currentState === "USER_SHADOWING"
                 ? { totalMs: countdown + 1000, remainingMs: countdown }
                 : undefined
             }
@@ -106,14 +154,15 @@ export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPl
               </button>
             ) : (
               <button
-                onClick={play}
-                className="px-8 py-3 rounded-full bg-[#FFBA49] text-slate-900 font-bold hover:bg-[#e6a640] transition-colors shadow-lg flex items-center gap-2"
+                onClick={play as () => void}
+                disabled={isYoutube && !ytPlayer} // Prevent play before YouTube loads
+                className="px-8 py-3 rounded-full bg-[#FFBA49] text-slate-900 font-bold hover:bg-[#e6a640] transition-colors shadow-lg flex items-center gap-2 disabled:opacity-50"
                 aria-label="Phát"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                 </svg>
-                {playerState === "PAUSED" ? "Tiếp tục" : "Đọc đoạn"}
+                {currentState === "PAUSED" ? "Tiếp tục" : (isYoutube && !ytPlayer ? "Đang tải Audio..." : "Đọc đoạn")}
               </button>
             )}
 
@@ -128,7 +177,7 @@ export function ShadowingPlayer({ sentences, title, level, onBack }: ShadowingPl
               </svg>
             </button>
           </div>
-          
+
           {/* Progress tổng */}
           <div className="text-center text-xs font-semibold text-slate-400 mt-1 sm:mt-0 sm:absolute sm:right-0">
             {Math.min(currentIndex + 1, sentences.length)} / {sentences.length}

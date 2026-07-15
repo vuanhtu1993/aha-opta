@@ -25,6 +25,8 @@ export const SentenceSchema = z.object({
   text: z.string(),         // Nội dung câu
   audioBase64: z.string().optional(), // Base64 audio (MP3), gán sau khi TTS xong
   words: z.array(WordSchema).optional(), // Mảng từ kèm IPA, gọn từ Gemini
+  startMs: z.number().optional(),     // Dành cho YouTube
+  endMs: z.number().optional(),       // Dành cho YouTube
 });
 
 export type Sentence = z.infer<typeof SentenceSchema>;
@@ -35,6 +37,8 @@ export const ProcessResponseSchema = z.object({
   keywords: z.array(KeywordSchema).optional(),
   totalCount: z.number(),
   id: z.string(),
+  sourceType: z.enum(["text", "youtube"]).optional(),
+  youtubeVideoId: z.string().optional(),
 });
 
 export type ProcessResponse = z.infer<typeof ProcessResponseSchema>;

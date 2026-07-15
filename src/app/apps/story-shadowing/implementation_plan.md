@@ -1171,21 +1171,72 @@ Sử dụng thư viện `@mozilla/readability` và `jsdom` để bóc tách nộ
 - Modify: `src/lib/schemas/story-shadowing.schema.ts`
 - Modify: `src/lib/db/models/Storybook.ts`
 
-- [ ] Cập nhật `KeywordSchema` và `StorybookKeywordSchema` bổ sung `wordFamily: string[]` và `collocations: string[]`.
+- [x] Cập nhật `KeywordSchema` và `StorybookKeywordSchema` bổ sung `wordFamily: string[]` và `collocations: string[]`.
 
 ### Task 29: Nâng cấp AI Prompt
 
 **Files:**
 - Modify: `src/lib/agents/story-shadowing-agent/nodes/keyword-extractor.node.ts`
 
-- [ ] Giảm số lượng từ xuống 3-5 từ cốt lõi nhất.
-- [ ] Yêu cầu Gemini đóng vai chuyên gia ngôn ngữ, trả về thêm các dạng từ phái sinh (Word Family) và các cụm từ cố định liên quan (Collocations).
+- [x] Giảm số lượng từ xuống 3-5 từ cốt lõi nhất.
+- [x] Yêu cầu Gemini đóng vai chuyên gia ngôn ngữ, trả về thêm các dạng từ phái sinh (Word Family) và các cụm từ cố định liên quan (Collocations).
 
 ### Task 30: Accordion UI cho Player
 
 **Files:**
 - Modify: `src/app/apps/story-shadowing/player/[id]/page.tsx`
 
-- [ ] Cập nhật UI màn hình "Học từ vựng" sử dụng component Accordion (hoặc logic expand/collapse tự viết bằng React State) để ẩn/hiện Word Family & Collocations. Mặc định chỉ hiển thị Word và Explanation để tránh ngợp.
+- [x] Cập nhật UI màn hình "Học từ vựng" sử dụng component Accordion (hoặc logic expand/collapse tự viết bằng React State) để ẩn/hiện Word Family & Collocations. Mặc định chỉ hiển thị Word và Explanation để tránh ngợp.
 
 *Made by Anh Tu - Share to be share*
+
+---
+
+## 🆕 Phase 6: YouTube Video Shadowing (Real-world Audio Source)
+
+> Thay vì dựa vào Text-to-Speech (TTS) khô khan, người dùng có thể dán link một video YouTube tiếng Anh. Hệ thống sẽ tự động bóc băng phụ đề (Transcript), gộp câu chuẩn xác nhờ AI, và biến video đó thành tài liệu Shadowing thực tế.
+
+### 📊 Phân tích Khả thi (Feasibility)
+
+**1. Bóc tách Phụ đề (Transcript):** KHẢ THI CAO
+- Sử dụng package `youtube-transcript` (hoặc tương đương) ở phía server để lấy phụ đề tiếng Anh kèm theo timestamps (`offset`, `duration`). Hoàn toàn miễn phí, không cần API Key của Google.
+
+**2. Điều khiển Video (Playback Control):** KHẢ THI CAO
+- Sử dụng `react-youtube` (wrap của YouTube IFrame API) trên Client. Cho phép lập trình viên Play, Pause, và Seek đến khoảng thời gian bất kỳ bằng JavaScript.
+
+**3. Khớp câu chuẩn xác (Sentence Consolidation):** KHẢ THI
+- *Vấn đề:* Phụ đề YouTube thường bị ngắt đoạn ngẫu nhiên theo nhịp thở (ví dụ: Block 1: "This is a", Block 2: "simple test.").
+- *Giải pháp:* Dùng Gemini đóng vai biên tập viên, gộp các block rời rạc này thành một câu hoàn chỉnh, đồng thời tính toán lại `startMs` và `endMs` cho câu đó.
+
+### 🏗️ Kế hoạch Triển khai (Implementation Plan)
+
+#### Task 31: Cấu trúc Database & State
+- Bổ sung `sourceType: "text" | "youtube"` vào `Storybook` schema.
+- Thêm `youtubeVideoId: string` vào model.
+- Cập nhật `SentenceSchema` bổ sung trường `startMs` và `endMs` (dùng cho YouTube) bên cạnh `audioBase64` (dùng cho Text).
+
+#### Task 32: LangGraph Pipeline mới cho YouTube
+Xây dựng một `youtubeShadowingGraph` hoàn toàn mới:
+1. **Node 1 - Transcript Fetcher**: Lấy toàn bộ mảng phụ đề thô từ link YouTube.
+2. **Node 2 - Sentence Consolidator (Gemini)**: Gộp các block phụ đề thô thành các câu hoàn chỉnh, giữ nguyên timestamps.
+3. **Node 3 - Keyword Extractor & IPA**: Tái sử dụng logic của Phase 5.1 và Phase 3 để phân tích từ vựng và phiên âm IPA.
+
+#### Task 33: API Endpoint mới
+- Tạo `POST /api/story-shadowing/youtube` để nhận Link YouTube, parse ID và gọi LangGraph Pipeline ở Task 32.
+
+#### Task 34: Cập nhật UI Create Page
+- Form nhập liệu có thêm Tab "Nhập từ YouTube".
+- Tự động fetch tiêu đề và thumbnail của video YouTube qua `oEmbed` hoặc IFrame.
+
+#### Task 35: Viết lại Player Engine (React-YouTube)
+- Nâng cấp `useShadowingPlayer` (hoặc viết hook riêng `useYouTubeShadowingPlayer`):
+  - Thay vì phát thẻ `<audio>`, hook sẽ quản lý tham chiếu đến `YouTube Player`.
+  - Sử dụng vòng lặp `requestAnimationFrame` (hoặc `setInterval`) để theo dõi `player.getCurrentTime()`.
+  - Khi thời gian chạy tới `endMs` của câu hiện tại -> Dừng Video -> Chuyển state sang `USER_SHADOWING` -> Đếm ngược thời gian (dựa trên thời lượng câu) -> Hết giờ thì Play Video tiếp.
+
+> [!IMPORTANT]
+> **Open Question cho Anh Tú:**
+> Khi hiển thị YouTube Video trong trang Player, bạn muốn:
+> 1. **Hiển thị Video nhỏ (ở góc hoặc phía trên)** để người học xem khẩu hình miệng của người nói.
+> 2. **Ẩn hoàn toàn Video**, chỉ phát âm thanh giống hệt như phiên bản Text-to-Speech cũ để giữ UI đồng nhất.
+> Bạn muốn chọn Option nào?

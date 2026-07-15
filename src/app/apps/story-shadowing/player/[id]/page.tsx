@@ -72,6 +72,8 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [title, setTitle] = useState<string>("");
   const [level, setLevel] = useState<"easy" | "medium" | "hard" | null>(null);
+  const [sourceType, setSourceType] = useState<"text" | "youtube">("text");
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,6 +90,9 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         setSentences(data.sentences);
         setTitle(data.title);
         setLevel(data.level);
+        setSourceType(data.sourceType || "text");
+        setYoutubeVideoId(data.youtubeVideoId);
+        
         if (data.keywords && data.keywords.length > 0) {
           setKeywords(data.keywords);
           setStep("vocab");
@@ -157,6 +162,8 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         sentences={sentences} 
         title={title}
         level={level}
+        sourceType={sourceType}
+        youtubeVideoId={youtubeVideoId}
         onBack={() => router.push("/apps/story-shadowing")}
       />
     </div>

@@ -18,9 +18,9 @@ export const metadata: Metadata = {
     siteName: "Aha-Mind",
     images: [
       {
-        url: "/logo.svg",
-        width: 600,
-        height: 600,
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
         alt: "Aha-Mind Logo",
       },
     ],
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Aha-Mind | Tổ hợp Ứng dụng AI thông minh",
     description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
-    images: ["/logo.svg"],
+    images: ["/og-image.png"],
   },
 };
 

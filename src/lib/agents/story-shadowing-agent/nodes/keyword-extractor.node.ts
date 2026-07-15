@@ -11,15 +11,29 @@ const model = new ChatGoogleGenerativeAI({
 
 const structuredLlm = model.withStructuredOutput(GeminiKeywordListSchema);
 
-const SYSTEM_PROMPT = `You are a professional English teacher.
-Your task is to extract 5 to 10 key vocabulary words or phrases from the provided English text.
-Focus on words that are essential for understanding the main context of the text, specifically those at a "medium" (B1-B2) or "hard" (C1-C2) difficulty level.
+const SYSTEM_PROMPT = `You are an expert Linguistics teacher.
+Extract 3 to 5 most important core vocabulary words from the given text.
+Choose ONLY words that are difficult or essential for understanding the main context (B2 to C2 level).
+
 Rules:
-- Select 5 to 10 words/phrases.
-- For each word, provide a simple English explanation (B1 level) so the user can easily understand the context.
-- Classify the word's level as either "medium" or "hard".
-- Do NOT provide translation in other languages, only English.
-- Return ONLY valid JSON matching the requested schema.`;
+1. Explain the meaning in SIMPLE English (B1 level max).
+2. Classify difficulty level as "medium" or "hard".
+3. Provide wordFamily: an array of 2-3 common derived words (e.g., if word is "act", wordFamily can be ["action (n)", "actively (adv)", "active (adj)"]).
+4. Provide collocations: an array of 2-3 common collocations or phrases using the word in context (e.g., ["take action", "immediate action"]).
+5. Return ONLY a valid JSON object matching the requested schema.
+
+Example JSON:
+{
+  "keywords": [
+    {
+      "word": "shadowing",
+      "explanation": "A practice technique where you repeat speech immediately after hearing it.",
+      "level": "hard",
+      "wordFamily": ["shadow (v)", "shadowy (adj)"],
+      "collocations": ["shadowing technique", "practice shadowing"]
+    }
+  ]
+}`;
 
 // Hàm sleep để tránh rate limit khi chạy song song
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

@@ -13,6 +13,8 @@ export const KeywordSchema = z.object({
   word: z.string(),
   explanation: z.string(),
   level: z.enum(["medium", "hard"]),
+  wordFamily: z.array(z.string()).optional(),
+  collocations: z.array(z.string()).optional(),
 });
 
 export type Keyword = z.infer<typeof KeywordSchema>;

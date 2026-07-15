@@ -1116,7 +1116,76 @@ Sử dụng thư viện `@mozilla/readability` và `jsdom` để bóc tách nộ
   - Gọi API `/scrape` với hiệu ứng loading.
 - [ ] **Step 3: Bước duyệt nội dung (Review)**
   - Tự động điền dữ liệu trả về từ API vào form (Title, Thumbnail, Text).
-  - Người dùng xem trước, có thể chỉnh sửa lại text (xóa bớt rác/quảng cáo nếu có).
   - Bấm "Tạo bài luyện tập" để gọi flow tạo agent như cũ.
+
+---
+
+## 🆕 Phase 5: Core Vocabulary Extraction & Two-Step Player
+
+> Nhằm đảm bảo người học hiểu được cốt lõi bài viết trước khi luyện phát âm, hệ thống sẽ tự động trích xuất các từ khóa khó (Medium/Hard) và giải thích bằng tiếng Anh đơn giản (B1 level). Giao diện Player được chia thành 2 bước: Học từ vựng -> Shadowing.
+
+### Task 24: Schema & DB Update
+
+**Files:**
+- Modify: `src/lib/schemas/story-shadowing.schema.ts`
+- Modify: `src/lib/db/models/Storybook.ts`
+
+- [x] Tạo `KeywordSchema` trong Zod.
+- [x] Cập nhật Mongoose Schema `StorybookKeywordSchema` để lưu `keywords`.
+
+### Task 25: LangGraph Parallel Execution
+
+**Files:**
+- Create: `src/lib/agents/story-shadowing-agent/nodes/keyword-extractor.node.ts`
+- Modify: `src/lib/agents/story-shadowing-agent/graph.ts`
+
+- [x] Viết `keywordExtractorNode` gọi Gemini để trích xuất 5-10 từ vựng.
+- [x] Cập nhật `graph.ts` để chạy song song `sentenceSplitter` và `keywordExtractor` từ `START`.
+- [x] Quản lý Gemini Rate Limit (thêm sleep 1s và maxRetries).
+
+### Task 26: API Updates
+
+**Files:**
+- Modify: `src/app/api/story-shadowing/process/route.ts`
+
+- [x] Nhận `keywords` từ pipeline và lưu vào MongoDB trong lúc tạo Storybook.
+
+### Task 27: UI Updates (Player Page)
+
+**Files:**
+- Modify: `src/app/apps/story-shadowing/player/[id]/page.tsx`
+
+- [x] Thiết lập State `step: "vocab" | "shadowing"`.
+- [x] Xây dựng UI Danh sách từ vựng.
+- [x] Thêm nút chuyển sang bước Shadowing.
+
+---
+
+## 🆕 Phase 5.1: Deep Vocabulary (Word Family & Collocations) - Option 1: Accordion UI
+
+> Nâng cấp tính năng trích xuất từ vựng bằng cách áp dụng phương pháp học theo họ từ (Word Family) và cụm từ cố định (Collocations). Thay vì học từ đơn lẻ, người học sẽ nắm được cách sử dụng từ trong ngữ cảnh tự nhiên như người bản ngữ. Option UI được chọn là **Accordion** để tránh quá tải nhận thức.
+
+### Task 28: Mở rộng Schema & Database
+
+**Files:**
+- Modify: `src/lib/schemas/story-shadowing.schema.ts`
+- Modify: `src/lib/db/models/Storybook.ts`
+
+- [ ] Cập nhật `KeywordSchema` và `StorybookKeywordSchema` bổ sung `wordFamily: string[]` và `collocations: string[]`.
+
+### Task 29: Nâng cấp AI Prompt
+
+**Files:**
+- Modify: `src/lib/agents/story-shadowing-agent/nodes/keyword-extractor.node.ts`
+
+- [ ] Giảm số lượng từ xuống 3-5 từ cốt lõi nhất.
+- [ ] Yêu cầu Gemini đóng vai chuyên gia ngôn ngữ, trả về thêm các dạng từ phái sinh (Word Family) và các cụm từ cố định liên quan (Collocations).
+
+### Task 30: Accordion UI cho Player
+
+**Files:**
+- Modify: `src/app/apps/story-shadowing/player/[id]/page.tsx`
+
+- [ ] Cập nhật UI màn hình "Học từ vựng" sử dụng component Accordion (hoặc logic expand/collapse tự viết bằng React State) để ẩn/hiện Word Family & Collocations. Mặc định chỉ hiển thị Word và Explanation để tránh ngợp.
 
 *Made by Anh Tu - Share to be share*

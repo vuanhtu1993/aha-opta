@@ -8,8 +8,31 @@ import { GlobalFooter } from "@/components/layout/GlobalFooter";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Aha Tools - Tiện ích Gia đình",
-  description: "Tập hợp các ứng dụng tiện ích nhỏ dành cho gia đình.",
+  metadataBase: new URL("https://aha-mind.vercel.app"),
+  title: "Aha-Mind | Tổ hợp Ứng dụng AI thông minh",
+  description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn. Cung cấp các tiện ích như Luyện nói tiếng Anh (Shadowing), Âm thanh trắng (White Noise), và Thống kê bóng đá (Opta).",
+  openGraph: {
+    title: "Aha-Mind | Tổ hợp Ứng dụng AI thông minh",
+    description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
+    url: "https://aha-mind.vercel.app",
+    siteName: "Aha-Mind",
+    images: [
+      {
+        url: "/logo.svg",
+        width: 600,
+        height: 600,
+        alt: "Aha-Mind Logo",
+      },
+    ],
+    locale: "vi_VN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Aha-Mind | Tổ hợp Ứng dụng AI thông minh",
+    description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
+    images: ["/logo.svg"],
+  },
 };
 
 export default function RootLayout({
@@ -17,8 +40,30 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Aha-Mind",
+    url: "https://aha-mind.vercel.app",
+    description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
+    publisher: {
+      "@type": "Organization",
+      name: "Anh Tu",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://aha-mind.vercel.app/logo.svg"
+      }
+    }
+  };
+
   return (
     <html lang="vi" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={`${inter.className} min-h-screen bg-slate-50 text-slate-900 flex flex-col`}>
         {/* Navigation Bar (Header) - Đóng vai trò làm lớp vỏ (Shell) cho các Micro Frontend */}
         <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md shadow-sm">

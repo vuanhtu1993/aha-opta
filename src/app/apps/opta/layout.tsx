@@ -5,8 +5,14 @@
  * Màu chủ đạo: Light Blue (#7DB0FF), Vibrant Blue (#3B5BDB), Deep Navy (#121C42).
  */
 
+import type { Metadata } from "next";
 import { ReactNode } from "react";
 import { OptaNavbar } from "./components/OptaNavbar";
+
+export const metadata: Metadata = {
+  title: "World Cup 2026 Predictions | Aha-Mind Opta",
+  description: "Dự đoán World Cup 2026 dựa trên chỉ số Opta. Phân tích sức mạnh đội tuyển, bảng xếp hạng và khả năng vô địch.",
+};
 
 export default function OptaLayout({ children }: { children: ReactNode }) {
   return (

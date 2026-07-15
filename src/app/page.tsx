@@ -12,7 +12,7 @@ export default function Home() {
           Chào mừng đến với <span className="text-emerald-500">AHA-MIND</span>
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Tập hợp các tiện ích nhỏ gọn (Micro-apps) giúp cuộc sống gia đình trở nên dễ dàng hơn.
+          Ứng dụng AI agent, micro frontend application giúp cuộc sống trở nên dễ dàng hơn.
           Được thiết kế dựa trên tư duy chia để trị, với hiệu suất và trải nghiệm đặt lên hàng đầu.
         </p>
       </section>
@@ -30,8 +30,8 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link 
-              href="/apps/white-noise" 
+            <Link
+              href="/apps/white-noise"
               className={cn(buttonVariants({ variant: "default" }), "w-full bg-blue-600 hover:bg-blue-700 text-white text-center")}
             >
               Mở ứng dụng
@@ -51,8 +51,8 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link 
-              href="/apps/opta" 
+            <Link
+              href="/apps/opta"
               className={cn(buttonVariants({ variant: "default" }), "w-full bg-green-600 hover:bg-green-700 text-white text-center")}
             >
               Khám phá

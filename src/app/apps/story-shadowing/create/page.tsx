@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
 
 export default function CreatePlayerPage() {
-  const [inputType, setInputType] = useState<"manual" | "url" | "youtube">("url");
+  const [inputType, setInputType] = useState<"manual" | "url" | "youtube">("youtube");
   const [urlInput, setUrlInput] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [scraping, setScraping] = useState(false);

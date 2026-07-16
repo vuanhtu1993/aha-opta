@@ -36,10 +36,12 @@ export async function youtubeTranscriptFetcherNode(
         }
 
         if (tracks.length > 0) {
-          // Tìm track không phải là "asr" (Auto-generated)
-          let bestTrack = tracks.find((t: any) => t.kind !== 'asr');
+          // Chỉ lấy track tiếng Anh (en) và thủ công (không phải asr)
+          let bestTrack = tracks.find((t: any) => t.languageCode.startsWith('en') && t.kind !== 'asr');
+          
           if (!bestTrack) {
-            bestTrack = tracks[0]; // Fallback về track đầu tiên (ASR)
+            // Ném lỗi để API trả về báo cho người dùng
+            throw new Error("BAD_TRANSCRIPT");
           }
           // Gọi lại hàm gốc nhưng chỉ với 1 track xịn nhất
           return originalFetchTranscriptFromTracks.call(this, [bestTrack], vId, config);
@@ -64,8 +66,11 @@ export async function youtubeTranscriptFetcherNode(
         duration: t.duration,
       })),
     };
-  } catch (err) {
+  } catch (err: any) {
     console.error("[YouTubeTranscriptFetcher] Error:", err);
+    if (err.message === "BAD_TRANSCRIPT") {
+      return { error: "Video này không có phụ đề tiếng Anh thủ công (Manual CC). Phụ đề tự động (Auto-generated) thường sai lệch thời gian rất lớn. Vui lòng chọn video khác!" };
+    }
     return { error: "Không thể lấy phụ đề video. Video có thể không cung cấp phụ đề hoặc bị giới hạn quốc gia." };
   }
 }

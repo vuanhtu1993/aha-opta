@@ -59,33 +59,109 @@ export async function youtubeSentenceConsolidatorNode(
   if (state.error || !state.rawTranscript) return {};
 
   try {
-    // Only send up to 100 blocks to avoid token limits / timeouts
-    const transcriptSubset = state.rawTranscript.slice(0, 80);
-    const inputText = JSON.stringify(transcriptSubset);
+    // Phân nhỏ transcript thành các chunk (mỗi chunk 80 blocks) để không vượt quá output token limit
+    // Cấp tối đa 400 blocks (~10-15 phút video) để tránh tốn quá nhiều tài nguyên/thời gian
+    const MAX_BLOCKS = 400;
+    const CHUNK_SIZE = 80;
+    const transcriptToProcess = state.rawTranscript.slice(0, MAX_BLOCKS);
+    
+    const chunkPromises = [];
+    const chunkOffsets: number[] = []; // Lưu lại timeOffset của từng chunk
 
-    const parsed = await geminiService.invokeStructured(GeminiYoutubeConsolidatedSchema, [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: inputText },
-    ], { name: "sentence_consolidation" });
+    for (let i = 0; i < transcriptToProcess.length; i += CHUNK_SIZE) {
+      const chunk = transcriptToProcess.slice(i, i + CHUNK_SIZE);
+      
+      // Mẹo: Đưa thời gian của chunk về 0 để LLM không bị nhầm lẫn với Example Prompt (startMs: 0)
+      const timeOffset = chunk[0].start;
+      chunkOffsets.push(timeOffset);
+      
+      const shiftedChunk = chunk.map(c => ({
+         ...c,
+         start: c.start - timeOffset
+      }));
 
-    const sentences = parsed.sentences;
+      const inputText = JSON.stringify(shiftedChunk);
+      
+      chunkPromises.push(
+        geminiService.invokeStructured(GeminiYoutubeConsolidatedSchema, [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: inputText },
+        ], { name: `sentence_consolidation_chunk_${i/CHUNK_SIZE}` })
+      );
+    }
 
-    // Xử lý hậu kỳ (Post-processing): Sửa lỗi chồng lấn thời gian do phụ đề tự động (ASR) của YouTube
-    for (let i = 0; i < sentences.length - 1; i++) {
-      const current = sentences[i];
-      const next = sentences[i + 1];
+    // Chạy song song các chunk (Rate Limiter trong geminiService sẽ lo việc xếp hàng nếu cần)
+    const chunkResults = await Promise.all(chunkPromises);
 
-      // Nếu câu hiện tại có thời gian kết thúc lẹm vào thời gian bắt đầu của câu tiếp theo
+    let allSentences: any[] = [];
+    let overallLevel = chunkResults[0]?.level || "medium";
+
+    // Gộp kết quả, đánh lại ID và cộng trả lại timeOffset
+    let currentId = 0;
+    for (let i = 0; i < chunkResults.length; i++) {
+      const parsed = chunkResults[i];
+      const offset = chunkOffsets[i];
+      for (const s of parsed.sentences) {
+        s.id = currentId++;
+        s.startMs += offset;
+        s.endMs += offset;
+        allSentences.push(s);
+      }
+    }
+
+    // Xử lý hậu kỳ (Post-processing)
+    // Bước 1: Nội suy (Interpolate) thời gian cho các câu có chung startMs và endMs (Thường do nằm chung 1 block phụ đề manual)
+    let i = 0;
+    while (i < allSentences.length) {
+       let j = i;
+       // Tìm các câu liên tiếp có chung startMs và endMs
+       while (j < allSentences.length && allSentences[j].startMs === allSentences[i].startMs && allSentences[j].endMs === allSentences[i].endMs) {
+          j++;
+       }
+       const count = j - i;
+       if (count > 1) {
+          // Phân bổ thời gian theo tỷ lệ độ dài chuỗi ký tự
+          const totalDuration = allSentences[i].endMs - allSentences[i].startMs;
+          let totalChars = 0;
+          for (let k = i; k < j; k++) {
+             totalChars += allSentences[k].text.length;
+          }
+          
+          let currentStart = allSentences[i].startMs;
+          for (let k = i; k < j; k++) {
+             const ratio = allSentences[k].text.length / (totalChars || 1);
+             const duration = totalDuration * ratio;
+             allSentences[k].startMs = Math.floor(currentStart);
+             allSentences[k].endMs = Math.floor(currentStart + duration);
+             currentStart += duration;
+          }
+       }
+       i = j;
+    }
+
+    // Bước 2: Sửa lỗi chồng lấn thời gian (Overlap) giữa các câu
+    for (let i = 0; i < allSentences.length - 1; i++) {
+      const current = allSentences[i];
+      const next = allSentences[i + 1];
+
+      // Nếu câu hiện tại lẹm vào câu tiếp theo
       if (current.endMs > next.startMs) {
-        // Ép thời gian kết thúc bằng đúng lúc câu tiếp theo bắt đầu
-        current.endMs = next.startMs;
+        if (next.startMs > current.startMs) {
+           // Chia đôi phần chồng lấn để audio mượt mà không bị hụt
+           const mid = Math.floor((current.endMs + next.startMs) / 2);
+           current.endMs = mid;
+           next.startMs = mid;
+        } else {
+           // Trôi ngược thời gian (LLM sinh lỗi), ép next bắt đầu sau current
+           next.startMs = current.endMs;
+        }
       }
     }
 
     return {
-      rawSentences: sentences,
-      level: parsed.level,
-      sentences: sentences, // For YouTube, rawSentences already has IPA and timestamps!
+      rawSentences: allSentences,
+      level: overallLevel,
+      sentences: allSentences, // For YouTube, rawSentences already has IPA and timestamps!
     };
   } catch (err) {
     console.error("[YouTubeSentenceConsolidator] Error:", err);

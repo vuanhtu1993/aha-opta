@@ -10,6 +10,8 @@ type StoryHistory = {
   createdAt: string;
   thumbnail?: string;
   level?: "easy" | "medium" | "hard";
+  sourceType?: "text" | "youtube";
+  youtubeVideoId?: string;
 };
 
 export default function StorybookPage() {
@@ -72,15 +74,6 @@ export default function StorybookPage() {
                     </svg>
                   </div>
                 )}
-                {story.level && (
-                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
-                    story.level === 'easy' ? 'bg-green-100 text-green-700 border border-green-200' :
-                    story.level === 'medium' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
-                    'bg-red-100 text-red-700 border border-red-200'
-                  }`}>
-                    {story.level.toUpperCase()}
-                  </div>
-                )}
               </div>
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
@@ -88,11 +81,31 @@ export default function StorybookPage() {
                     {story.title}
                   </h3>
                   <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
-                    {story.originalText}
+                    {story.sourceType === 'youtube' ? 'Mô tả video: ' : ''}{story.originalText}
                   </p>
                 </div>
-                <div className="mt-4 text-xs text-slate-400 font-medium">
-                  {new Date(story.createdAt).toLocaleDateString('vi-VN')}
+                <div className="mt-4 flex items-center justify-between text-xs font-medium">
+                  <div className="flex items-center gap-3 text-slate-400">
+                    <span>{new Date(story.createdAt).toLocaleDateString('vi-VN')}</span>
+                    <span className="flex items-center gap-1">
+                      <span>⏱️</span>
+                      ~{Math.max(1, Math.ceil((story.originalText?.split(/\s+/).length || 0) / 20))} phút
+                    </span>
+                  </div>
+                  {story.sourceType === 'youtube' && story.youtubeVideoId && (
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.open(`https://youtube.com/watch?v=${story.youtubeVideoId}`, '_blank');
+                      }}
+                      className="text-red-500 hover:text-red-600 transition-colors p-1"
+                      title="Xem trên YouTube"
+                    >
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.059 0 12 0 12s0 3.941.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122-2.136C24 15.941 24 12 24 12s0-3.941-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             </Link>

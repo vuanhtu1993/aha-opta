@@ -1,15 +1,7 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { GeminiKeywordListSchema } from "@/lib/schemas/story-shadowing.schema";
 import { StorybookStateType } from "../state";
 import { RunnableConfig } from "@langchain/core/runnables";
-
-const model = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash",
-  apiKey: process.env.GOOGLE_API_KEY!,
-  maxRetries: 3, // Tích hợp sẵn retry để đối phó rate limit
-});
-
-const structuredLlm = model.withStructuredOutput(GeminiKeywordListSchema);
+import { geminiService } from "@/lib/utils/gemini";
 
 const SYSTEM_PROMPT = `You are an expert Linguistics teacher.
 Extract 3 to 5 most important core vocabulary words from the given text.
@@ -35,19 +27,13 @@ Example JSON:
   ]
 }`;
 
-// Hàm sleep để tránh rate limit khi chạy song song
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export async function keywordExtractorNode(state: StorybookStateType, config?: RunnableConfig): Promise<Partial<StorybookStateType>> {
   const log = config?.configurable?.logCallback || console.log;
 
   try {
     log(`[Keyword Extractor] Bắt đầu trích xuất từ vựng...`);
-    
-    // Đợi 1 giây trước khi gọi Gemini để tránh hit rate limit cùng lúc với Sentence Splitter
-    await sleep(1000);
 
-    const parsed = await structuredLlm.invoke([
+    const parsed = await geminiService.invokeStructured(GeminiKeywordListSchema, [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: state.rawText },
     ]);

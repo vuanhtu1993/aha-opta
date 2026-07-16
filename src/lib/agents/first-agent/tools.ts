@@ -1,11 +1,8 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { geminiService } from "@/lib/utils/gemini";
 import { tool } from "@langchain/core/tools";
 import * as z from "zod";
 
-const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
-    temperature: 0
-})
+const model = geminiService.baseLlm;
 
 const add = tool(({ a, b }) => a + b, {
     name: "add",

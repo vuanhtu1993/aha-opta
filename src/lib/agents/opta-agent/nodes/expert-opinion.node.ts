@@ -1,5 +1,5 @@
 import { OptaStateType } from "../state";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { geminiService } from "@/lib/utils/gemini";
 import { tavily } from "@tavily/core";
 
 export async function expertOpinionNode(state: OptaStateType): Promise<Partial<OptaStateType>> {
@@ -35,12 +35,6 @@ export async function expertOpinionNode(state: OptaStateType): Promise<Partial<O
     }
 
     // 2. Tổng hợp bằng LLM
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-    const llm = new ChatGoogleGenerativeAI({
-      model: modelName,
-      temperature: 0.3, // Nhiệt độ thấp hơn để bám sát dữ liệu search hơn
-    });
-
     const prompt = `
     Bạn là một trợ lý ảo chuyên phân tích và tổng hợp thông tin thể thao.
     Trận đấu sắp tới: ${home} vs ${away}.
@@ -57,8 +51,8 @@ export async function expertOpinionNode(state: OptaStateType): Promise<Partial<O
     Nếu kết quả tra cứu rỗng hoặc không có nội dung liên quan đến trận đấu này, hãy tự suy luận bằng kiến thức của bạn, nhưng hãy bắt đầu câu trả lời bằng: "Chưa có nhận định cụ thể trên báo chí quốc tế..."
     `;
 
-    const response = await llm.invoke(prompt);
-    const opinion = response.content.toString();
+    const response = await geminiService.invoke([{ role: "user", content: prompt }], { temperature: 0.3 });
+    const opinion = response.content ? response.content.toString() : "";
 
     console.log(`[LangGraph] Node 3 -> Expert Opinion synthesized`, opinion);
 

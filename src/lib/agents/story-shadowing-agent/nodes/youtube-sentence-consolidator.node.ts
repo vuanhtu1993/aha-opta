@@ -1,11 +1,6 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 import { YouTubeShadowingStateType } from "../youtube-state";
-
-const model = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash",
-  apiKey: process.env.GEMINI_API_KEY!,
-});
+import { geminiService } from "@/lib/utils/gemini";
 
 const GeminiYoutubeConsolidatedSchema = z.object({
   level: z.enum(["easy", "medium", "hard"]),
@@ -24,8 +19,6 @@ const GeminiYoutubeConsolidatedSchema = z.object({
     })
   ),
 });
-
-const structuredLlm = model.withStructuredOutput(GeminiYoutubeConsolidatedSchema, { name: "sentence_consolidation" });
 
 const SYSTEM_PROMPT = `You are an expert linguist and audio synchronizer.
 The user will provide a raw transcript array from a YouTube video where each item is a caption block with 'text', 'start' (in ms) and 'duration' (in ms).
@@ -70,10 +63,10 @@ export async function youtubeSentenceConsolidatorNode(
     const transcriptSubset = state.rawTranscript.slice(0, 80);
     const inputText = JSON.stringify(transcriptSubset);
 
-    const parsed = await structuredLlm.invoke([
+    const parsed = await geminiService.invokeStructured(GeminiYoutubeConsolidatedSchema, [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: inputText },
-    ]);
+    ], { name: "sentence_consolidation" });
 
     return {
       rawSentences: parsed.sentences,

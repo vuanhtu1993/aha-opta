@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { Match } from "@/lib/db/models/Match";
 import { Team } from "@/lib/db/models/Team";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { geminiService } from "@/lib/utils/gemini";
 import { z } from "zod";
 
 export interface AutoFetchResult {
@@ -146,7 +146,6 @@ export async function POST(request: NextRequest) {
         const dateStr = matchDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
         
         // Search Grounding
-        const searchLlm = new ChatGoogleGenerativeAI({ model: modelName, temperature: 0, searchGrounding: true } as any);
         const searchPrompt = `Find detailed match statistics for this football game:
 Match: ${homeTeam.name} vs ${awayTeam.name}
 Date: ${dateStr}
@@ -161,12 +160,13 @@ Search and return ONLY these specific advanced statistics:
 
 Include the source website. If a stat cannot be found, omit it.`;
 
-        const searchResponse = await searchLlm.invoke(searchPrompt);
+        const searchResponse = await geminiService.invoke([
+          { role: "user", content: searchPrompt }
+        ], { temperature: 0, searchGrounding: true });
+        
         const rawContent = typeof searchResponse.content === "string" ? searchResponse.content : JSON.stringify(searchResponse.content);
 
         // Parsing
-        const parseLlm = new ChatGoogleGenerativeAI({ model: modelName, temperature: 0 });
-        const parserLlm = parseLlm.withStructuredOutput(AdvancedStatsSchema);
         const parsePrompt = `Based on the search results, extract the advanced statistics.
 Match: ${homeTeam.name} (home) vs ${awayTeam.name} (away)
 
@@ -175,7 +175,9 @@ ${rawContent}
 
 Only extract stats if they are clearly mentioned. Do not guess.`;
 
-        const advancedStats = await parserLlm.invoke(parsePrompt);
+        const advancedStats = await geminiService.invokeStructured(AdvancedStatsSchema, [
+          { role: "user", content: parsePrompt }
+        ], { temperature: 0 });
         
         console.log(`[AutoFetch] Advanced Stats from AI:`, advancedStats);
 

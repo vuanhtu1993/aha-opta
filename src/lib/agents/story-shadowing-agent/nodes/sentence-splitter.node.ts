@@ -1,14 +1,7 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { GeminiSentenceListSchema } from "@/lib/schemas/story-shadowing.schema";
 import { StorybookStateType } from "../state";
 import { RunnableConfig } from "@langchain/core/runnables";
-
-const model = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash",
-  apiKey: process.env.GOOGLE_API_KEY!,
-});
-
-const structuredLlm = model.withStructuredOutput(GeminiSentenceListSchema);
+import { geminiService } from "@/lib/utils/gemini";
 
 const SYSTEM_PROMPT = `You are a language learning assistant and phonetics expert.
 Split the given English text into individual sentences for shadowing practice.
@@ -31,7 +24,7 @@ export async function sentenceSplitterNode(state: StorybookStateType, config?: R
 
   try {
     log(`[Sentence Splitter] Bắt đầu phân tích văn bản (Độ dài: ${state.rawText.length} ký tự)...`);
-    const parsed = await structuredLlm.invoke([
+    const parsed = await geminiService.invokeStructured(GeminiSentenceListSchema, [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: state.rawText },
     ]);

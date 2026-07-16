@@ -8,8 +8,8 @@
  */
 
 import { OptaStateType } from "../state";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
+import { geminiService } from "@/lib/utils/gemini";
 
 // 1. Định nghĩa cấu trúc JSON bắt buộc LLM phải trả về
 const PredictionSchema = z.object({
@@ -27,16 +27,6 @@ const PredictionSchema = z.object({
 
 export async function predictorNode(state: OptaStateType): Promise<Partial<OptaStateType>> {
   console.log(`[LangGraph] Node 4: Gemini Predictor đang suy luận...`);
-
-  // Khởi tạo Gemini Model (Flash cho tốc độ)
-  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-  const llm = new ChatGoogleGenerativeAI({
-    model: modelName,
-    temperature: 0.2, // Temperature thấp để output ổn định, phân tích logic
-  });
-
-  // Ép model trả về format JSON chuẩn Zod
-  const structuredLlm = llm.withStructuredOutput(PredictionSchema);
 
   // 2. Chuẩn bị Context
   const home = state.homeTeamInfo;
@@ -87,7 +77,7 @@ Trả về định dạng JSON nghiêm ngặt. Tổng probabilities (home + draw
 
   try {
     // 3. Gọi LLM
-    const result = await structuredLlm.invoke(context);
+    const result = await geminiService.invokeStructured(PredictionSchema, context, { temperature: 0.2 });
 
     console.log(`[LangGraph] Node 4: Gemini dự đoán ${result.winner.toUpperCase()} thắng. Tỉ số: ${result.predictedScore}`);
 

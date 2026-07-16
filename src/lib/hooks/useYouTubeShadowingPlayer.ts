@@ -18,6 +18,7 @@ export function useYouTubeShadowingPlayer(sentences: Sentence[], ytPlayer: YouTu
 
   const requestRef = useRef<number | undefined>(undefined);
   const isPlayingRef = useRef(false);
+  const hasSeekedRef = useRef(false); // Thêm cờ để biết player đã seek tới nơi chưa
 
   // Stop polling current time
   const stopPolling = useCallback(() => {
@@ -34,6 +35,19 @@ export function useYouTubeShadowingPlayer(sentences: Sentence[], ytPlayer: YouTu
     if (!sentence || !sentence.endMs) return;
 
     const currentTimeMs = ytPlayer.getCurrentTime() * 1000;
+
+    // Chờ Player thực sự Seek tới gần vị trí startMs (sai số dưới 1.5s) trước khi bắt đầu đo endMs
+    // (Fix lỗi quay lại câu cũ nhưng video chưa kịp tua, làm cho currentTimeMs > endMs và dừng ngay lập tức)
+    if (!hasSeekedRef.current) {
+      if (Math.abs(currentTimeMs - (sentence.startMs || 0)) < 1500) {
+        hasSeekedRef.current = true;
+      } else {
+        // Vẫn đang tua, chờ thêm
+        requestRef.current = requestAnimationFrame(pollTime);
+        return;
+      }
+    }
+
     if (currentTimeMs >= sentence.endMs) {
       // Đã chạy tới cuối câu -> Dừng video!
       ytPlayer.pauseVideo();
@@ -58,6 +72,7 @@ export function useYouTubeShadowingPlayer(sentences: Sentence[], ytPlayer: YouTu
     setCurrentSentenceIndex(index);
     setPlayerState("PLAYING_AUDIO");
     isPlayingRef.current = true;
+    hasSeekedRef.current = false; // Reset cờ seek
 
     // Seek to start of the sentence
     ytPlayer.seekTo(sentence.startMs / 1000, true);

@@ -19,25 +19,19 @@ Rules:
 - Return ONLY valid JSON in this exact format:
 {"level": "easy", "sentences": [{"id": 0, "text": "Hello world.", "words": [{"word": "Hello", "ipa": "/həˈləʊ/"}, {"word": "world", "ipa": "/wɜːld/"}]}]}`;
 
-export async function sentenceSplitterNode(state: StorybookStateType, config?: RunnableConfig): Promise<Partial<StorybookStateType>> {
-  const log = config?.configurable?.logCallback || console.log;
-
+export async function sentenceSplitterNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
   try {
-    log(`[Sentence Splitter] Bắt đầu phân tích văn bản (Độ dài: ${state.rawText.length} ký tự)...`);
     const parsed = await geminiService.invokeStructured(GeminiSentenceListSchema, [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: state.rawText },
     ]);
     
-    log(`[Sentence Splitter] ✅ Đã chia thành ${parsed.sentences.length} câu. Đánh giá độ khó: ${parsed.level.toUpperCase()}. Đang tạo phiên âm IPA...`);
-
     return { 
       level: parsed.level,
       rawSentences: parsed.sentences  // Đã bao gồm words[] với IPA
     };
   } catch (err) {
     console.error("[SentenceSplitter] Error:", err);
-    log("[Sentence Splitter] Lỗi: Không thể chia câu.");
     return { error: "Không thể chia câu. Vui lòng thử lại." };
   }
 }

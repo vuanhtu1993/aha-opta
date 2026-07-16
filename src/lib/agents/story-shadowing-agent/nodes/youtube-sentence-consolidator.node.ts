@@ -68,10 +68,24 @@ export async function youtubeSentenceConsolidatorNode(
       { role: "user", content: inputText },
     ], { name: "sentence_consolidation" });
 
+    const sentences = parsed.sentences;
+
+    // Xử lý hậu kỳ (Post-processing): Sửa lỗi chồng lấn thời gian do phụ đề tự động (ASR) của YouTube
+    for (let i = 0; i < sentences.length - 1; i++) {
+      const current = sentences[i];
+      const next = sentences[i + 1];
+
+      // Nếu câu hiện tại có thời gian kết thúc lẹm vào thời gian bắt đầu của câu tiếp theo
+      if (current.endMs > next.startMs) {
+        // Ép thời gian kết thúc bằng đúng lúc câu tiếp theo bắt đầu
+        current.endMs = next.startMs;
+      }
+    }
+
     return {
-      rawSentences: parsed.sentences,
+      rawSentences: sentences,
       level: parsed.level,
-      sentences: parsed.sentences, // For YouTube, rawSentences already has IPA and timestamps!
+      sentences: sentences, // For YouTube, rawSentences already has IPA and timestamps!
     };
   } catch (err) {
     console.error("[YouTubeSentenceConsolidator] Error:", err);

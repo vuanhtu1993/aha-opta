@@ -1,8 +1,8 @@
 import { StorybookStateType } from "../state";
 import { RunnableConfig } from "@langchain/core/runnables";
 
-export async function ttsGeneratorNode(state: StorybookStateType, config?: RunnableConfig): Promise<Partial<StorybookStateType>> {
-  const log = config?.configurable?.logCallback || console.log;
+export async function ttsGeneratorNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
+  const log = console.log;
 
   if (state.error || !state.rawSentences?.length) {
     return {};

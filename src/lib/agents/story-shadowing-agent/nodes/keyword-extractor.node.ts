@@ -27,25 +27,18 @@ Example JSON:
   ]
 }`;
 
-export async function keywordExtractorNode(state: StorybookStateType, config?: RunnableConfig): Promise<Partial<StorybookStateType>> {
-  const log = config?.configurable?.logCallback || console.log;
-
+export async function keywordExtractorNode(state: StorybookStateType): Promise<Partial<StorybookStateType>> {
   try {
-    log(`[Keyword Extractor] Bắt đầu trích xuất từ vựng...`);
-
     const parsed = await geminiService.invokeStructured(GeminiKeywordListSchema, [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: state.rawText },
     ]);
     
-    log(`[Keyword Extractor] ✅ Đã trích xuất được ${parsed.keywords.length} từ vựng cốt lõi.`);
-
     return { 
       keywords: parsed.keywords
     };
   } catch (err) {
     console.error("[KeywordExtractor] Error:", err);
-    log("[Keyword Extractor] Lỗi: Không thể trích xuất từ vựng.");
     return { error: "Không thể trích xuất từ vựng. Vui lòng thử lại." };
   }
 }

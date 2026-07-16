@@ -31,14 +31,33 @@ export const storybookAgentGraph = graphBuilder.compile();
  * Public API: Chạy toàn bộ pipeline cho 1 đoạn văn bản
  */
 export async function runStorybookPipeline(rawText: string, voice: string = "en-US-Journey-F", logCallback?: (msg: string) => void) {
-  const finalState = await storybookAgentGraph.invoke(
-    { rawText, voice },
-    { configurable: { logCallback } }
-  );
+  const log = logCallback || console.log;
+  log("[Storybook Pipeline] Bắt đầu xử lý văn bản...");
+
+  let finalState: any = { rawText, voice };
+
+  const stream = await storybookAgentGraph.stream({ rawText, voice });
+
+  for await (const chunk of stream) {
+    if (chunk.sentenceSplitter) {
+      log("[Storybook Pipeline] 🧩 Đã tách câu và tạo phiên âm (IPA). Đang tạo Audio...");
+      finalState = { ...finalState, ...chunk.sentenceSplitter };
+    }
+    if (chunk.ttsGenerator) {
+      log("[Storybook Pipeline] 🎧 Đã hoàn tất tạo Audio (Text-to-Speech).");
+      finalState = { ...finalState, ...chunk.ttsGenerator };
+    }
+    if (chunk.keywordExtractor) {
+      log("[Storybook Pipeline] 🔑 Đã trích xuất xong các từ vựng quan trọng.");
+      finalState = { ...finalState, ...chunk.keywordExtractor };
+    }
+  }
 
   if (finalState.error) {
     throw new Error(finalState.error);
   }
+
+  log("[Storybook Pipeline] ✅ Xử lý hoàn tất.");
 
   return {
     sentences: finalState.sentences,

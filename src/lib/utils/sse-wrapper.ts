@@ -8,7 +8,7 @@ export type AgentSSEHandler = (
 export function withAgentSSE(handler: AgentSSEHandler) {
   return async function (req: NextRequest) {
     const encoder = new TextEncoder();
-    
+
     const stream = new ReadableStream({
       async start(controller) {
         const log = (msg: string) => {
@@ -31,8 +31,8 @@ export function withAgentSSE(handler: AgentSSEHandler) {
           }
         } catch (error: unknown) {
           console.error("[SSE Error]", error);
-          const errData = JSON.stringify({ 
-            error: error instanceof Error ? error.message : "Lỗi không xác định" 
+          const errData = JSON.stringify({
+            error: error instanceof Error ? error.message : "Lỗi không xác định"
           });
           try {
             controller.enqueue(encoder.encode(`data: ${errData}\n\n`));

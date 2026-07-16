@@ -6,7 +6,7 @@ export async function youtubeTranscriptFetcherNode(
 ): Promise<Partial<YouTubeShadowingStateType>> {
   try {
     const url = state.youtubeUrl;
-    
+
     // Validate YouTube URL and extract ID (basic regex)
     const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&]{11})/);
     if (!videoIdMatch) {
@@ -24,6 +24,29 @@ export async function youtubeTranscriptFetcherNode(
       }
     } catch (e) {
       // Bỏ qua nếu lỗi lấy tiêu đề
+    }
+
+    // --- Monkey Patch YoutubeTranscript để luôn ưu tiên phụ đề thủ công (Manual) thay vì ASR ---
+    if (!(YoutubeTranscript as any).__patchedForManualSubtitles) {
+      const originalFetchTranscriptFromTracks = (YoutubeTranscript as any).fetchTranscriptFromTracks;
+      (YoutubeTranscript as any).fetchTranscriptFromTracks = async function (captionTracks: any[], vId: string, config: any) {
+        let tracks = captionTracks;
+        if (config?.lang) {
+          tracks = captionTracks.filter((t: any) => t.languageCode === config.lang);
+        }
+
+        if (tracks.length > 0) {
+          // Tìm track không phải là "asr" (Auto-generated)
+          let bestTrack = tracks.find((t: any) => t.kind !== 'asr');
+          if (!bestTrack) {
+            bestTrack = tracks[0]; // Fallback về track đầu tiên (ASR)
+          }
+          // Gọi lại hàm gốc nhưng chỉ với 1 track xịn nhất
+          return originalFetchTranscriptFromTracks.call(this, [bestTrack], vId, config);
+        }
+        return originalFetchTranscriptFromTracks.call(this, captionTracks, vId, config);
+      };
+      (YoutubeTranscript as any).__patchedForManualSubtitles = true;
     }
 
     // Lấy transcript

@@ -31,8 +31,26 @@ export const youtubeShadowingAgentGraph = graphBuilder.compile();
  * Public API: Chạy toàn bộ pipeline cho 1 URL YouTube
  */
 export async function runYouTubeShadowingPipeline(youtubeUrl: string, log: (msg: string) => void) {
-  log("[YouTube Pipeline] Bắt đầu phân tích video...");
-  const finalState = await youtubeShadowingAgentGraph.invoke({ youtubeUrl });
+  log("[YouTube Pipeline] Bắt đầu xử lý video...");
+  
+  let finalState: any = { youtubeUrl };
+
+  const stream = await youtubeShadowingAgentGraph.stream({ youtubeUrl });
+
+  for await (const chunk of stream) {
+    if (chunk.transcriptFetcher) {
+      log("[YouTube Pipeline] 📥 Đã tải xong phụ đề (Transcript). Đang xử lý AI...");
+      finalState = { ...finalState, ...chunk.transcriptFetcher };
+    }
+    if (chunk.sentenceConsolidator) {
+      log("[YouTube Pipeline] 🧩 Đã ghép câu và tạo phiên âm (IPA).");
+      finalState = { ...finalState, ...chunk.sentenceConsolidator };
+    }
+    if (chunk.keywordExtractor) {
+      log("[YouTube Pipeline] 🔑 Đã trích xuất xong các từ vựng quan trọng.");
+      finalState = { ...finalState, ...chunk.keywordExtractor };
+    }
+  }
 
   if (finalState.error) {
     throw new Error(finalState.error);

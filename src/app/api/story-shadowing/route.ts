@@ -8,10 +8,25 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    // Lấy 20 bài mới nhất, chỉ lấy các trường cần thiết để hiển thị list
-    const stories = await Storybook.find({}, { title: 1, thumbnail: 1, originalText: 1, createdAt: 1, level: 1, sourceType: 1, youtubeVideoId: 1 })
+    // Lấy 50 bài mới nhất, bao gồm các trường series để hiển thị group
+    const stories = await Storybook.find(
+      {},
+      {
+        title: 1,
+        thumbnail: 1,
+        originalText: 1,
+        createdAt: 1,
+        level: 1,
+        sourceType: 1,
+        youtubeVideoId: 1,
+        seriesId: 1,
+        partIndex: 1,
+        partTitle: 1,
+        totalParts: 1,
+      }
+    )
       .sort({ createdAt: -1 })
-      .limit(20)
+      .limit(50)
       .lean();
 
     return NextResponse.json(stories);

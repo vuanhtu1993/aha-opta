@@ -35,6 +35,12 @@ export interface IStorybook extends Document {
   createdAt: Date;
   sourceType: "text" | "youtube";
   youtubeVideoId?: string;
+
+  // Phase 7 series fields
+  seriesId?: string;
+  partIndex?: number;
+  partTitle?: string;
+  totalParts?: number;
 }
 
 const StorybookSentenceSchema = new Schema<IStorybookSentence>({
@@ -78,6 +84,12 @@ const StorybookSchema = new Schema<IStorybook>(
     speakingRate: { type: Number, required: true },
     sourceType: { type: String, enum: ["text", "youtube"], required: true, default: "text" },
     youtubeVideoId: { type: String, required: false },
+
+    // Phase 7 series fields
+    seriesId: { type: String, required: false },
+    partIndex: { type: Number, required: false },
+    partTitle: { type: String, required: false },
+    totalParts: { type: Number, required: false },
   },
   {
     timestamps: true,
@@ -85,11 +97,11 @@ const StorybookSchema = new Schema<IStorybook>(
 );
 
 // Tránh lỗi overwrite model và cập nhật schema mới nhất trong môi trường dev Next.js
-if (mongoose.models.Storybook_v4) {
-  delete mongoose.models.Storybook_v4;
+if (mongoose.models.Storybook_v5) {
+  delete mongoose.models.Storybook_v5;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete (mongoose.connection.models as any).Storybook_v4;
+  delete (mongoose.connection.models as any).Storybook_v5;
 }
-const Storybook = mongoose.model<IStorybook>("Storybook_v4", StorybookSchema, "storybooks");
+const Storybook = mongoose.model<IStorybook>("Storybook_v5", StorybookSchema, "storybooks");
 
 export default Storybook;

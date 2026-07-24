@@ -19,12 +19,24 @@ Rules:
 5. Return ONLY a valid JSON object matching the requested schema.`;
 
 export const youtubeKeywordExtractorNode = async (state: YouTubeShadowingStateType) => {
-  if (state.error || !state.rawTranscript) return {};
+  if (state.error || (!state.rawTranscript && !state.sentences)) return {};
 
   try {
-    // Reconstruct rawText from transcript blocks
-    const transcriptSubset = state.rawTranscript.slice(0, 80);
-    const rawText = transcriptSubset.map(t => t.text).join(" ");
+    let rawText = "";
+    
+    if (state.sentences && state.sentences.length > 0) {
+      // Reconstruct rawText from sentences
+      rawText = state.sentences.map(s => s.text).join(" ");
+    } else if (state.rawTranscript && state.rawTranscript.length > 0) {
+      // Reconstruct rawText from transcript blocks
+      const transcriptSubset = state.rawTranscript.slice(0, 80);
+      rawText = transcriptSubset.map(t => t.text).join(" ");
+    } else {
+      return {};
+    }
+
+    // Giới hạn độ dài để tránh tốn quá nhiều token
+    rawText = rawText.slice(0, 5000);
 
     const parsed = await geminiService.invokeStructured(GeminiKeywordListSchema, [
       { role: "system", content: SYSTEM_PROMPT },

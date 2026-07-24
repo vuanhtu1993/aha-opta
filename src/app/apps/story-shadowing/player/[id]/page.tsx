@@ -1,8 +1,17 @@
 "use client";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ShadowingPlayer } from "@/components/story-shadowing/shadowing-player";
 import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
+
+type SeriesPart = {
+  _id: string;
+  title: string;
+  partIndex: number;
+  partTitle?: string;
+  totalParts?: number;
+};
 
 function VocabCard({ kw }: { kw: any }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -21,8 +30,7 @@ function VocabCard({ kw }: { kw: any }) {
           <p className="text-slate-600 mt-1">{kw.explanation}</p>
         </div>
         <div className="flex items-center gap-3 hidden md:flex">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${kw.level === "hard" ? "text-red-700" : "text-yellow-500"
-            }`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${kw.level === "hard" ? "text-red-700" : "text-yellow-500"}`}>
             {kw.level.toUpperCase()}
           </span>
           <div className={`text-slate-400 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}>
@@ -85,6 +93,13 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Series state
+  const [seriesId, setSeriesId] = useState<string | undefined>(undefined);
+  const [partIndex, setPartIndex] = useState<number | undefined>(undefined);
+  const [partTitle, setPartTitle] = useState<string | undefined>(undefined);
+  const [totalParts, setTotalParts] = useState<number | undefined>(undefined);
+  const [seriesParts, setSeriesParts] = useState<SeriesPart[]>([]);
+
   const [keywords, setKeywords] = useState<any[]>([]);
   const [step, setStep] = useState<"vocab" | "shadowing">("shadowing");
 
@@ -94,12 +109,29 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         if (!res.ok) throw new Error("Không tìm thấy bài luyện tập");
         return res.json();
       })
-      .then((data) => {
+      .then(async (data) => {
         setSentences(data.sentences);
         setTitle(data.title);
         setLevel(data.level);
         setSourceType(data.sourceType || "text");
         setYoutubeVideoId(data.youtubeVideoId);
+
+        setSeriesId(data.seriesId);
+        setPartIndex(data.partIndex);
+        setPartTitle(data.partTitle);
+        setTotalParts(data.totalParts);
+
+        if (data.seriesId) {
+          try {
+            const seriesRes = await fetch(`/api/story-shadowing/series/${data.seriesId}`);
+            if (seriesRes.ok) {
+              const seriesData = await seriesRes.json();
+              setSeriesParts(seriesData);
+            }
+          } catch (e) {
+            console.error("Failed to load series parts", e);
+          }
+        }
 
         if (data.keywords && data.keywords.length > 0) {
           setKeywords(data.keywords);
@@ -132,50 +164,89 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
     );
   }
 
-  if (step === "vocab") {
-    return (
-      <div className="max-w-2xl mx-auto space-y-8 py-8">
-        <div className="flex items-center">
-          <button
-            onClick={() => router.push("/apps/story-shadowing")}
-            className="p-2 -ml-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
-            aria-label="Danh sách bài"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Vocabulary</h1>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {keywords.map((kw, i) => (
-            <VocabCard key={i} kw={kw} />
-          ))}
-        </div>
-
-        <button
-          onClick={() => setStep("shadowing")}
-          className="w-full py-4 bg-shadowing-primary text-white font-bold rounded-xl hover:bg-slate-800 transition-colors text-lg shadow-md"
-        >
-          Let's practice!
-        </button>
-      </div>
-    );
-  }
+  const prevPart = seriesParts.find((p) => p.partIndex === (partIndex ?? 0) - 1);
+  const nextPart = seriesParts.find((p) => p.partIndex === (partIndex ?? 0) + 1);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-4">
-      <ShadowingPlayer
-        sentences={sentences}
-        title={title}
-        level={level}
-        sourceType={sourceType}
-        youtubeVideoId={youtubeVideoId}
-        onBack={() => router.push("/apps/story-shadowing")}
-      />
+      {/* Series Navigation Header Bar */}
+      {seriesId && (
+        <div className="bg-slate-900 text-white px-5 py-3 rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            <span className="text-xs px-2.5 py-1 bg-indigo-500/20 text-indigo-300 font-bold rounded-full flex-shrink-0">
+              Phần {(partIndex ?? 0) + 1}/{totalParts || seriesParts.length}
+            </span>
+            <span className="text-sm font-semibold truncate text-slate-200">
+              {partTitle || title}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {prevPart ? (
+              <Link
+                href={`/apps/story-shadowing/player/${prevPart._id}`}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition-colors"
+                title="Phần trước"
+              >
+                ◀ Trước
+              </Link>
+            ) : (
+              <span className="p-1.5 opacity-30 text-xs">◀</span>
+            )}
+            {nextPart ? (
+              <Link
+                href={`/apps/story-shadowing/player/${nextPart._id}`}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
+              >
+                Tiếp ▶
+              </Link>
+            ) : (
+              <span className="p-1.5 opacity-30 text-xs">▶</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step === "vocab" ? (
+        <div className="space-y-8">
+          <div className="flex items-center">
+            <button
+              onClick={() => router.push("/apps/story-shadowing")}
+              className="p-2 -ml-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
+              aria-label="Danh sách bài"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Vocabulary</h1>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {keywords.map((kw, i) => (
+              <VocabCard key={i} kw={kw} />
+            ))}
+          </div>
+
+          <button
+            onClick={() => setStep("shadowing")}
+            className="w-full py-4 bg-shadowing-primary text-white font-bold rounded-xl hover:bg-slate-800 transition-colors text-lg shadow-md"
+          >
+            Let's practice!
+          </button>
+        </div>
+      ) : (
+        <ShadowingPlayer
+          sentences={sentences}
+          title={title}
+          level={level}
+          sourceType={sourceType}
+          youtubeVideoId={youtubeVideoId}
+          onBack={() => router.push("/apps/story-shadowing")}
+        />
+      )}
     </div>
   );
 }

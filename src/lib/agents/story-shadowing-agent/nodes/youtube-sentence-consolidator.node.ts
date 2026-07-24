@@ -59,34 +59,34 @@ export async function youtubeSentenceConsolidatorNode(
   if (state.error || !state.rawTranscript) return {};
 
   try {
-    // Phân nhỏ transcript thành các chunk (mỗi chunk 80 blocks) để không vượt quá output token limit
-    // Cấp tối đa 400 blocks (~10-15 phút video) để tránh tốn quá nhiều tài nguyên/thời gian
+    // Phân nhỏ transcript thành các chunk để không vượt quá output token limit của Gemini (8192 tokens).
+    // IPA sinh ra rất tốn token (khoảng 15 tokens/từ). Do đó, CHUNK_SIZE = 30 block là ngưỡng an toàn.
     const MAX_BLOCKS = 400;
-    const CHUNK_SIZE = 80;
+    const CHUNK_SIZE = 30;
     const transcriptToProcess = state.rawTranscript.slice(0, MAX_BLOCKS);
-    
+
     const chunkPromises = [];
     const chunkOffsets: number[] = []; // Lưu lại timeOffset của từng chunk
 
     for (let i = 0; i < transcriptToProcess.length; i += CHUNK_SIZE) {
       const chunk = transcriptToProcess.slice(i, i + CHUNK_SIZE);
-      
+
       // Mẹo: Đưa thời gian của chunk về 0 để LLM không bị nhầm lẫn với Example Prompt (startMs: 0)
       const timeOffset = chunk[0].start;
       chunkOffsets.push(timeOffset);
-      
+
       const shiftedChunk = chunk.map(c => ({
-         ...c,
-         start: c.start - timeOffset
+        ...c,
+        start: c.start - timeOffset
       }));
 
       const inputText = JSON.stringify(shiftedChunk);
-      
+
       chunkPromises.push(
         geminiService.invokeStructured(GeminiYoutubeConsolidatedSchema, [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: inputText },
-        ], { name: `sentence_consolidation_chunk_${i/CHUNK_SIZE}` })
+        ], { name: `sentence_consolidation_chunk_${i / CHUNK_SIZE}` })
       );
     }
 
@@ -113,30 +113,30 @@ export async function youtubeSentenceConsolidatorNode(
     // Bước 1: Nội suy (Interpolate) thời gian cho các câu có chung startMs và endMs (Thường do nằm chung 1 block phụ đề manual)
     let i = 0;
     while (i < allSentences.length) {
-       let j = i;
-       // Tìm các câu liên tiếp có chung startMs và endMs
-       while (j < allSentences.length && allSentences[j].startMs === allSentences[i].startMs && allSentences[j].endMs === allSentences[i].endMs) {
-          j++;
-       }
-       const count = j - i;
-       if (count > 1) {
-          // Phân bổ thời gian theo tỷ lệ độ dài chuỗi ký tự
-          const totalDuration = allSentences[i].endMs - allSentences[i].startMs;
-          let totalChars = 0;
-          for (let k = i; k < j; k++) {
-             totalChars += allSentences[k].text.length;
-          }
-          
-          let currentStart = allSentences[i].startMs;
-          for (let k = i; k < j; k++) {
-             const ratio = allSentences[k].text.length / (totalChars || 1);
-             const duration = totalDuration * ratio;
-             allSentences[k].startMs = Math.floor(currentStart);
-             allSentences[k].endMs = Math.floor(currentStart + duration);
-             currentStart += duration;
-          }
-       }
-       i = j;
+      let j = i;
+      // Tìm các câu liên tiếp có chung startMs và endMs
+      while (j < allSentences.length && allSentences[j].startMs === allSentences[i].startMs && allSentences[j].endMs === allSentences[i].endMs) {
+        j++;
+      }
+      const count = j - i;
+      if (count > 1) {
+        // Phân bổ thời gian theo tỷ lệ độ dài chuỗi ký tự
+        const totalDuration = allSentences[i].endMs - allSentences[i].startMs;
+        let totalChars = 0;
+        for (let k = i; k < j; k++) {
+          totalChars += allSentences[k].text.length;
+        }
+
+        let currentStart = allSentences[i].startMs;
+        for (let k = i; k < j; k++) {
+          const ratio = allSentences[k].text.length / (totalChars || 1);
+          const duration = totalDuration * ratio;
+          allSentences[k].startMs = Math.floor(currentStart);
+          allSentences[k].endMs = Math.floor(currentStart + duration);
+          currentStart += duration;
+        }
+      }
+      i = j;
     }
 
     // Bước 2: Sửa lỗi chồng lấn thời gian (Overlap) giữa các câu
@@ -147,13 +147,13 @@ export async function youtubeSentenceConsolidatorNode(
       // Nếu câu hiện tại lẹm vào câu tiếp theo
       if (current.endMs > next.startMs) {
         if (next.startMs > current.startMs) {
-           // Chia đôi phần chồng lấn để audio mượt mà không bị hụt
-           const mid = Math.floor((current.endMs + next.startMs) / 2);
-           current.endMs = mid;
-           next.startMs = mid;
+          // Chia đôi phần chồng lấn để audio mượt mà không bị hụt
+          const mid = Math.floor((current.endMs + next.startMs) / 2);
+          current.endMs = mid;
+          next.startMs = mid;
         } else {
-           // Trôi ngược thời gian (LLM sinh lỗi), ép next bắt đầu sau current
-           next.startMs = current.endMs;
+          // Trôi ngược thời gian (LLM sinh lỗi), ép next bắt đầu sau current
+          next.startMs = current.endMs;
         }
       }
     }

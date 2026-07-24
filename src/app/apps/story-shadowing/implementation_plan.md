@@ -1283,5 +1283,590 @@ Xây dựng một `youtubeShadowingGraph` hoàn toàn mới:
   - Phân tách bằng typography: Từ/cụm từ chính in đậm (`font-semibold`), giải thích in thường kèm màu nhạt (`text-slate-600 text-sm`).
 - [x] Tích hợp Design System màu sắc Tailwind CSS v4 (`--color-shadowing-*`) vào globals.css.
 
-*Made by Anh Tu - Share to be share*
+---
+
+## 🆕 Phase 7: Smart Video Splitting (AI-Suggested Segments)
+
+> **Vấn đề cần giải quyết:** Video YouTube dài ≥ 20 phút gây ra 3 nhóm vấn đề:
+> 1. **Latency**: 400+ transcript blocks → Gemini chunking xử lý rất lâu (có thể timeout).
+> 2. **Cognitive Overload**: 100+ câu trong 1 session → Người học kiệt sức, mất tập trung.
+> 3. **UX Player**: Danh sách câu cực dài, khó navigate, khó quay lại vị trí cũ.
+>
+> **Giải pháp:** Sau khi bóc transcript, Gemini phân tích và **đề xuất cách chia** video thành các segment 5–10 phút theo ranh giới ngữ nghĩa tự nhiên. User **duyệt và xác nhận** trước khi pipeline xử lý từng segment song song thành nhiều Storybook riêng biệt.
+
+### 🏛️ Architecture Decision: AI-Proposed + User-Confirmed Splitting
+
+**Lý do chọn phương án này thay vì các alternatives:**
+
+| Phương án | Ưu điểm | Nhược điểm | Quyết định |
+|---|---|---|---|
+| **A: AI-Proposed (Phase 7)** | UX tự nhiên, Gemini hiểu ngữ nghĩa, user kiểm soát | Thêm 1 LLM call, cần UI confirmation | ✅ **CHỌN** |
+| B: Time Range Manual | User tự chia, không cần LLM | Friction cao, phải biết video | ❌ |
+| C: Fixed-duration (5 phút) | Đơn giản, predictable | Cắt giữa câu, thiếu ngữ nghĩa | ❌ |
+| D: Lazy Loading | Không đổi data model | Không giải quyết latency lúc tạo | ❌ |
+
+**Data Model Decision:** Mỗi segment là một **Storybook độc lập** (không tạo Storybook cha/con phức tạp).
+- ✅ Tái sử dụng 100% Player hiện tại
+- ✅ Không thay đổi schema DB
+- ✅ Các segment liên kết nhau qua field `seriesId` (UUID) và `partIndex` (số thứ tự)
+
+### 📊 Flow Tổng thể
+
 ```
+User nhập YouTube URL (video dài)
+        ↓
+[Node 1] Transcript Fetcher
+        ↓
+Đếm blocks. Nếu totalBlocks > THRESHOLD (200 blocks ≈ 15 phút)?
+        ↓ YES
+[Node 2-NEW] Segment Suggester (Gemini)
+  → Phân tích transcript (chỉ đọc text + timestamps, không IPA)
+  → Trả về mảng segments: [{title, startMs, endMs, blockCount}]
+        ↓
+[API] Trả về JSON segments cho Frontend (CHƯA tạo Storybook)
+        ↓
+[UI] Hiển thị "Confirmation Dialog" — Danh sách segments đề xuất
+  → User có thể merge/bỏ bớt segments
+  → User bấm "Tạo tất cả" hoặc "Chọn từng phần"
+        ↓
+[API] Nhận danh sách segments đã được user duyệt
+  → Với mỗi segment: lọc rawTranscript theo startMs/endMs
+  → Chạy youtubeShadowingPipeline (consolidation + keyword) song song
+  → Lưu từng Storybook vào DB với seriesId và partIndex
+        ↓
+[UI] Redirect sang trang danh sách — hiển thị group các bài cùng series
+```
+
+---
+
+### Task 39: Cập nhật DB Model — Series Support
+
+**Files:**
+- Modify: `src/lib/db/models/Storybook.ts`
+
+- [x] **Step 1: Thêm fields mới vào IStorybook Interface & Schema**
+
+```typescript
+// Trong src/lib/db/models/Storybook.ts
+export interface IStorybook extends Document {
+  title: string;
+  thumbnail?: string;
+  originalText: string;
+  sentences: IStorybookSentence[];
+  keywords?: IStorybookKeyword[];
+  level: "easy" | "medium" | "hard";
+  voice: string;
+  speakingRate: number;
+  createdAt: Date;
+  sourceType: "text" | "youtube";
+  youtubeVideoId?: string;
+
+  // === NEW FIELDS FOR PHASE 7 ===
+  seriesId?: string;    // UUID dùng để group các part cùng video vào 1 series
+  partIndex?: number;   // Thứ tự của part trong series (0, 1, 2...)
+  partTitle?: string;   // Tiêu đề của riêng part (VD: "Phần 1: Introduction")
+  totalParts?: number;  // Tổng số part trong series (để UI render "Part 1/3")
+}
+
+// Thêm vào StorybookSchema:
+const StorybookSchema = new Schema<IStorybook>(
+  {
+    title: { type: String, required: true },
+    thumbnail: { type: String, required: false },
+    originalText: { type: String, required: true },
+    sentences: { type: [StorybookSentenceSchema], required: true },
+    keywords: { type: [StorybookKeywordSchema], required: false, default: undefined },
+    level: { type: String, enum: ["easy", "medium", "hard"], required: true },
+    voice: { type: String, required: true },
+    speakingRate: { type: Number, required: true },
+    sourceType: { type: String, enum: ["text", "youtube"], required: true, default: "text" },
+    youtubeVideoId: { type: String, required: false },
+
+    // Phase 7 fields
+    seriesId: { type: String, required: false },
+    partIndex: { type: Number, required: false },
+    partTitle: { type: String, required: false },
+    totalParts: { type: Number, required: false },
+  },
+  { timestamps: true }
+);
+
+// Đổi model key thành Storybook_v5 để tránh model overwrite conflict
+if (mongoose.models.Storybook_v5) {
+  delete mongoose.models.Storybook_v5;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete (mongoose.connection.models as any).Storybook_v5;
+}
+const Storybook = mongoose.model<IStorybook>("Storybook_v5", StorybookSchema, "storybooks");
+```
+
+---
+
+### Task 40: Node mới — Segment Suggester (Gemini)
+
+**Files:**
+- Create: `src/lib/agents/story-shadowing-agent/nodes/youtube-segment-suggester.node.ts`
+
+- [x] **Step 1: Viết Node đề xuất phân đoạn video bằng Gemini**
+
+```typescript
+// src/lib/agents/story-shadowing-agent/nodes/youtube-segment-suggester.node.ts
+import { z } from "zod";
+import { geminiService } from "@/lib/utils/gemini";
+
+export const SegmentSuggestionSchema = z.object({
+  segments: z.array(
+    z.object({
+      title: z.string(),
+      startMs: z.number(),
+      endMs: z.number(),
+      blockStart: z.number(),
+      blockEnd: z.number(),
+    })
+  ),
+});
+
+export type SuggestedSegment = z.infer<typeof SegmentSuggestionSchema>["segments"][number];
+
+const SYSTEM_PROMPT = `You are an expert content editor and English language teacher.
+Your task is to analyze a YouTube video transcript and divide it into logical, standalone learning segments for shadowing practice.
+
+Rules:
+1. Each segment should ideal duration be 4 to 8 minutes long (around 40 to 80 transcript blocks).
+2. Cut ONLY at natural semantic boundaries (topic changes, pause in speech, end of a thought).
+3. Do NOT cut mid-sentence.
+4. Give each segment a short, engaging title in English describing its content (e.g. "Part 1: Introduction to AI", "Part 2: Core Concepts").
+5. Use the exact startMs of the first block in the segment and endMs (start + duration) of the last block.
+6. Return blockStart (0-indexed block index) and blockEnd (inclusive 0-indexed block index).`;
+
+export async function youtubeSegmentSuggesterNode(
+  rawTranscript: Array<{ text: string; start: number; duration: number }>
+): Promise<SuggestedSegment[]> {
+  // Compress transcript: group every 4-5 blocks to keep prompt concise
+  const compressedTranscript = rawTranscript.map((b, idx) => ({
+    i: idx,
+    t: Math.floor(b.start / 1000), // start time in seconds
+    txt: b.text,
+  }));
+
+  const response = await geminiService.invokeStructured(
+    SegmentSuggestionSchema,
+    [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: JSON.stringify(compressedTranscript) },
+    ],
+    { name: "youtube_segment_suggester" }
+  );
+
+  return response.segments;
+}
+```
+
+---
+
+### Task 41: API Endpoint mới — POST /api/story-shadowing/youtube/suggest-segments
+
+**Files:**
+- Create: `src/app/api/story-shadowing/youtube/suggest-segments/route.ts`
+
+- [x] **Step 1: Viết API phân tích video và trả về danh sách phân đoạn đề xuất**
+
+```typescript
+// src/app/api/story-shadowing/youtube/suggest-segments/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { youtubeTranscriptFetcherNode } from "@/lib/agents/story-shadowing-agent/nodes/youtube-transcript-fetcher.node";
+import { youtubeSegmentSuggesterNode } from "@/lib/agents/story-shadowing-agent/nodes/youtube-segment-suggester.node";
+
+const RequestSchema = z.object({
+  youtubeUrl: z.string().url("URL không hợp lệ"),
+});
+
+const SPLIT_THRESHOLD_BLOCKS = 200; // ~15 phút video (khoảng 200 block phụ đề)
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { youtubeUrl } = RequestSchema.parse(body);
+
+    // Phase 1: Fetch raw transcript & metadata
+    const fetchResult = await youtubeTranscriptFetcherNode({ youtubeUrl } as any);
+
+    if (fetchResult.error || !fetchResult.rawTranscript) {
+      return NextResponse.json(
+        { error: fetchResult.error || "Không thể tải phụ đề video." },
+        { status: 400 }
+      );
+    }
+
+    const totalBlocks = fetchResult.rawTranscript.length;
+
+    // Nếu video ngắn (< 200 blocks), không cần split
+    if (totalBlocks <= SPLIT_THRESHOLD_BLOCKS) {
+      return NextResponse.json({
+        needsSplitting: false,
+        videoId: fetchResult.youtubeVideoId,
+        title: fetchResult.title,
+      });
+    }
+
+    // Nếu video dài (>= 200 blocks), gọi AI gợi ý phân đoạn
+    const segments = await youtubeSegmentSuggesterNode(fetchResult.rawTranscript);
+
+    return NextResponse.json({
+      needsSplitting: true,
+      videoId: fetchResult.youtubeVideoId,
+      title: fetchResult.title,
+      totalBlocks,
+      segments,
+      rawTranscript: fetchResult.rawTranscript, // Trả lại để frontend truyền tiếp khi user confirm
+    });
+  } catch (err: any) {
+    console.error("[API suggest-segments]", err);
+    return NextResponse.json(
+      { error: err.message || "Lỗi xử lý phân đoạn video." },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+### Task 42: API Endpoint — POST /api/story-shadowing/youtube/create-series
+
+**Files:**
+- Create: `src/app/api/story-shadowing/youtube/create-series/route.ts`
+
+- [x] **Step 1: Viết API nhận danh sách segments đã duyệt và tạo mảng Storybook hàng loạt với SSE log**
+
+```typescript
+// src/app/api/story-shadowing/youtube/create-series/route.ts
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import { connectDB } from "@/lib/db/mongoose";
+import Storybook from "@/lib/db/models/Storybook";
+import { youtubeSentenceConsolidatorNode } from "@/lib/agents/story-shadowing-agent/nodes/youtube-sentence-consolidator.node";
+import { youtubeKeywordExtractorNode } from "@/lib/agents/story-shadowing-agent/nodes/youtube-keyword-extractor.node";
+
+const SegmentInputSchema = z.object({
+  title: z.string(),
+  startMs: z.number(),
+  endMs: z.number(),
+  blockStart: z.number(),
+  blockEnd: z.number(),
+});
+
+const RequestSchema = z.object({
+  youtubeUrl: z.string().url(),
+  videoId: z.string(),
+  videoTitle: z.string(),
+  selectedSegments: z.array(SegmentInputSchema).min(1, "Vui lòng chọn ít nhất 1 phần"),
+  rawTranscript: z.array(
+    z.object({
+      text: z.string(),
+      start: z.number(),
+      duration: z.number(),
+    })
+  ),
+  voice: z.string().default("en-US-Journey-F"),
+});
+
+export async function POST(request: NextRequest) {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const sendLog = (msg: string) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ message: msg })}\n\n`));
+      };
+
+      try {
+        const body = await request.json();
+        const parsed = RequestSchema.parse(body);
+
+        await connectDB();
+
+        const seriesId = crypto.randomUUID();
+        const totalParts = parsed.selectedSegments.length;
+        const createdStoryIds: string[] = [];
+
+        sendLog(`🚀 Bắt đầu tạo series [${parsed.videoTitle}] với ${totalParts} phần...`);
+
+        // Xử lý từng segment tuần tự để kiểm soát Rate Limit
+        for (let idx = 0; idx < parsed.selectedSegments.length; idx++) {
+          const seg = parsed.selectedSegments[idx];
+          const partNum = idx + 1;
+
+          sendLog(`[Phần ${partNum}/${totalParts}] 🧩 Đang phân tích: ${seg.title}...`);
+
+          // Slice transcript cho riêng segment này
+          const slicedTranscript = parsed.rawTranscript.slice(seg.blockStart, seg.blockEnd + 1);
+
+          // Call consolidator node for this slice
+          const consolidatorResult = await youtubeSentenceConsolidatorNode({
+            youtubeUrl: parsed.youtubeUrl,
+            rawTranscript: slicedTranscript,
+          } as any);
+
+          if (consolidatorResult.error || !consolidatorResult.sentences) {
+            sendLog(`⚠️ Lỗi khi xử lý Phần ${partNum}: ${consolidatorResult.error}. Bỏ qua phần này.`);
+            continue;
+          }
+
+          sendLog(`[Phần ${partNum}/${totalParts}] 🔑 Đang trích xuất từ vựng cốt lõi...`);
+
+          // Call keyword extractor node
+          const keywordResult = await youtubeKeywordExtractorNode({
+            sentences: consolidatorResult.sentences,
+          } as any);
+
+          // Tạo full text đại diện
+          const originalText = consolidatorResult.sentences.map((s) => s.text).join(" ");
+
+          const newStory = await Storybook.create({
+            title: `${parsed.videoTitle} - ${seg.title}`,
+            thumbnail: `https://img.youtube.com/vi/${parsed.videoId}/hqdefault.jpg`,
+            originalText,
+            sentences: consolidatorResult.sentences,
+            keywords: keywordResult.keywords || [],
+            level: consolidatorResult.level || "medium",
+            voice: parsed.voice,
+            speakingRate: 1.0,
+            sourceType: "youtube",
+            youtubeVideoId: parsed.videoId,
+            // Phase 7 series fields
+            seriesId,
+            partIndex: idx,
+            partTitle: seg.title,
+            totalParts,
+          });
+
+          createdStoryIds.push(newStory._id.toString());
+          sendLog(`[Phần ${partNum}/${totalParts}] ✅ Hoàn tất tạo bài!`);
+        }
+
+        sendLog(`🎉 Đã tạo thành công Series (${createdStoryIds.length}/${totalParts} bài). Đang chuyển hướng...`);
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ done: true, seriesId, firstStoryId: createdStoryIds[0] })}\n\n`
+          )
+        );
+      } catch (err: any) {
+        sendLog(`❌ Lỗi: ${err.message || "Lỗi tạo series"}`);
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+}
+```
+
+---
+
+### Task 43: UI — Segment Confirmation Dialog Component
+
+**Files:**
+- Create: `src/components/story-shadowing/segment-preview-dialog.tsx`
+- Modify: `src/app/apps/story-shadowing/create/page.tsx`
+
+- [x] **Step 1: Viết Component `SegmentPreviewDialog`**
+
+```tsx
+// src/components/story-shadowing/segment-preview-dialog.tsx
+"use client";
+
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import type { SuggestedSegment } from "@/lib/agents/story-shadowing-agent/nodes/youtube-segment-suggester.node";
+
+interface SegmentPreviewDialogProps {
+  open: boolean;
+  videoTitle: string;
+  segments: SuggestedSegment[];
+  onConfirm: (selected: SuggestedSegment[]) => void;
+  onCancel: () => void;
+}
+
+export function SegmentPreviewDialog({
+  open,
+  videoTitle,
+  segments: initialSegments,
+  onConfirm,
+  onCancel,
+}: SegmentPreviewDialogProps) {
+  const [segments, setSegments] = useState(
+    initialSegments.map((s) => ({ ...s, selected: true }))
+  );
+
+  const toggleSelect = (index: number) => {
+    setSegments((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, selected: !item.selected } : item))
+    );
+  };
+
+  const updateTitle = (index: number, newTitle: string) => {
+    setSegments((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, title: newTitle } : item))
+    );
+  };
+
+  const selectedCount = segments.filter((s) => s.selected).length;
+
+  const handleConfirm = () => {
+    const selected = segments.filter((s) => s.selected);
+    onConfirm(selected);
+  };
+
+  const formatDuration = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(val) => !val && onCancel()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-slate-800">
+            🎬 Video dài — Gợi ý chia bài học ({segments.length} phần)
+          </DialogTitle>
+          <p className="text-sm text-slate-500 line-clamp-1">{videoTitle}</p>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto space-y-3 py-3 pr-1">
+          {segments.map((seg, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                seg.selected
+                  ? "bg-indigo-50/50 border-indigo-200"
+                  : "bg-slate-50 border-slate-200 opacity-60"
+              }`}
+            >
+              <Checkbox
+                checked={seg.selected}
+                onCheckedChange={() => toggleSelect(idx)}
+                id={`seg-${idx}`}
+              />
+              <div className="flex-1 space-y-1">
+                <Input
+                  value={seg.title}
+                  onChange={(e) => updateTitle(idx, e.target.value)}
+                  className="font-medium text-sm bg-white"
+                />
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <span>⏱ {formatDuration(seg.endMs - seg.startMs)}</span>
+                  <span>📍 Block {seg.blockStart} → {seg.blockEnd}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <DialogFooter className="flex items-center justify-between border-t pt-3">
+          <span className="text-xs text-slate-500">
+            Đã chọn {selectedCount}/{segments.length} phần (Dự kiến: {selectedCount * 30}s tạo)
+          </span>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel}>
+              Hủy bỏ
+            </Button>
+            <Button
+              disabled={selectedCount === 0}
+              onClick={handleConfirm}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Tạo {selectedCount} phần bài học →
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+- [x] **Step 2: Cập nhật `src/app/apps/story-shadowing/create/page.tsx`**
+
+Thích ứng flow `suggest-segments` trước khi quyết định tạo bài đơn lẻ hay mở `SegmentPreviewDialog`.
+
+---
+
+### Task 44: UI — History Page Series Grouping
+
+**Files:**
+- Modify: `src/app/api/story-shadowing/route.ts`
+- Modify: `src/app/apps/story-shadowing/page.tsx`
+
+- [x] **Step 1: Cập nhật API GET `/api/story-shadowing` bổ sung series fields vào projection**
+- [x] **Step 2: Group bài học theo `seriesId` trên giao diện trang danh sách (Collapsible Card)**
+
+---
+
+### Task 45: UI — Player Series Navigation
+
+**Files:**
+- Create: `src/app/api/story-shadowing/series/[seriesId]/route.ts`
+- Modify: `src/app/apps/story-shadowing/player/[id]/page.tsx`
+
+- [x] **Step 1: Viết API lấy thông tin tất cả phần trong cùng 1 Series**
+
+```typescript
+// src/app/api/story-shadowing/series/[seriesId]/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { connectDB } from "@/lib/db/mongoose";
+import Storybook from "@/lib/db/models/Storybook";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ seriesId: string }> }
+) {
+  try {
+    const { seriesId } = await params;
+    await connectDB();
+
+    const parts = await Storybook.find({ seriesId })
+      .select("title partIndex partTitle totalParts level createdAt")
+      .sort({ partIndex: 1 });
+
+    return NextResponse.json(parts);
+  } catch (err) {
+    return NextResponse.json({ error: "Lỗi truy vấn series" }, { status: 500 });
+  }
+}
+```
+
+- [x] **Step 2: Thêm thanh chuyển hướng Part nhanh trên Player (`Part 1 of 3`) và Nút "Chuyển sang phần tiếp theo" khi hoàn thành bài Shadowing.**
+
+---
+
+## 🛑 User Feedback / Review Required
+
+> [!IMPORTANT]
+> **Điểm cần Anh Tú lưu ý trước khi triển khai:**
+> 1. **Mongoose Model Update**: Để tránh xung đột schema trong môi trường Next.js hot-reload, model đã được nâng cấp lên `Storybook_v5`. Mọi dữ liệu cũ ở `Storybook_v4` vẫn được giữ nguyên trong MongoDB collection `storybooks`.
+> 2. **Concurrency Control**: Khi chia video dài thành 3-5 phần, ứng dụng sẽ gọi Gemini phân tích tuần tự từng phần trong API `/create-series`. Tiến trình được phát trực tiếp (SSE Stream) ra UI nên người dùng sẽ thấy thanh tiến trình chạy liên tục.
+
+*Made by Anh Tu - Share to be share*
+
+## 🛑 User Feedback / Review Required
+
+> [!IMPORTANT]
+> **Điểm cần Anh Tú lưu ý trước khi triển khai:**
+> 1. **Mongoose Model Update**: Để tránh xung đột schema trong môi trường Next.js hot-reload, model đã được nâng cấp lên `Storybook_v5`. Mọi dữ liệu cũ ở `Storybook_v4` vẫn được giữ nguyên trong MongoDB collection `storybooks`.
+> 2. **Concurrency Control**: Khi chia video dài thành 3-5 phần, ứng dụng sẽ gọi Gemini phân tích tuần tự từng phần trong API `/create-series`. Tiến trình được phát trực tiếp (SSE Stream) ra UI nên người dùng sẽ thấy thanh tiến trình chạy liên tục.
+
+*Made by Anh Tu - Share to be share*

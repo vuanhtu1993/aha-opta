@@ -46,3 +46,4 @@ async function youtubeHandler(req: NextRequest, log: (msg: string) => void) {
 }
 
 export const POST = withAgentSSE(youtubeHandler);
+export const maxDuration = 300;

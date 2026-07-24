@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
+import { SegmentPreviewDialog } from "@/components/story-shadowing/segment-preview-dialog";
+import type { SuggestedSegment } from "@/lib/agents/story-shadowing-agent/nodes/youtube-segment-suggester.node";
 
 export default function CreatePlayerPage() {
   const [inputType, setInputType] = useState<"manual" | "url" | "youtube">("youtube");
@@ -16,6 +18,14 @@ export default function CreatePlayerPage() {
   const [voice, setVoice] = useState("en-US-Journey-F");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Phase 7 Segment Dialog States
+  const [showSegmentDialog, setShowSegmentDialog] = useState(false);
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoId, setVideoId] = useState("");
+  const [suggestedSegments, setSuggestedSegments] = useState<SuggestedSegment[]>([]);
+  const [rawTranscript, setRawTranscript] = useState<any[]>([]);
+
   const router = useRouter();
   const { fetchSSE } = useAgentFetch();
 
@@ -48,13 +58,66 @@ export default function CreatePlayerPage() {
     setError(null);
 
     try {
-      const data = await fetchSSE<{ id: string }>("/api/story-shadowing/youtube", {
+      // 1. Phân tích xem video có cần chia nhỏ không
+      const res = await fetch("/api/story-shadowing/youtube/suggest-segments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ youtubeUrl }),
       });
 
-      router.push(`/apps/story-shadowing/player/${data.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lỗi khi phân tích video YouTube");
+
+      if (data.needsSplitting) {
+        // Video dài >= 15 phút → Mở dialog gợi ý phân đoạn
+        setVideoTitle(data.title);
+        setVideoId(data.videoId);
+        setSuggestedSegments(data.segments);
+        setRawTranscript(data.rawTranscript);
+        setShowSegmentDialog(true);
+        setLoading(false);
+      } else {
+        // Video ngắn → Chạy flow 1 bài đơn lẻ như cũ
+        const result = await fetchSSE<{ id: string }>("/api/story-shadowing/youtube", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ youtubeUrl }),
+        });
+        router.push(`/apps/story-shadowing/player/${result.id}`);
+      }
+    } catch (err) {
+      setError((err as Error).message);
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmSeries = async (selectedSegments: SuggestedSegment[]) => {
+    setShowSegmentDialog(false);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await fetchSSE<{ done: boolean; seriesId: string; firstStoryId: string }>(
+        "/api/story-shadowing/youtube/create-series",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            youtubeUrl,
+            videoId,
+            videoTitle,
+            selectedSegments,
+            rawTranscript,
+            voice,
+          }),
+        }
+      );
+
+      if (result.firstStoryId) {
+        router.push(`/apps/story-shadowing/player/${result.firstStoryId}`);
+      } else {
+        router.push("/apps/story-shadowing");
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -89,9 +152,11 @@ export default function CreatePlayerPage() {
           href="/apps/story-shadowing"
           className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
         >
-          ← Quay lại
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Tạo bài luyện tập mới</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Creating story</h1>
       </div>
 
       {/* Tabs */}
@@ -254,6 +319,15 @@ export default function CreatePlayerPage() {
           </button>
         </form>
       )}
+
+      {/* Segment Dialog for long YouTube videos */}
+      <SegmentPreviewDialog
+        open={showSegmentDialog}
+        videoTitle={videoTitle}
+        segments={suggestedSegments}
+        onConfirm={handleConfirmSeries}
+        onCancel={() => setShowSegmentDialog(false)}
+      />
     </div>
   );
 }

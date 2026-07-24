@@ -95,9 +95,9 @@ export function ShadowingPlayer({ sentences, title, level, onBack, sourceType = 
 
           {/* Trạng thái Player Inline */}
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${currentState === "AI_SPEAKING" ? "bg-blue-50 text-blue-700" :
-              currentState === "USER_SHADOWING" ? "bg-[#FFBA49]/10 text-[#d9962a]" :
-                currentState === "DONE" ? "bg-green-50 text-green-700" :
-                  "bg-slate-50 text-slate-600"
+            currentState === "USER_SHADOWING" ? "bg-[#FFBA49]/10 text-[#d9962a]" :
+              currentState === "DONE" ? "bg-green-50 text-green-700" :
+                "bg-slate-50 text-slate-600"
             }`}>
             {currentState === "AI_SPEAKING" && <><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> {isYoutube ? "Speaker đang đọc" : "AI đang đọc"}</>}
             {currentState === "USER_SHADOWING" && <><span className="w-1.5 h-1.5 rounded-full bg-[#FFBA49] animate-bounce" /> Lặp lại theo {isYoutube ? "Speaker" : "AI"}</>}
@@ -145,12 +145,12 @@ export function ShadowingPlayer({ sentences, title, level, onBack, sourceType = 
               <button
                 onClick={pause}
                 className="px-8 py-3 rounded-full bg-slate-800 text-white font-bold hover:bg-slate-900 transition-colors shadow-lg flex items-center gap-2"
-                aria-label="Tạm dừng"
+                aria-label="Pause"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                Tạm dừng
+                Pause
               </button>
             ) : (
               <button
@@ -162,7 +162,7 @@ export function ShadowingPlayer({ sentences, title, level, onBack, sourceType = 
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                 </svg>
-                {currentState === "PAUSED" ? "Tiếp tục" : (isYoutube && !ytPlayer ? "Đang tải Audio..." : "Đọc đoạn")}
+                {currentState === "PAUSED" ? "Tiếp tục" : (isYoutube && !ytPlayer ? "Loading Audio..." : "Speaking")}
               </button>
             )}
 

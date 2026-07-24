@@ -39,7 +39,7 @@ export default function StorybookPage() {
         </div>
         <Link
           href="/apps/story-shadowing/create"
-          className="px-6 py-3 bg-[#FFBA49] text-slate-900 font-bold rounded-xl hover:bg-[#e6a640] transition-colors shadow-sm"
+          className="px-6 py-3 bg-[#FFBA49] text-slate-800 font-bold rounded-xl hover:bg-[#e6a640] transition-colors shadow-sm"
         >
           + Tạo bài luyện tập
         </Link>
@@ -54,7 +54,7 @@ export default function StorybookPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {history.map((story) => (
-            <Link 
+            <Link
               key={story._id}
               href={`/apps/story-shadowing/player/${story._id}`}
               className="flex flex-col bg-white border border-slate-100 shadow-sm rounded-2xl hover:border-[#FFBA49] hover:shadow-md transition-all group overflow-hidden"
@@ -93,7 +93,7 @@ export default function StorybookPage() {
                     </span>
                   </div>
                   {story.sourceType === 'youtube' && story.youtubeVideoId && (
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         window.open(`https://youtube.com/watch?v=${story.youtubeVideoId}`, '_blank');
@@ -102,7 +102,7 @@ export default function StorybookPage() {
                       title="Xem trên YouTube"
                     >
                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.059 0 12 0 12s0 3.941.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122-2.136C24 15.941 24 12 24 12s0-3.941-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.059 0 12 0 12s0 3.941.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122-2.136C24 15.941 24 12 24 12s0-3.941-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                       </svg>
                     </button>
                   )}

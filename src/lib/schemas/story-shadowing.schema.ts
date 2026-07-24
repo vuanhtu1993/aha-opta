@@ -11,10 +11,19 @@ export type Word = z.infer<typeof WordSchema>;
 // Schema cho từ vựng khó được trích xuất
 export const KeywordSchema = z.object({
   word: z.string(),
+  ipa: z.string().optional(),
   explanation: z.string(),
   level: z.enum(["medium", "hard"]),
-  wordFamily: z.array(z.string()).optional(),
-  collocations: z.array(z.string()).optional(),
+  wordFamily: z.array(z.object({
+    word: z.string(),
+    partOfSpeech: z.string().optional(),
+    ipa: z.string().optional(),
+    explanation: z.string()
+  })).optional(),
+  collocations: z.array(z.object({
+    collocation: z.string(),
+    explanation: z.string()
+  })).optional(),
 });
 
 export type Keyword = z.infer<typeof KeywordSchema>;

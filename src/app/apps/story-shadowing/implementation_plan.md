@@ -1241,5 +1241,46 @@ Xây dựng một `youtubeShadowingGraph` hoàn toàn mới:
   - [x] **Bắt sự kiện Asynchronous Seek**: Bổ sung cờ `hasSeekedRef` để xử lý triệt để lỗi "không phát âm thanh" khi bấm Back (buộc script phải chờ YouTube load xong thao tác tua ngược trước khi tính giờ).
   - [x] Khi thời gian chạy tới `endMs` của câu hiện tại -> Dừng Video -> Chuyển state sang `USER_SHADOWING` -> Đếm ngược thời gian -> Hết giờ Play Video tiếp.
 
-*Made by Anh Tu - Share to be share*
+---
 
+## 🆕 Phase 6.1: Cải thiện Trải nghiệm Học Từ vựng (Vocabulary Enrichment)
+
+> **Định nghĩa:** Vocabulary Enrichment (Làm giàu từ vựng) là quá trình cung cấp thêm các tầng thông tin bổ trợ (như ngữ âm, từ loại, ngữ cảnh sử dụng) giúp người học hiểu sâu bản chất của một từ thay vì học vẹt. Ở đây, chúng ta "giải phẫu" việc học một từ bằng cách bổ sung IPA (mặt âm thanh) và giải thích ngữ nghĩa cho Word Family/Collocation (mặt ứng dụng). 
+> **Tại sao cần làm điều này?** Việc chỉ liệt kê Word Family và Collocation dạng text thô khiến người dùng bị quá tải thông tin mà không hiểu cách dùng. Phiên âm IPA giúp chuẩn hóa âm thanh đầu vào, còn giải thích ngắn giúp neo giữ ý nghĩa vào trí nhớ ngắn hạn.
+
+### 🏗️ Kế hoạch Triển khai (Implementation Plan)
+
+#### Task 36: Tái cấu trúc Schema & Database (Schema Refactoring)
+*Tại sao?* Cấu trúc mảng chuỗi `string[]` hiện tại của `wordFamily` và `collocations` không đủ không gian để chứa metadata giải thích. Chúng ta cần chuyển sang mảng Object.
+**Files:**
+- Modify: `src/lib/schemas/story-shadowing.schema.ts`
+- Modify: `src/lib/db/models/Storybook.ts`
+
+- [ ] Cập nhật `KeywordSchema`:
+  - Thêm `ipa: string` cho keyword chính.
+  - Sửa `wordFamily` thành mảng Object: `[{ word: string, explanation: string }]`.
+  - Sửa `collocations` thành mảng Object: `[{ collocation: string, explanation: string }]`.
+- [ ] Cập nhật Mongoose Schema `StorybookKeywordSchema` tương ứng.
+
+#### Task 37: Tối ưu hóa Prompt cho AI (Prompt Engineering)
+*Tại sao?* Gemini cần chỉ thị rõ ràng để sinh ra giải thích ngắn gọn, đúng trọng tâm (để không phá vỡ UI) và chuẩn hóa IPA.
+**Files:**
+- Modify: `src/lib/agents/story-shadowing-agent/nodes/keyword-extractor.node.ts`
+
+- [ ] Điều chỉnh System Prompt:
+  - **IPA**: Yêu cầu cung cấp phiên âm IPA quốc tế chuẩn (broad transcription) cho từ khóa chính.
+  - **Explanation**: Bắt buộc giải thích ngắn gọn, súc tích (dưới 10 từ, ưu tiên tiếng Việt) cho từng từ trong Word Family và Collocation. Tránh sinh ra câu dài dòng.
+
+#### Task 38: Nâng cấp UI Hiển thị Từ vựng (UI Enhancements)
+*Tại sao?* UI cần thể hiện được cấu trúc dữ liệu mới mà không làm rối mắt (cognitive overload). Phân cấp thị giác (Visual hierarchy) phải tốt.
+**Files:**
+- Modify: `src/app/apps/story-shadowing/player/[id]/page.tsx`
+- (Hoặc component con hiển thị Keyword)
+
+- [ ] Thêm IPA vào ngay bên dưới hoặc bên cạnh keyword chính, sử dụng chữ màu nhạt (muted text) và font phù hợp cho IPA (ví dụ: `<span className="font-mono text-sm text-slate-500">/ˈkiː.wɜːd/</span>`).
+- [ ] Trong phần Accordion của Word Family & Collocations: 
+  - Render list các object.
+  - Phân tách bằng typography: Từ/cụm từ chính in đậm (`font-semibold`), giải thích in thường kèm màu nhạt (`text-slate-600 text-sm`).
+
+*Made by Anh Tu - Share to be share*
+```

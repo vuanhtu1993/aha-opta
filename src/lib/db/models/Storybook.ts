@@ -16,10 +16,11 @@ export interface IStorybookSentence {
 
 export interface IStorybookKeyword {
   word: string;
+  ipa?: string;
   explanation: string;
   level: "medium" | "hard";
-  wordFamily?: string[];
-  collocations?: string[];
+  wordFamily?: { word: string; partOfSpeech?: string; ipa?: string; explanation: string }[];
+  collocations?: { collocation: string; explanation: string }[];
 }
 
 export interface IStorybook extends Document {
@@ -52,10 +53,17 @@ const StorybookSentenceSchema = new Schema<IStorybookSentence>({
 
 const StorybookKeywordSchema = new Schema<IStorybookKeyword>({
   word: { type: String, required: true },
+  ipa: { type: String, required: false },
   explanation: { type: String, required: true },
   level: { type: String, enum: ["medium", "hard"], required: true },
-  wordFamily: { type: [String], required: false },
-  collocations: { type: [String], required: false }
+  wordFamily: { 
+    type: [{ word: String, partOfSpeech: String, ipa: String, explanation: String }], 
+    required: false 
+  },
+  collocations: { 
+    type: [{ collocation: String, explanation: String }], 
+    required: false 
+  }
 }, { _id: false });
 
 const StorybookSchema = new Schema<IStorybook>(

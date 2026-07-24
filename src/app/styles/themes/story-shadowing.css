@@ -1,0 +1,24 @@
+@theme inline {
+  /* Story shadowing color system */
+  /* Primary color */
+  --color-shadowing-primary: #ffba49;
+  --color-shadowing-primary-foreground: #ffffff;
+
+  /* Secondary color */
+  --color-shadowing-secondary: #22be61;
+  --color-shadowing-secondary-foreground: #ffffff;
+
+  /* Border color */
+  --color-shadowing-border: #e8e8e8;
+
+  /* Accent color */
+  --color-shadowing-accent: #FFC857;
+  --color-shadowing-accent-foreground: #4A301C;
+
+  /* Ring color */
+  --color-shadowing-ring: #D76E59;
+
+  /* Text color */
+  --color-shadowing-text: #2D1B16;
+  --color-shadowing-text-secondary: #6C423D;
+}

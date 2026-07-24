@@ -1256,20 +1256,20 @@ Xây dựng một `youtubeShadowingGraph` hoàn toàn mới:
 - Modify: `src/lib/schemas/story-shadowing.schema.ts`
 - Modify: `src/lib/db/models/Storybook.ts`
 
-- [ ] Cập nhật `KeywordSchema`:
+- [x] Cập nhật `KeywordSchema`:
   - Thêm `ipa: string` cho keyword chính.
-  - Sửa `wordFamily` thành mảng Object: `[{ word: string, explanation: string }]`.
+  - Sửa `wordFamily` thành mảng Object: `[{ word: string, partOfSpeech?: string, ipa?: string, explanation: string }]`.
   - Sửa `collocations` thành mảng Object: `[{ collocation: string, explanation: string }]`.
-- [ ] Cập nhật Mongoose Schema `StorybookKeywordSchema` tương ứng.
+- [x] Cập nhật Mongoose Schema `StorybookKeywordSchema` tương ứng.
 
 #### Task 37: Tối ưu hóa Prompt cho AI (Prompt Engineering)
 *Tại sao?* Gemini cần chỉ thị rõ ràng để sinh ra giải thích ngắn gọn, đúng trọng tâm (để không phá vỡ UI) và chuẩn hóa IPA.
 **Files:**
 - Modify: `src/lib/agents/story-shadowing-agent/nodes/keyword-extractor.node.ts`
 
-- [ ] Điều chỉnh System Prompt:
+- [x] Điều chỉnh System Prompt:
   - **IPA**: Yêu cầu cung cấp phiên âm IPA quốc tế chuẩn (broad transcription) cho từ khóa chính.
-  - **Explanation**: Bắt buộc giải thích ngắn gọn, súc tích (dưới 10 từ, ưu tiên tiếng Việt) cho từng từ trong Word Family và Collocation. Tránh sinh ra câu dài dòng.
+  - **Explanation**: Bắt buộc giải thích bằng tiếng Anh đơn giản (B1 level) cho từng từ trong Word Family và Collocation, bổ sung partOfSpeech và ipa. Tránh sinh ra câu dài dòng. Bổ sung các chỉ thị chặn vòng lặp vô tận.
 
 #### Task 38: Nâng cấp UI Hiển thị Từ vựng (UI Enhancements)
 *Tại sao?* UI cần thể hiện được cấu trúc dữ liệu mới mà không làm rối mắt (cognitive overload). Phân cấp thị giác (Visual hierarchy) phải tốt.
@@ -1277,10 +1277,11 @@ Xây dựng một `youtubeShadowingGraph` hoàn toàn mới:
 - Modify: `src/app/apps/story-shadowing/player/[id]/page.tsx`
 - (Hoặc component con hiển thị Keyword)
 
-- [ ] Thêm IPA vào ngay bên dưới hoặc bên cạnh keyword chính, sử dụng chữ màu nhạt (muted text) và font phù hợp cho IPA (ví dụ: `<span className="font-mono text-sm text-slate-500">/ˈkiː.wɜːd/</span>`).
-- [ ] Trong phần Accordion của Word Family & Collocations: 
-  - Render list các object.
+- [x] Thêm IPA vào ngay bên dưới hoặc bên cạnh keyword chính, sử dụng chữ màu nhạt (muted text) và font phù hợp cho IPA (ví dụ: `<span className="font-mono text-sm text-slate-500">/ˈkiː.wɜːd/</span>`).
+- [x] Trong phần Accordion của Word Family & Collocations: 
+  - Render list các object kèm loại từ `(v, n, adj)` và `ipa`.
   - Phân tách bằng typography: Từ/cụm từ chính in đậm (`font-semibold`), giải thích in thường kèm màu nhạt (`text-slate-600 text-sm`).
+- [x] Tích hợp Design System màu sắc Tailwind CSS v4 (`--color-shadowing-*`) vào globals.css.
 
 *Made by Anh Tu - Share to be share*
 ```

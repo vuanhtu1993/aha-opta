@@ -1211,32 +1211,35 @@ Sử dụng thư viện `@mozilla/readability` và `jsdom` để bóc tách nộ
 ### 🏗️ Kế hoạch Triển khai (Implementation Plan)
 
 #### Task 31: Cấu trúc Database & State
-- Bổ sung `sourceType: "text" | "youtube"` vào `Storybook` schema.
-- Thêm `youtubeVideoId: string` vào model.
-- Cập nhật `SentenceSchema` bổ sung trường `startMs` và `endMs` (dùng cho YouTube) bên cạnh `audioBase64` (dùng cho Text).
+- [x] Bổ sung `sourceType: "text" | "youtube"` vào `Storybook` schema.
+- [x] Thêm `youtubeVideoId: string` vào model.
+- [x] Cập nhật `SentenceSchema` bổ sung trường `startMs` và `endMs` (dùng cho YouTube) bên cạnh `audioBase64` (dùng cho Text).
 
 #### Task 32: LangGraph Pipeline mới cho YouTube
 Xây dựng một `youtubeShadowingGraph` hoàn toàn mới:
-1. **Node 1 - Transcript Fetcher**: Lấy toàn bộ mảng phụ đề thô từ link YouTube.
-2. **Node 2 - Sentence Consolidator (Gemini)**: Gộp các block phụ đề thô thành các câu hoàn chỉnh, giữ nguyên timestamps.
-3. **Node 3 - Keyword Extractor & IPA**: Tái sử dụng logic của Phase 5.1 và Phase 3 để phân tích từ vựng và phiên âm IPA.
+- [x] **Node 1 - Transcript Fetcher**: Lấy toàn bộ mảng phụ đề từ link YouTube. **Cải tiến:** Ưu tiên chỉ lấy phụ đề thủ công (Manual CC) tiếng Anh để tránh lỗi cắt câu của ASR. Nếu không có, ném lỗi yêu cầu đổi video.
+- [x] **Node 2 - Sentence Consolidator (Gemini)**: Gộp các block phụ đề thô thành câu hoàn chỉnh, tính toán lại `startMs` và `endMs`.
+  - **Kiến trúc Map-Reduce + Chunking**: Video dài được chia thành các chunk (80 blocks) để xử lý song song vượt qua giới hạn context của Gemini.
+  - **Zero-shifting time**: Tịnh tiến mốc thời gian của từng chunk về 0 trước khi đẩy cho LLM để chống lại "hội chứng ảo giác thời gian" (Time Hallucination) do Pattern Matching.
+  - **Nội suy thời gian (Interpolation)**: Phân bổ đều thời lượng dựa trên số lượng ký tự cho các câu nằm trong cùng 1 block phụ đề thủ công.
+  - **Mid-point clamping**: Xử lý mượt mà các đoạn chồng lấn thời gian (overlap) bằng cách lấy trung bình cộng.
+- [x] **Node 3 - Keyword Extractor & IPA**: Tái sử dụng logic phân tích từ vựng và phiên âm IPA.
 
 #### Task 33: API Endpoint mới
-- Tạo `POST /api/story-shadowing/youtube` để nhận Link YouTube, parse ID và gọi LangGraph Pipeline ở Task 32.
+- [x] Tạo `POST /api/story-shadowing/youtube` để nhận Link YouTube, parse ID và gọi LangGraph Pipeline. Triển khai xử lý Streaming log (Server-Sent Events) để cập nhật trạng thái tiến trình ra UI.
 
 #### Task 34: Cập nhật UI Create Page
-- Form nhập liệu có thêm Tab "Nhập từ YouTube".
-- Tự động fetch tiêu đề và thumbnail của video YouTube qua `oEmbed` hoặc IFrame.
+- [x] Form nhập liệu có thêm Tab "Từ YouTube".
+- [x] Tự động fetch tiêu đề và thumbnail của video YouTube.
+- [x] Hiển thị terminal log realtime (Server-Sent Events) các bước đang chạy (VD: Đang phân tích video, Đang lọc từ vựng...).
 
 #### Task 35: Viết lại Player Engine (React-YouTube)
-- Nâng cấp `useShadowingPlayer` (hoặc viết hook riêng `useYouTubeShadowingPlayer`):
-  - Thay vì phát thẻ `<audio>`, hook sẽ quản lý tham chiếu đến `YouTube Player`.
-  - Sử dụng vòng lặp `requestAnimationFrame` (hoặc `setInterval`) để theo dõi `player.getCurrentTime()`.
-  - Khi thời gian chạy tới `endMs` của câu hiện tại -> Dừng Video -> Chuyển state sang `USER_SHADOWING` -> Đếm ngược thời gian (dựa trên thời lượng câu) -> Hết giờ thì Play Video tiếp.
+- [x] Nâng cấp bằng hook riêng `useYouTubeShadowingPlayer`:
+  - [x] Thay vì phát thẻ `<audio>`, hook sẽ quản lý tham chiếu đến `YouTube Player`.
+  - [x] Ẩn Iframe (Option 2) giữ UI đồng nhất với bản Text. Hiển thị mô tả video, link gốc và thời gian dự kiến.
+  - [x] Sử dụng `requestAnimationFrame` để theo dõi `player.getCurrentTime()`.
+  - [x] **Bắt sự kiện Asynchronous Seek**: Bổ sung cờ `hasSeekedRef` để xử lý triệt để lỗi "không phát âm thanh" khi bấm Back (buộc script phải chờ YouTube load xong thao tác tua ngược trước khi tính giờ).
+  - [x] Khi thời gian chạy tới `endMs` của câu hiện tại -> Dừng Video -> Chuyển state sang `USER_SHADOWING` -> Đếm ngược thời gian -> Hết giờ Play Video tiếp.
 
-> [!IMPORTANT]
-> **Open Question cho Anh Tú:**
-> Khi hiển thị YouTube Video trong trang Player, bạn muốn:
-> 1. **Hiển thị Video nhỏ (ở góc hoặc phía trên)** để người học xem khẩu hình miệng của người nói.
-> 2. **Ẩn hoàn toàn Video**, chỉ phát âm thanh giống hệt như phiên bản Text-to-Speech cũ để giữ UI đồng nhất.
-> Bạn muốn chọn Option nào?
+*Made by Anh Tu - Share to be share*
+

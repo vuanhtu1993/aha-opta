@@ -18,7 +18,7 @@ export interface IStorybookKeyword {
   word: string;
   ipa?: string;
   explanation: string;
-  level: "medium" | "hard";
+  level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
   wordFamily?: { word: string; partOfSpeech?: string; ipa?: string; explanation: string }[];
   collocations?: { collocation: string; explanation: string }[];
 }
@@ -61,7 +61,7 @@ const StorybookKeywordSchema = new Schema<IStorybookKeyword>({
   word: { type: String, required: true },
   ipa: { type: String, required: false },
   explanation: { type: String, required: true },
-  level: { type: String, enum: ["medium", "hard"], required: true },
+  level: { type: String, enum: ["A1", "A2", "B1", "B2", "C1", "C2"], required: true },
   wordFamily: { 
     type: [{ word: String, partOfSpeech: String, ipa: String, explanation: String }], 
     required: false 

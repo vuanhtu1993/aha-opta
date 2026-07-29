@@ -4,7 +4,8 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db/mongoose";
 import Storybook from "@/lib/db/models/Storybook";
 import { youtubeSentenceConsolidatorNode } from "@/lib/agents/story-shadowing-agent/nodes/youtube-sentence-consolidator.node";
-import { youtubeKeywordExtractorNode } from "@/lib/agents/story-shadowing-agent/nodes/youtube-keyword-extractor.node";
+import { youtubeKeywordIdentifierNode } from "@/lib/agents/story-shadowing-agent/nodes/keyword-identifier.node";
+import { youtubeKeywordEnricherNode } from "@/lib/agents/story-shadowing-agent/nodes/keyword-enricher.node";
 
 const SegmentInputSchema = z.object({
   title: z.string(),
@@ -73,9 +74,16 @@ export async function POST(request: NextRequest) {
 
           sendLog(`[Phần ${partNum}/${totalParts}] 🔑 Đang trích xuất từ vựng cốt lõi...`);
 
-          // Call keyword extractor node
-          const keywordResult = await youtubeKeywordExtractorNode({
-            sentences: consolidatorResult.sentences,
+          // Call keyword identifier node
+          const identifierResult = await youtubeKeywordIdentifierNode({
+            rawSentences: consolidatorResult.sentences,
+          } as any);
+
+          sendLog(`[Phần ${partNum}/${totalParts}] 🔑 Đang tra cứu từ điển và phân tích chi tiết...`);
+
+          // Call keyword enricher node
+          const enricherResult = await youtubeKeywordEnricherNode({
+            identifiedKeywords: identifierResult.identifiedKeywords || [],
           } as any);
 
           // Tạo full text đại diện
@@ -86,7 +94,7 @@ export async function POST(request: NextRequest) {
             thumbnail: `https://img.youtube.com/vi/${parsed.videoId}/hqdefault.jpg`,
             originalText,
             sentences: consolidatorResult.sentences,
-            keywords: keywordResult.keywords || [],
+            keywords: enricherResult.keywords || [],
             level: consolidatorResult.level || "medium",
             voice: parsed.voice,
             speakingRate: 1.0,

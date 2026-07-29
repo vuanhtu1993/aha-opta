@@ -2,7 +2,8 @@ import { StateGraph, START, END } from "@langchain/langgraph";
 import { YouTubeShadowingAgentState } from "./youtube-state";
 import { youtubeTranscriptFetcherNode } from "./nodes/youtube-transcript-fetcher.node";
 import { youtubeSentenceConsolidatorNode } from "./nodes/youtube-sentence-consolidator.node";
-import { youtubeKeywordExtractorNode } from "./nodes/youtube-keyword-extractor.node";
+import { youtubeKeywordIdentifierNode } from "./nodes/keyword-identifier.node";
+import { youtubeKeywordEnricherNode } from "./nodes/keyword-enricher.node";
 
 // 1. Khởi tạo Graph
 const graphBuilder = new StateGraph<typeof YouTubeShadowingAgentState, any, any, string>(YouTubeShadowingAgentState);
@@ -10,7 +11,8 @@ const graphBuilder = new StateGraph<typeof YouTubeShadowingAgentState, any, any,
 // 2. Thêm Node
 graphBuilder.addNode("transcriptFetcher", youtubeTranscriptFetcherNode);
 graphBuilder.addNode("sentenceConsolidator", youtubeSentenceConsolidatorNode);
-graphBuilder.addNode("keywordExtractor", youtubeKeywordExtractorNode);
+graphBuilder.addNode("keywordIdentifier", youtubeKeywordIdentifierNode);
+graphBuilder.addNode("keywordEnricher", youtubeKeywordEnricherNode);
 
 // 3. Định nghĩa luồng (Parallel execution)
 // Fetch transcript first
@@ -18,11 +20,12 @@ graphBuilder.addEdge(START, "transcriptFetcher");
 
 // Then branch into two parallel tasks: Consolidate sentences & Extract Keywords
 graphBuilder.addEdge("transcriptFetcher", "sentenceConsolidator");
-graphBuilder.addEdge("transcriptFetcher", "keywordExtractor");
+graphBuilder.addEdge("transcriptFetcher", "keywordIdentifier");
 
 // Join branches to END
 graphBuilder.addEdge("sentenceConsolidator", END);
-graphBuilder.addEdge("keywordExtractor", END);
+graphBuilder.addEdge("keywordIdentifier", "keywordEnricher");
+graphBuilder.addEdge("keywordEnricher", END);
 
 // 4. Compile
 export const youtubeShadowingAgentGraph = graphBuilder.compile();
@@ -32,7 +35,7 @@ export const youtubeShadowingAgentGraph = graphBuilder.compile();
  */
 export async function runYouTubeShadowingPipeline(youtubeUrl: string, log: (msg: string) => void) {
   log("[YouTube Pipeline] Bắt đầu xử lý video...");
-  
+
   let finalState: any = { youtubeUrl };
 
   const stream = await youtubeShadowingAgentGraph.stream({ youtubeUrl });
@@ -46,9 +49,13 @@ export async function runYouTubeShadowingPipeline(youtubeUrl: string, log: (msg:
       log("[YouTube Pipeline] 🧩 Đã ghép câu và tạo phiên âm (IPA).");
       finalState = { ...finalState, ...chunk.sentenceConsolidator };
     }
-    if (chunk.keywordExtractor) {
-      log("[YouTube Pipeline] 🔑 Đã trích xuất xong các từ vựng quan trọng.");
-      finalState = { ...finalState, ...chunk.keywordExtractor };
+    if (chunk.keywordIdentifier) {
+      log("[YouTube Pipeline] 🔍 Đã nhận diện các từ vựng/idiom khó.");
+      finalState = { ...finalState, ...chunk.keywordIdentifier };
+    }
+    if (chunk.keywordEnricher) {
+      log("[YouTube Pipeline] 🔑 Đã tra cứu từ điển và trích xuất nghĩa, word family, collocations.");
+      finalState = { ...finalState, ...chunk.keywordEnricher };
     }
   }
 

@@ -51,16 +51,42 @@ export async function youtubeTranscriptFetcherNode(
       (YoutubeTranscript as any).__patchedForManualSubtitles = true;
     }
 
-    // Lấy transcript
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    if (!transcript || transcript.length === 0) {
+    // Fetch transcript với cơ chế retry (fix ECONNRESET)
+    let transcript: any = null;
+    let retries = 3;
+    let lastError: any = null;
+
+    while (retries > 0) {
+      try {
+        transcript = await YoutubeTranscript.fetchTranscript(videoId);
+        break; // Thành công thì thoát vòng lặp
+      } catch (err: any) {
+        lastError = err;
+        if (err.message === "BAD_TRANSCRIPT") {
+          throw err; // Lỗi do monkey patch, không retry
+        }
+        
+        console.warn(`[YouTubeTranscriptFetcher] Fetch failed (retries left: ${retries - 1}). Error: ${err.message}`);
+        retries--;
+        if (retries > 0) {
+          // Đợi 1s trước khi retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+
+    if (!transcript) {
+      throw lastError || new Error("Fetch failed after retries");
+    }
+
+    if (transcript.length === 0) {
       return { error: "Video này không có phụ đề (CC). Vui lòng chọn video khác." };
     }
 
     return {
       youtubeVideoId: videoId,
       title: title,
-      rawTranscript: transcript.map((t) => ({
+      rawTranscript: transcript.map((t: any) => ({
         text: t.text,
         start: t.offset,
         duration: t.duration,

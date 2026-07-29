@@ -25,6 +25,15 @@ export const YouTubeShadowingAgentState = Annotation.Root({
   }),
 
   // === Node 3 Output: Keyword Extractor ===
+  identifiedKeywords: Annotation<Array<{
+    word: string;
+    type: "word" | "idiom" | "phrasal_verb";
+    context: string;
+    level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+  }>>({
+    reducer: (_, y) => y,
+  }),
+  
   keywords: Annotation<Keyword[]>({
     reducer: (_, y) => y,
   }),

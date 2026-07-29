@@ -20,8 +20,18 @@ export const StorybookAgentState = Annotation.Root({
     reducer: (_, y) => y,
   }),
 
+  // === Node: KeywordIdentifier Output (intermediate) ===
+  identifiedKeywords: Annotation<Array<{
+    word: string;
+    type: "word" | "idiom" | "phrasal_verb";
+    context: string;
+    level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+  }>>({
+    reducer: (_, y) => y,
+  }),
+
   // === Metadata ===
-  keywords: Annotation<Array<{ word: string; explanation: string; level: "medium" | "hard" }>>({
+  keywords: Annotation<Array<{ word: string; explanation: string; level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" }>>({
     reducer: (_, y) => y,
   }),
   error: Annotation<string | null>(),  // Lỗi nếu có

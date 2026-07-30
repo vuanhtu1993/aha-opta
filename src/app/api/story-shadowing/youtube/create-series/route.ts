@@ -35,8 +35,14 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const sendLog = (msg: string) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ message: msg })}\n\n`));
+      const sendLog = (payload: string | { message?: string, progress?: any }) => {
+        let dataStr: string;
+        if (typeof payload === 'string') {
+          dataStr = JSON.stringify({ log: payload });
+        } else {
+          dataStr = JSON.stringify({ log: payload.message, progress: payload.progress });
+        }
+        controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
       };
 
       try {
@@ -49,14 +55,39 @@ export async function POST(request: NextRequest) {
         const totalParts = parsed.selectedSegments.length;
         const createdStoryIds: string[] = [];
 
-        sendLog(`🚀 Bắt đầu tạo series [${parsed.videoTitle}] với ${totalParts} phần...`);
+        const steps = [
+          { id: 'consolidate', name: 'Xử lý ngữ pháp' },
+          { id: 'identify', name: 'Phân tích từ vựng' },
+          { id: 'enrich', name: 'Tra cứu từ điển' },
+        ];
+
+        sendLog({
+          message: `🚀 Bắt đầu tạo series [${parsed.videoTitle}] với ${totalParts} phần...`,
+          progress: {
+            type: 'init',
+            title: `[Tạo Series] Khởi tạo ${totalParts} phần...`,
+            steps
+          }
+        });
 
         // Xử lý từng segment tuần tự để kiểm soát Rate Limit
         for (let idx = 0; idx < parsed.selectedSegments.length; idx++) {
           const seg = parsed.selectedSegments[idx];
           const partNum = idx + 1;
 
-          sendLog(`[Phần ${partNum}/${totalParts}] 🧩 Đang phân tích: ${seg.title}...`);
+          sendLog({
+            message: `[Phần ${partNum}/${totalParts}] 🧩 Đang phân tích: ${seg.title}...`,
+            progress: {
+              type: 'init',
+              title: `[Phần ${partNum}/${totalParts}] Đang xử lý...`,
+              steps
+            }
+          });
+          
+          sendLog({
+            message: "Đang xử lý ngữ pháp...",
+            progress: { type: 'update', stepId: 'consolidate', status: 'running' }
+          });
 
           // Slice transcript cho riêng segment này
           const slicedTranscript = parsed.rawTranscript.slice(seg.blockStart, seg.blockEnd + 1);
@@ -72,14 +103,30 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          sendLog(`[Phần ${partNum}/${totalParts}] 🔑 Đang trích xuất từ vựng cốt lõi...`);
+          sendLog({
+            message: `[Phần ${partNum}/${totalParts}] 🔑 Đang trích xuất từ vựng cốt lõi...`,
+            progress: { type: 'update', stepId: 'consolidate', status: 'completed' }
+          });
+          
+          sendLog({
+            message: "Đang nhận diện từ vựng...",
+            progress: { type: 'update', stepId: 'identify', status: 'running' }
+          });
 
           // Call keyword identifier node
           const identifierResult = await youtubeKeywordIdentifierNode({
             rawSentences: consolidatorResult.sentences,
           } as any);
 
-          sendLog(`[Phần ${partNum}/${totalParts}] 🔑 Đang tra cứu từ điển và phân tích chi tiết...`);
+          sendLog({
+            message: `[Phần ${partNum}/${totalParts}] 🔑 Đang tra cứu từ điển và phân tích chi tiết...`,
+            progress: { type: 'update', stepId: 'identify', status: 'completed' }
+          });
+          
+          sendLog({
+            message: "Đang tra cứu từ điển...",
+            progress: { type: 'update', stepId: 'enrich', status: 'running' }
+          });
 
           // Call keyword enricher node
           const enricherResult = await youtubeKeywordEnricherNode({
@@ -108,7 +155,10 @@ export async function POST(request: NextRequest) {
           });
 
           createdStoryIds.push(newStory._id.toString());
-          sendLog(`[Phần ${partNum}/${totalParts}] ✅ Hoàn tất tạo bài!`);
+          sendLog({
+            message: `[Phần ${partNum}/${totalParts}] ✅ Hoàn tất tạo bài!`,
+            progress: { type: 'update', stepId: 'enrich', status: 'completed' }
+          });
         }
 
         sendLog(`🎉 Đã tạo thành công Series (${createdStoryIds.length}/${totalParts} bài). Đang chuyển hướng...`);

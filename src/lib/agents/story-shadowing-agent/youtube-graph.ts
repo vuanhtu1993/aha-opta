@@ -33,8 +33,25 @@ export const youtubeShadowingAgentGraph = graphBuilder.compile();
 /**
  * Public API: Chạy toàn bộ pipeline cho 1 URL YouTube
  */
-export async function runYouTubeShadowingPipeline(youtubeUrl: string, log: (msg: string) => void) {
-  log("[YouTube Pipeline] Bắt đầu xử lý video...");
+export async function runYouTubeShadowingPipeline(youtubeUrl: string, log: (msg: any) => void) {
+  const steps = [
+    { id: 'fetch', name: 'Tải phụ đề' },
+    { id: 'consolidate', name: 'Xử lý ngữ pháp' },
+    { id: 'identify', name: 'Phân tích từ vựng' },
+    { id: 'enrich', name: 'Tra cứu từ điển' },
+  ];
+
+  log({
+    message: "[YouTube Pipeline] Bắt đầu xử lý video...",
+    progress: {
+      type: 'init',
+      title: '[YouTube Pipeline] Đang phân tích video...',
+      steps
+    }
+  });
+  log({
+    progress: { type: 'update', stepId: 'fetch', status: 'running' }
+  });
 
   let finalState: any = { youtubeUrl };
 
@@ -42,19 +59,43 @@ export async function runYouTubeShadowingPipeline(youtubeUrl: string, log: (msg:
 
   for await (const chunk of stream) {
     if (chunk.transcriptFetcher) {
-      log("[YouTube Pipeline] 📥 Đã tải xong phụ đề (Transcript). Đang xử lý AI...");
+      log({
+        message: "[YouTube Pipeline] 📥 Đã tải xong phụ đề (Transcript). Đang xử lý AI...",
+        progress: { type: 'update', stepId: 'fetch', status: 'completed' }
+      });
+      log({
+        message: "Đang xử lý ngữ pháp...",
+        progress: { type: 'update', stepId: 'consolidate', status: 'running' }
+      });
+      log({
+        message: "Đang nhận diện từ vựng...",
+        progress: { type: 'update', stepId: 'identify', status: 'running' }
+      });
       finalState = { ...finalState, ...chunk.transcriptFetcher };
     }
     if (chunk.sentenceConsolidator) {
-      log("[YouTube Pipeline] 🧩 Đã ghép câu và tạo phiên âm (IPA).");
+      log({
+        message: "[YouTube Pipeline] 🧩 Đã ghép câu và tạo phiên âm (IPA).",
+        progress: { type: 'update', stepId: 'consolidate', status: 'completed' }
+      });
       finalState = { ...finalState, ...chunk.sentenceConsolidator };
     }
     if (chunk.keywordIdentifier) {
-      log("[YouTube Pipeline] 🔍 Đã nhận diện các từ vựng/idiom khó.");
+      log({
+        message: "[YouTube Pipeline] 🔍 Đã nhận diện các từ vựng/idiom khó.",
+        progress: { type: 'update', stepId: 'identify', status: 'completed' }
+      });
+      log({
+        message: "Đang tra cứu từ điển...",
+        progress: { type: 'update', stepId: 'enrich', status: 'running' }
+      });
       finalState = { ...finalState, ...chunk.keywordIdentifier };
     }
     if (chunk.keywordEnricher) {
-      log("[YouTube Pipeline] 🔑 Đã tra cứu từ điển và trích xuất nghĩa, word family, collocations.");
+      log({
+        message: "[YouTube Pipeline] 🔑 Đã tra cứu từ điển và trích xuất nghĩa, word family, collocations.",
+        progress: { type: 'update', stepId: 'enrich', status: 'completed' }
+      });
       finalState = { ...finalState, ...chunk.keywordEnricher };
     }
   }

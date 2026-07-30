@@ -33,9 +33,30 @@ export const storybookAgentGraph = graphBuilder.compile();
 /**
  * Public API: Chạy toàn bộ pipeline cho 1 đoạn văn bản
  */
-export async function runStorybookPipeline(rawText: string, voice: string = "en-US-Journey-F", logCallback?: (msg: string) => void) {
+export async function runStorybookPipeline(rawText: string, voice: string = "en-US-Journey-F", logCallback?: (msg: any) => void) {
   const log = logCallback || console.log;
-  log("[Storybook Pipeline] Bắt đầu xử lý văn bản...");
+  const steps = [
+    { id: 'split', name: 'Chia câu & Phiên âm' },
+    { id: 'tts', name: 'Tạo giọng đọc (TTS)' },
+    { id: 'identify', name: 'Phân tích từ vựng' },
+    { id: 'enrich', name: 'Tra cứu từ điển' },
+  ];
+
+  log({
+    message: "[Storybook Pipeline] Bắt đầu xử lý văn bản...",
+    progress: {
+      type: 'init',
+      title: '[Text Pipeline] Đang xử lý đoạn văn...',
+      steps
+    }
+  });
+  log({
+    message: "Đang chia câu và nhận diện từ vựng...",
+    progress: { type: 'update', stepId: 'split', status: 'running' }
+  });
+  log({
+    progress: { type: 'update', stepId: 'identify', status: 'running' }
+  });
 
   let finalState: any = { rawText, voice };
 
@@ -43,19 +64,39 @@ export async function runStorybookPipeline(rawText: string, voice: string = "en-
 
   for await (const chunk of stream) {
     if (chunk.sentenceSplitter) {
-      log("[Storybook Pipeline] 🧩 Đã tách câu và tạo phiên âm (IPA). Đang tạo Audio...");
+      log({
+        message: "[Storybook Pipeline] 🧩 Đã tách câu và tạo phiên âm (IPA). Đang tạo Audio...",
+        progress: { type: 'update', stepId: 'split', status: 'completed' }
+      });
+      log({
+        message: "Đang xử lý TTS...",
+        progress: { type: 'update', stepId: 'tts', status: 'running' }
+      });
       finalState = { ...finalState, ...chunk.sentenceSplitter };
     }
     if (chunk.ttsGenerator) {
-      log("[Storybook Pipeline] 🎧 Đã hoàn tất tạo Audio (Text-to-Speech).");
+      log({
+        message: "[Storybook Pipeline] 🎧 Đã hoàn tất tạo Audio (Text-to-Speech).",
+        progress: { type: 'update', stepId: 'tts', status: 'completed' }
+      });
       finalState = { ...finalState, ...chunk.ttsGenerator };
     }
     if (chunk.keywordIdentifier) {
-      log("[Storybook Pipeline] 🔍 Đã nhận diện các từ vựng/idiom khó.");
+      log({
+        message: "[Storybook Pipeline] 🔍 Đã nhận diện các từ vựng/idiom khó.",
+        progress: { type: 'update', stepId: 'identify', status: 'completed' }
+      });
+      log({
+        message: "Đang tra cứu từ điển...",
+        progress: { type: 'update', stepId: 'enrich', status: 'running' }
+      });
       finalState = { ...finalState, ...chunk.keywordIdentifier };
     }
     if (chunk.keywordEnricher) {
-      log("[Storybook Pipeline] 🔑 Đã tra cứu từ điển và trích xuất nghĩa, word family, collocations.");
+      log({
+        message: "[Storybook Pipeline] 🔑 Đã tra cứu từ điển và trích xuất nghĩa, word family, collocations.",
+        progress: { type: 'update', stepId: 'enrich', status: 'completed' }
+      });
       finalState = { ...finalState, ...chunk.keywordEnricher };
     }
   }

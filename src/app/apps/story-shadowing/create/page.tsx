@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
@@ -26,8 +26,45 @@ export default function CreatePlayerPage() {
   const [suggestedSegments, setSuggestedSegments] = useState<SuggestedSegment[]>([]);
   const [rawTranscript, setRawTranscript] = useState<any[]>([]);
 
+  // YouTube Preview State
+  const [youtubePreview, setYoutubePreview] = useState<{title: string, thumbnail: string} | null>(null);
+
   const router = useRouter();
   const { fetchSSE } = useAgentFetch();
+
+  // Fetch YouTube preview info when URL changes
+  useEffect(() => {
+    if (!youtubeUrl) {
+      setYoutubePreview(null);
+      return;
+    }
+    
+    // Check if it looks like a valid youtube url
+    const isYoutube = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))/.test(youtubeUrl);
+    if (!isYoutube) {
+      setYoutubePreview(null);
+      return;
+    }
+
+    const fetchPreview = async () => {
+      try {
+        const res = await fetch(`https://noembed.com/embed?dataType=json&url=${encodeURIComponent(youtubeUrl)}`);
+        const data = await res.json();
+        if (data.title && data.thumbnail_url) {
+          setYoutubePreview({
+            title: data.title,
+            thumbnail: data.thumbnail_url
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch youtube preview", err);
+      }
+    };
+
+    // Debounce slightly to avoid spamming while typing
+    const timeout = setTimeout(fetchPreview, 500);
+    return () => clearTimeout(timeout);
+  }, [youtubeUrl]);
 
   const handleScrape = async () => {
     if (!urlInput) return;
@@ -216,6 +253,18 @@ export default function CreatePlayerPage() {
 
       {inputType === "youtube" && (
         <div className="space-y-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          {youtubePreview && (
+            <div className="flex gap-4 items-center p-3 bg-slate-50 border border-slate-100 rounded-xl mb-4">
+              <img 
+                src={youtubePreview.thumbnail} 
+                alt="Youtube Thumbnail" 
+                className="w-24 h-16 object-cover rounded-lg shadow-sm shrink-0"
+              />
+              <p className="font-semibold text-slate-800 text-sm line-clamp-2">
+                {youtubePreview.title}
+              </p>
+            </div>
+          )}
           <form onSubmit={handleYoutubeSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">Đường dẫn video YouTube</label>

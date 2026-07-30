@@ -55,9 +55,19 @@ export function useAgentFetch() {
               try {
                 const data = JSON.parse(dataStr);
                 
-                if (data.log) {
+                if (data.progress) {
+                  const p = data.progress;
+                  const store = useAgentStore.getState();
+                  if (p.type === 'init') {
+                    store.initProgress(p.title, p.steps);
+                  } else if (p.type === 'update') {
+                    store.updateProgress(p.stepId, p.status, data.log);
+                  }
+                } else if (data.log) {
                   startAgent(data.log);
-                } else if (data.error) {
+                }
+                
+                if (data.error) {
                   stopAgent();
                   return reject(new Error(data.error));
                 } else if (data.result !== undefined) {

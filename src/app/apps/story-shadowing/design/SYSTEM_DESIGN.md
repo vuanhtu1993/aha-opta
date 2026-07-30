@@ -32,7 +32,7 @@ AI đọc câu → Dừng → Người dùng lặp lại trong khoảng dừng �
 | **Web Scraping**     | `@mozilla/readability` + `jsdom`             | Bóc nội dung bài báo từ URL                      |
 | **Database**         | MongoDB (Mongoose)                               | Lưu Storybook (bài luyện tập)                     |
 | **Validation**       | Zod v4                                           | Validate cả API input và Gemini output              |
-| **Real-time**        | Server-Sent Events (SSE)                         | Streaming log tiến trình về UI                     |
+| **Real-time**        | Server-Sent Events (SSE)                         | Streaming log tiến trình về Toast UI (Progress)    |
 
 ---
 
@@ -387,6 +387,7 @@ Thay vì `<audio>`, hook điều khiển YouTube IFrame Player:
 | **Phase 6.1** | Vocabulary Enrichment     | ✅ Done      | Nâng cấp schema + UI accordion cho vocabulary         |
 | **Phase 7**   | Smart Video Splitting          | ✅ Done    | Video dài → AI gợi ý chia → Series management          |
 | **Phase 8**   | Keyword Pipeline Refactor      | 🔲 Planned | Hybrid pipeline: Gemini identify + Dict API enrich      |
+| **Phase 9**   | UI & UX Refinements            | ✅ Done    | Toast UI Agent Progress + YouTube Auto-Preview        |
 
 ---
 

@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { GlobalFooter } from "@/components/layout/GlobalFooter";
+import { AgentProgressToast } from "@/components/story-shadowing/agent-progress-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -90,6 +91,7 @@ export default function RootLayout({
         </main>
 
         <GlobalFooter />
+        <AgentProgressToast />
       </body>
     </html>
   );

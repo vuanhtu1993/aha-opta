@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 export type AgentSSEHandler = (
   req: NextRequest,
-  log: (msg: string) => void
+  log: (msg: string | { message?: string; progress?: any }) => void
 ) => Promise<unknown>;
 
 export function withAgentSSE(handler: AgentSSEHandler) {
@@ -25,10 +25,18 @@ export function withAgentSSE(handler: AgentSSEHandler) {
           }
         }, 15000);
 
-        const log = (msg: string) => {
+        const log = (payload: string | { message?: string; progress?: any }) => {
           if (isClosed) return;
           try {
-            const data = JSON.stringify({ log: msg });
+            let data: string;
+            if (typeof payload === 'string') {
+              data = JSON.stringify({ log: payload });
+            } else {
+              data = JSON.stringify({ 
+                log: payload.message,
+                progress: payload.progress
+              });
+            }
             controller.enqueue(encoder.encode(`data: ${data}\n\n`));
           } catch {
             // Ignore encoding errors

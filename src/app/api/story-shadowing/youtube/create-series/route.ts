@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
               steps
             }
           });
-          
+
           sendLog({
             message: "Đang xử lý ngữ pháp...",
             progress: { type: 'update', stepId: 'consolidate', status: 'running' }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
             message: `[Phần ${partNum}/${totalParts}] 🔑 Đang trích xuất từ vựng cốt lõi...`,
             progress: { type: 'update', stepId: 'consolidate', status: 'completed' }
           });
-          
+
           sendLog({
             message: "Đang nhận diện từ vựng...",
             progress: { type: 'update', stepId: 'identify', status: 'running' }
@@ -115,14 +115,14 @@ export async function POST(request: NextRequest) {
 
           // Call keyword identifier node
           const identifierResult = await youtubeKeywordIdentifierNode({
-            rawSentences: consolidatorResult.sentences,
+            rawTranscript: slicedTranscript,
           } as any);
 
           sendLog({
             message: `[Phần ${partNum}/${totalParts}] 🔑 Đang tra cứu từ điển và phân tích chi tiết...`,
             progress: { type: 'update', stepId: 'identify', status: 'completed' }
           });
-          
+
           sendLog({
             message: "Đang tra cứu từ điển...",
             progress: { type: 'update', stepId: 'enrich', status: 'running' }

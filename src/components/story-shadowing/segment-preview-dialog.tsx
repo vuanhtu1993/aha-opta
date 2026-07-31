@@ -79,11 +79,10 @@ export function SegmentPreviewDialog({
           {segments.map((seg, idx) => (
             <div
               key={idx}
-              className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${
-                seg.selected
+              className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${seg.selected
                   ? "bg-white border-indigo-200 shadow-sm"
                   : "bg-slate-100/70 border-slate-200 opacity-60"
-              }`}
+                }`}
             >
               <input
                 type="checkbox"

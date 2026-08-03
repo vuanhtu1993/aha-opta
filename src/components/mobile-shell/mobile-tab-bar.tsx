@@ -47,8 +47,9 @@ export function MobileTabBar() {
 
   // Fetch due count for Vocab tab badge
   const { data: dueData } = useSWR("/api/vocab/due-count", fetcher, {
-    refreshInterval: 15000, // refresh every 15s
-    revalidateOnFocus: true,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 60000,
   });
 
   const dueCount = dueData?.dueCount ?? 0;
@@ -98,7 +99,7 @@ export function MobileTabBar() {
 
                 {/* Badge indicator on Vocab tab */}
                 {isVocabTab && dueCount > 0 && (
-                  <span className="absolute -top-1 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-extrabold shadow-sm animate-pulse">
+                  <span className="absolute -top-1 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-extrabold shadow-xs">
                     {dueCount > 99 ? "99+" : dueCount}
                   </span>
                 )}

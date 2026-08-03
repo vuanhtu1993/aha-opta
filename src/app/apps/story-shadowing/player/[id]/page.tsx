@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { mutate } from "swr";
 import { ShadowingPlayer } from "@/components/story-shadowing/shadowing-player";
 import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
 import { BookOpen, Sparkles, ChevronDown, BookmarkPlus, Check, Volume2 } from "lucide-react";
@@ -19,14 +20,22 @@ function VocabCard({
   kw,
   storybookId,
   storybookTitle,
+  isInitiallySaved,
+  onSaved,
 }: {
   kw: any;
   storybookId: string;
   storybookTitle: string;
+  isInitiallySaved: boolean;
+  onSaved?: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(isInitiallySaved);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(isInitiallySaved);
+  }, [isInitiallySaved]);
 
   const handleSaveToSRS = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,6 +60,9 @@ function VocabCard({
 
       if (res.ok) {
         setIsSaved(true);
+        onSaved?.();
+        // Cập nhật lại badge và cache stats mà không cần reload
+        mutate("/api/vocab/due-count");
       }
     } catch (err) {
       console.error("Failed to save vocab card to SRS", err);
@@ -255,6 +267,7 @@ export default function PlayerPage({
   const [seriesParts, setSeriesParts] = useState<SeriesPart[]>([]);
 
   const [keywords, setKeywords] = useState<any[]>([]);
+  const [savedWordSet, setSavedWordSet] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<"vocab" | "shadowing">("shadowing");
 
   useEffect(() => {
@@ -292,6 +305,24 @@ export default function PlayerPage({
         if (data.keywords && data.keywords.length > 0) {
           setKeywords(data.keywords);
           setStep("vocab");
+
+          // Kiểm tra xem các từ vựng này đã có trong SRS chưa
+          const wordList = data.keywords.map((kw: any) => kw.word).filter(Boolean);
+          if (wordList.length > 0) {
+            try {
+              const checkRes = await fetch("/api/vocab/check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ words: wordList }),
+              });
+              if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                setSavedWordSet(new Set(checkData.savedWords || []));
+              }
+            } catch (err) {
+              console.error("Failed to check saved keywords", err);
+            }
+          }
         }
       })
       .catch((err) => {
@@ -390,6 +421,12 @@ export default function PlayerPage({
                 kw={kw}
                 storybookId={id}
                 storybookTitle={title}
+                isInitiallySaved={savedWordSet.has(kw.word?.toLowerCase())}
+                onSaved={() => {
+                  setSavedWordSet(
+                    (prev) => new Set([...prev, kw.word?.toLowerCase()])
+                  );
+                }}
               />
             ))}
           </div>

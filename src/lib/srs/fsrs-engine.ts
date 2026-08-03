@@ -11,12 +11,15 @@ import {
 
 /**
  * FSRS Scheduler Instance with optimal parameters for foreign language vocabulary
+ * - enable_short_term: false -> Day-based Spaced Repetition (Daily Quiz model)
+ * - request_retention: 0.9 -> 90% retrieval probability
  */
 export const srsScheduler = fsrs(
   generatorParameters({
     request_retention: 0.9, // Target 90% retrieval probability
     maximum_interval: 365, // Max interval 1 year
     enable_fuzz: true, // Prevent review bunching
+    enable_short_term: false, // Day-based Spaced Repetition (Next review is tomorrow or +N days)
   })
 );
 

@@ -8,7 +8,9 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function DueReviewCard() {
   const { data, isLoading } = useSWR("/api/vocab/due-count", fetcher, {
-    revalidateOnFocus: true,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 60000,
   });
 
   if (isLoading || !data) return null;

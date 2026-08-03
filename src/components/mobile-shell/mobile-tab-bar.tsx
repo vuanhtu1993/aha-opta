@@ -42,6 +42,10 @@ const TABS: TabItem[] = [
 export function MobileTabBar() {
   const pathname = usePathname();
 
+  // Ẩn tab bar ở các trang chi tiết/player để nhường không gian cho thanh điều khiển
+  const isHidden = pathname.startsWith("/apps/story-shadowing/player");
+  if (isHidden) return null;
+
   return (
     <nav
       aria-label="Bottom Navigation"

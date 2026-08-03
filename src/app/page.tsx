@@ -1,117 +1,47 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
+"use client";
+
+import { useEffect, useState } from "react";
+import { GreetingSection } from "@/components/dashboard/greeting-section";
+import { ContinueLearning } from "@/components/dashboard/continue-learning";
+import { AppShortcuts } from "@/components/dashboard/app-shortcuts";
+import { RecentStories } from "@/components/dashboard/recent-stories";
 
 export default function Home() {
+  const [stories, setStories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/story-shadowing")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setStories(data);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch stories for dashboard", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const latestStory = stories.length > 0 ? stories[0] : null;
+  const recentStories = stories.slice(0, 6);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Tiêu đề & Giới thiệu (Pedagogical approach: explain what this is) */}
-      <section className="text-center space-y-4 pt-12 pb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-          Chào mừng đến với <span className="text-emerald-500">AHA-MIND</span>
-        </h1>
-        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Ứng dụng AI agent, micro frontend application giúp cuộc sống trở nên dễ dàng hơn.
-          Được thiết kế dựa trên tư duy chia để trị, với hiệu suất và trải nghiệm đặt lên hàng đầu.
-        </p>
-      </section>
+    <div className="p-4 space-y-6">
+      {/* 1. Lời chào */}
+      <GreetingSection />
 
-      {/* Danh sách các ứng dụng (Micro-apps) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* 2. Tiếp tục bài gần nhất */}
+      {!loading && <ContinueLearning latestStory={latestStory} />}
 
-        {/* App 1: White Noise */}
-        <Card className="hover:shadow-lg transition-shadow duration-300 border-slate-200">
-          <CardHeader>
-            <div className="text-4xl mb-2">🎵</div>
-            <CardTitle>White Noise</CardTitle>
-            <CardDescription>
-              Tạo tiếng ồn trắng giúp bạn tập trung làm việc hoặc ru em bé ngủ dễ dàng.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/apps/white-noise"
-              className={cn(buttonVariants({ variant: "default" }), "w-full bg-blue-600 hover:bg-blue-700 text-white text-center")}
-            >
-              Mở ứng dụng
-            </Link>
-          </CardContent>
-        </Card>
+      {/* 3. Phím tắt tiện ích */}
+      <AppShortcuts />
 
-        {/* App 2: aha-opta — World Cup 2026 AI */}
-        <Card className="hover:shadow-lg transition-shadow duration-300 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardHeader>
-            <div className="text-4xl mb-2">⚽</div>
-            <CardTitle className="text-green-800">aha-opta</CardTitle>
-            <CardDescription>
-              Dự đoán kết quả World Cup 2026 bằng AI — phân tích xG, form, và kèo thị trường.
-              <br />
-              <span className="text-xs text-green-600 font-medium">(Đang phát triển — Phase 1)</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/apps/opta"
-              className={cn(buttonVariants({ variant: "default" }), "w-full bg-green-600 hover:bg-green-700 text-white text-center")}
-            >
-              Khám phá
-            </Link>
-          </CardContent>
-        </Card>
+      {/* 4. Danh sách bài học gần đây (cuộn ngang) */}
+      {!loading && <RecentStories stories={recentStories} />}
 
-        {/* App 3: AI Storybook Shadowing */}
-        <Card className="hover:shadow-lg transition-shadow duration-300 border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50">
-          <CardHeader>
-            <div className="text-4xl mb-2">📖</div>
-            <CardTitle className="text-indigo-800">AI Storybook Shadowing</CardTitle>
-            <CardDescription>
-              Luyện phát âm tiếng Anh qua phương pháp Shadowing — AI đọc mẫu, bạn đọc theo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/apps/story-shadowing"
-              className={cn(buttonVariants({ variant: "default" }), "w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center")}
-            >
-              Bắt đầu luyện tập
-            </Link>
-          </CardContent>
-        </Card>
-
-        {/* Các App Tương Lai (Placeholder) */}
-        <Card className="opacity-70 border-dashed border-slate-300 bg-slate-50/50">
-          <CardHeader>
-            <div className="text-4xl mb-2">📰</div>
-            <CardTitle>Tổng hợp tin tức</CardTitle>
-            <CardDescription>
-              Đọc nhanh tin tức mỗi sáng.
-              <br /><span className="text-xs text-orange-600 font-medium">(Đang phát triển)</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button disabled variant="outline" className="w-full">
-              Sắp ra mắt
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="opacity-70 border-dashed border-slate-300 bg-slate-50/50">
-          <CardHeader>
-            <div className="text-4xl mb-2">✅</div>
-            <CardTitle>Nhắc việc</CardTitle>
-            <CardDescription>
-              Lên danh sách đi chợ, việc nhà.
-              <br /><span className="text-xs text-orange-600 font-medium">(Đang phát triển)</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button disabled variant="outline" className="w-full">
-              Sắp ra mắt
-            </Button>
-          </CardContent>
-        </Card>
-
+      {/* Footer copyright */}
+      <div className="pt-2 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+        Made by Anh Tu - Share to be share
       </div>
     </div>
   );

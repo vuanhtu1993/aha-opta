@@ -54,3 +54,15 @@
     transform: translate(0px, 0px) scale(1);
   }
 }
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .app-shell-shadow {
+    box-shadow: 0 0 50px -12px rgba(0, 0, 0, 0.12);
+  }
+}

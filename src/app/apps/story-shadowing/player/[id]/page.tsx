@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShadowingPlayer } from "@/components/story-shadowing/shadowing-player";
 import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
-import { BookOpen, Sparkles, ChevronDown } from "lucide-react";
+import { BookOpen, Sparkles, ChevronDown, BookmarkPlus, Check, Volume2 } from "lucide-react";
 
 type SeriesPart = {
   _id: string;
@@ -15,8 +15,59 @@ type SeriesPart = {
   totalParts?: number;
 };
 
-function VocabCard({ kw }: { kw: any }) {
+function VocabCard({
+  kw,
+  storybookId,
+  storybookTitle,
+}: {
+  kw: any;
+  storybookId: string;
+  storybookTitle: string;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveToSRS = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isSaved || isSaving) return;
+
+    try {
+      setIsSaving(true);
+      const res = await fetch("/api/vocab", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          word: kw.word,
+          ipa: kw.ipa,
+          explanation: kw.explanation,
+          level: kw.level || "B1",
+          wordFamily: kw.wordFamily,
+          collocations: kw.collocations,
+          sourceStorybookId: storybookId,
+          sourceStorybookTitle: storybookTitle,
+        }),
+      });
+
+      if (res.ok) {
+        setIsSaved(true);
+      }
+    } catch (err) {
+      console.error("Failed to save vocab card to SRS", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const playPronunciation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const utterance = new SpeechSynthesisUtterance(kw.word);
+      utterance.lang = "en-US";
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-2xs overflow-hidden transition-all duration-300">
@@ -25,12 +76,53 @@ function VocabCard({ kw }: { kw: any }) {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline flex-wrap gap-2">
-            <span className="text-base font-extrabold text-slate-900 dark:text-white">{kw.word}</span>
-            {kw.ipa && <span className="font-mono text-xs text-slate-400 font-normal">{kw.ipa}</span>}
+          <div className="flex items-center flex-wrap gap-2">
+            <span className="text-base font-extrabold text-slate-900 dark:text-white">
+              {kw.word}
+            </span>
+            {kw.ipa && (
+              <span className="font-mono text-xs text-slate-400 font-normal">
+                {kw.ipa}
+              </span>
+            )}
+            <button
+              onClick={playPronunciation}
+              className="p-1 text-slate-400 hover:text-amber-500 rounded-full hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors"
+              title="Phát âm từ này"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{kw.explanation}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+            {kw.explanation}
+          </p>
+
+          {/* Action button to save to SRS */}
+          <div className="mt-2.5 flex items-center gap-2">
+            <button
+              onClick={handleSaveToSRS}
+              disabled={isSaved || isSaving}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
+                isSaved
+                  ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                  : "bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950/70 border border-amber-200 dark:border-amber-800"
+              }`}
+            >
+              {isSaved ? (
+                <>
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Đã lưu vào SRS</span>
+                </>
+              ) : (
+                <>
+                  <BookmarkPlus className="w-3.5 h-3.5" />
+                  <span>{isSaving ? "Đang lưu..." : "+ Lưu vào SRS"}</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
+
         <div className="flex items-center gap-2 shrink-0 pt-0.5">
           {kw.level && (
             <span
@@ -54,7 +146,9 @@ function VocabCard({ kw }: { kw: any }) {
       {/* Expanded Content */}
       <div
         className={`px-4 transition-all duration-300 ease-in-out ${
-          isExpanded ? "max-h-96 py-3 border-t border-slate-100 dark:border-slate-700/60 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+          isExpanded
+            ? "max-h-96 py-3 border-t border-slate-100 dark:border-slate-700/60 opacity-100"
+            : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
         <div className="space-y-3">
@@ -65,19 +159,37 @@ function VocabCard({ kw }: { kw: any }) {
               </h4>
               <ul className="space-y-1">
                 {kw.wordFamily.map(
-                  (wf: { word: string; partOfSpeech?: string; ipa?: string; explanation: string }, idx: number) => (
+                  (
+                    wf: {
+                      word: string;
+                      partOfSpeech?: string;
+                      ipa?: string;
+                      explanation: string;
+                    },
+                    idx: number
+                  ) => (
                     <li
                       key={idx}
                       className="text-xs bg-slate-50 dark:bg-slate-750 px-2.5 py-1.5 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col gap-0.5"
                     >
                       <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className="font-bold text-slate-800 dark:text-slate-100">{wf.word}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100">
+                          {wf.word}
+                        </span>
                         {wf.partOfSpeech && (
-                          <span className="text-[10px] font-medium text-slate-400">({wf.partOfSpeech})</span>
+                          <span className="text-[10px] font-medium text-slate-400">
+                            ({wf.partOfSpeech})
+                          </span>
                         )}
-                        {wf.ipa && <span className="font-mono text-[10px] text-slate-400">{wf.ipa}</span>}
+                        {wf.ipa && (
+                          <span className="font-mono text-[10px] text-slate-400">
+                            {wf.ipa}
+                          </span>
+                        )}
                       </div>
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">{wf.explanation}</span>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                        {wf.explanation}
+                      </span>
                     </li>
                   )
                 )}
@@ -91,15 +203,24 @@ function VocabCard({ kw }: { kw: any }) {
                 <span>🔗</span> Collocations
               </h4>
               <ul className="space-y-1">
-                {kw.collocations.map((col: { collocation: string; explanation: string }, idx: number) => (
-                  <li
-                    key={idx}
-                    className="text-xs bg-slate-50 dark:bg-slate-750 px-2.5 py-1.5 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col gap-0.5"
-                  >
-                    <span className="font-bold text-slate-800 dark:text-slate-100">{col.collocation}</span>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">{col.explanation}</span>
-                  </li>
-                ))}
+                {kw.collocations.map(
+                  (
+                    col: { collocation: string; explanation: string },
+                    idx: number
+                  ) => (
+                    <li
+                      key={idx}
+                      className="text-xs bg-slate-50 dark:bg-slate-750 px-2.5 py-1.5 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col gap-0.5"
+                    >
+                      <span className="font-bold text-slate-800 dark:text-slate-100">
+                        {col.collocation}
+                      </span>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                        {col.explanation}
+                      </span>
+                    </li>
+                  )
+                )}
               </ul>
             </div>
           )}
@@ -109,14 +230,20 @@ function VocabCard({ kw }: { kw: any }) {
   );
 }
 
-export default function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
+export default function PlayerPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const { id } = use(params);
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [title, setTitle] = useState<string>("");
   const [level, setLevel] = useState<"easy" | "medium" | "hard" | null>(null);
   const [sourceType, setSourceType] = useState<"text" | "youtube">("text");
-  const [youtubeVideoId, setYoutubeVideoId] = useState<string | undefined>(undefined);
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | undefined>(
+    undefined
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -150,7 +277,9 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
 
         if (data.seriesId) {
           try {
-            const seriesRes = await fetch(`/api/story-shadowing/series/${data.seriesId}`);
+            const seriesRes = await fetch(
+              `/api/story-shadowing/series/${data.seriesId}`
+            );
             if (seriesRes.ok) {
               const seriesData = await seriesRes.json();
               setSeriesParts(seriesData);
@@ -184,7 +313,9 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   if (error || !sentences.length) {
     return (
       <div className="p-6 text-center py-20 space-y-4">
-        <p className="text-xs font-semibold text-rose-500">{error || "Dữ liệu trống"}</p>
+        <p className="text-xs font-semibold text-rose-500">
+          {error || "Dữ liệu trống"}
+        </p>
         <button
           onClick={() => router.push("/apps/story-shadowing")}
           className="text-xs font-bold text-amber-500 hover:underline"
@@ -254,7 +385,12 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
 
           <div className="space-y-3">
             {keywords.map((kw, i) => (
-              <VocabCard key={i} kw={kw} />
+              <VocabCard
+                key={i}
+                kw={kw}
+                storybookId={id}
+                storybookTitle={title}
+              />
             ))}
           </div>
 

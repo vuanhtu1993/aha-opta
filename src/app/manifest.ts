@@ -3,7 +3,7 @@ import { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "AHA-MIND — AI Learning Tools",
-    short_name: "AHA-MIND",
+    short_name: "aha-mind",
     description: "Ứng dụng AI thông minh hỗ trợ luyện phát âm tiếng Anh (Story Shadowing) và các tiện ích vi mô.",
     start_url: "/",
     display: "standalone",
@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait",
     icons: [
       {
-        src: "/icon.svg",
+        src: "/logo.svg",
         sizes: "any",
         type: "image/svg+xml",
       },

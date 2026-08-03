@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GreetingSection } from "@/components/dashboard/greeting-section";
+import { DueReviewCard } from "@/components/dashboard/due-review-card";
 import { ContinueLearning } from "@/components/dashboard/continue-learning";
 import { AppShortcuts } from "@/components/dashboard/app-shortcuts";
 import { RecentStories } from "@/components/dashboard/recent-stories";
@@ -30,13 +31,16 @@ export default function Home() {
       {/* 1. Lời chào */}
       <GreetingSection />
 
-      {/* 2. Tiếp tục bài gần nhất */}
+      {/* 2. Nhắc nhở ôn tập SRS nếu có từ đến hạn */}
+      <DueReviewCard />
+
+      {/* 3. Tiếp tục bài gần nhất */}
       {!loading && <ContinueLearning latestStory={latestStory} />}
 
-      {/* 3. Phím tắt tiện ích */}
+      {/* 4. Phím tắt tiện ích */}
       <AppShortcuts />
 
-      {/* 4. Danh sách bài học gần đây (cuộn ngang) */}
+      {/* 5. Danh sách bài học gần đây (cuộn ngang) */}
       {!loading && <RecentStories stories={recentStories} />}
 
       {/* Footer copyright */}

@@ -7,7 +7,9 @@
 
 ## 1. Mục tiêu sản phẩm (Product Goal)
 
-Micro-app học tiếng Anh theo phương pháp **Shadowing** — nghe và lặp lại câu theo AI. Người dùng nhập văn bản hoặc link YouTube, hệ thống xử lý và tạo ra một bài luyện tập có cấu trúc.
+Micro-app học tiếng Anh theo phương pháp **Shadowing** — nghe và lặp lại câu theo AI. Người dùng nhập văn bản hoặc link YouTube, hệ thống xử lý và tạo ra một bài luyện tập có cấu trúc hoàn chỉnh.
+
+Ứng dụng được thiết kế theo tư duy **Mobile-First PWA (Progressive Web App)**, tối ưu cho thao tác một tay trên thiết bị di động, hoạt động độc lập như một Native App và tích hợp trong hệ sinh thái AHA-MIND.
 
 **Phương pháp Shadowing:**
 
@@ -21,79 +23,106 @@ AI đọc câu → Dừng → Người dùng lặp lại trong khoảng dừng �
 
 | Layer                      | Technology                                       | Ghi chú                                              |
 | -------------------------- | ------------------------------------------------ | ----------------------------------------------------- |
-| **Frontend**         | Next.js 16 (App Router), React 19                | App Router, Server/Client Components                  |
-| **Styling**          | TailwindCSS v4                                   | Design tokens trong`globals.css`                    |
-| **UI Components**    | Shadcn UI                                        | Card, Button, Dialog, Accordion, Input                |
-| **State Machine**    | Custom Hooks (React)                             | `useShadowingPlayer`, `useYouTubeShadowingPlayer` |
-| **AI Orchestration** | LangGraph (`@langchain/langgraph@1.3.6`)       | Pipeline xử lý đa bước                           |
-| **AI Model**         | Gemini 2.5 Flash (`@langchain/google-genai@2`) | Sentence splitting, IPA, Keywords                     |
-| **TTS**              | Google Cloud TTS REST API                        | Không cần SDK, gọi trực tiếp qua`fetch`        |
-| **YouTube**          | `youtube-transcript` package                   | Bóc phụ đề;`react-youtube` cho Player           |
-| **Web Scraping**     | `@mozilla/readability` + `jsdom`             | Bóc nội dung bài báo từ URL                      |
-| **Database**         | MongoDB (Mongoose)                               | Lưu Storybook (bài luyện tập)                     |
-| **Validation**       | Zod v4                                           | Validate cả API input và Gemini output              |
-| **Real-time**        | Server-Sent Events (SSE)                         | Streaming log tiến trình về Toast UI (Progress)    |
+| **Frontend Framework**     | Next.js 16 (App Router), React 19                | App Router, Server/Client Components                  |
+| **PWA & Offline**          | Web App Manifest (`manifest.ts`) + Service Worker (`sw.js`) | Standalone mode, static asset caching, portrait lock |
+| **Styling**                | TailwindCSS v4                                   | Safe-area insets (`pt-safe`, `pb-safe`), Dark Mode    |
+| **UI Components**          | Shadcn UI + Lucide Icons                         | Card, Button, Dialog, Accordion, Input, Icons         |
+| **App Shell & Layout**     | Mobile-First Shell (`max-w-[480px]`)             | Bottom Tab Bar 4 tabs, Sticky Mobile Header           |
+| **Local State / Settings** | React Hooks + `localStorage`                     | `useSettings`, `useShadowingPlayer`, `useYouTubeShadowingPlayer` |
+| **AI Orchestration**       | LangGraph (`@langchain/langgraph@1.3.6`)         | Pipeline xử lý đa bước (Text & YouTube)               |
+| **AI Model**               | Gemini 2.5 Flash (`@langchain/google-genai@2`)   | Sentence splitting, IPA, Keywords, Video Segmenting   |
+| **TTS**                    | Google Cloud TTS REST API                        | Gọi trực tiếp REST API qua `fetch`                    |
+| **YouTube Integration**    | `youtube-transcript` + `react-youtube`           | Bóc phụ đề; custom YouTube Player controller          |
+| **Web Scraping**           | `@mozilla/readability` + `jsdom`                 | Bóc nội dung bài báo từ URL                           |
+| **Database**               | MongoDB (Mongoose)                               | Collection `storybooks` (Model: `Storybook_v5`)       |
+| **Validation**             | Zod v4                                           | Validate API input/output & Gemini LLM response       |
+| **Real-time Streaming**    | Server-Sent Events (SSE)                         | Streaming log tiến trình về Toast UI (Progress)       |
 
 ---
 
 ## 3. Kiến trúc Tổng thể (High-Level Architecture)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        FRONTEND                              │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────┐  │
-│  │  Create Page│  │ History Page │  │    Player Page     │  │
-│  │(Text / URL) │  │(List + Group)│  │(TTS / YouTube)     │  │
-│  └──────┬──────┘  └──────────────┘  └────────┬───────────┘  │
-│         │  fetch()                            │              │
-└─────────┼───────────────────────────────────-┼──────────────┘
-          │                                     │
-┌─────────▼───────────────────────────────────-▼──────────────┐
-│                    NEXT.JS API ROUTES                         │
-│  POST /process   POST /youtube   GET /scrape  GET /[id]      │
-│  POST /create-series             GET /suggest-segments        │
-└─────────┬───────────────────────────────────────────────────┘
-          │
-┌─────────▼───────────────────────────────────────────────────┐
-│                  LANGGRAPH PIPELINES                          │
-│                                                               │
-│  storyShadowingGraph (Text Input):                            │
-│  [sentenceSplitter] → [ttsGenerator]                         │
-│                                                               │
-│  youtubeShadowingGraph (YouTube Input):                       │
-│  [transcriptFetcher] → [sentenceConsolidator]                │
-│               ↕ (parallel)                                   │
-│          [keywordExtractor]                                   │
-└─────────┬───────────────────────────────────────────────────┘
-          │
-┌─────────▼───────────────────────────────────────────────────┐
-│               EXTERNAL SERVICES                               │
-│  Gemini 2.5 Flash    Google Cloud TTS    YouTube Transcript  │
-│  Free Dictionary API (dictionaryapi.dev) — IPA + Definitions │
-└─────────┬───────────────────────────────────────────────────┘
-          │
-┌─────────▼───────────────────────────────────────────────────┐
-│              MONGODB (Mongoose)                               │
-│  Collection: storybooks (model: Storybook_v5)                │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      UNIFIED MOBILE-FIRST APP SHELL                     │
+│                           (max-w-[480px] Centered)                      │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │             MobileHeader (Sticky Top: Logo + Back Button)         │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │   Home Tab   │  │  Story Tab   │  │  Vocab Tab   │  │ Profile Tab │  │
+│  │ (Dashboard)  │  │  (History)   │  │(Flashcards)  │  │ (Settings)  │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────────────┘  └─────────────┘  │
+│         │                 │                                             │
+│         │          ┌──────▼────────┐  ┌────────────────┐                │
+│         │          │  Create Page  │  │  Player Page   │ (Tabs Hidden)  │
+│         │          │ (Text/YouTube)│  │(TTS / YouTube) │                │
+│         │          └──────┬────────┘  └───────┬────────┘                │
+│  ┌──────┴─────────────────┴───────────────────┴──────────────────────┐  │
+│  │           MobileTabBar (4 Tabs Bottom Nav - Auto Hide on Player)   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                    PWA & SERVICE WORKER LAYER                           │
+│  Manifest (standalone, theme_color)  │ Service Worker (Static Cache)   │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ fetch()
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                    NEXT.JS API ROUTES (Backend)                         │
+│  POST /process   POST /youtube   GET /scrape  GET /[id]                 │
+│  POST /create-series             GET /suggest-segments                  │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                  LANGGRAPH MULTI-STEP PIPELINES                         │
+│  storyShadowingGraph (Text)    │  youtubeShadowingGraph (YouTube)       │
+│  [sentenceSplitter] → [TTS]    │  [transcriptFetcher] → [consolidator]  │
+│         ↕ (parallel)           │               ↕ (parallel)             │
+│    [keywordIdentifier]         │          [keywordIdentifier]           │
+│            ↓                   │                   ↓                    │
+│    [keywordEnricher]           │          [keywordEnricher]             │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────┐
+│               EXTERNAL AI & MEDIA SERVICES                              │
+│  Gemini 2.5 Flash  │ Google Cloud TTS │ YouTube CC │ Dict API (IPA)     │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────┐
+│              MONGODB DATABASE (Collection: storybooks)                  │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 4. File Structure Map (Thực tế hiện tại)
+## 4. File Structure Map
 
 ```
 src/
 ├── app/
+│   ├── layout.tsx                          ← Root Layout tích hợp AppShell, PWA & Toasts
+│   ├── page.tsx                            ← [PWA] Smart Mobile Dashboard (Home Tab)
+│   ├── globals.css                         ← Tailwind v4, safe-area tokens (pt-safe, pb-safe)
+│   ├── manifest.ts                         ← [PWA] Web App Manifest definition
+│   │
+│   ├── vocab/
+│   │   └── page.tsx                        ← [PWA] Vocab & Flashcards Placeholder Tab
+│   │
+│   ├── profile/
+│   │   └── page.tsx                        ← [PWA] Settings & User Profile Tab
+│   │
 │   ├── apps/
 │   │   └── story-shadowing/
-│   │       ├── page.tsx                    ← History Page (danh sách bài học)
+│   │       ├── page.tsx                    ← [PWA] Mobile History (Search + Filter chips)
 │   │       ├── layout.tsx
 │   │       ├── create/
-│   │       │   └── page.tsx                ← Create Page (nhập text / URL)
+│   │       │   └── page.tsx                ← Create Page (Text / YouTube / Scraping)
 │   │       └── player/
 │   │           └── [id]/
-│   │               └── page.tsx            ← Player Page (shadowing session)
+│   │               └── page.tsx            ← [PWA] Mobile Player Page (Bottom bar hidden)
 │   │
 │   └── api/
 │       └── story-shadowing/
@@ -114,42 +143,55 @@ src/
 │               └── create-series/
 │                   └── route.ts            ← POST (SSE): Tạo hàng loạt Storybook
 │
+├── public/
+│   ├── sw.js                               ← [PWA] Service worker caching static assets
+│   └── logo.svg                            ← Vector App Icon
+│
+├── components/
+│   ├── mobile-shell/                       ← [PWA] Unified App Shell System
+│   │   ├── app-shell.tsx                   ← 480px width container + safe-area wrapper
+│   │   ├── mobile-header.tsx               ← Header tối giản + Back button logic
+│   │   ├── mobile-tab-bar.tsx              ← 4-Tab Bottom Nav (Auto-hide on Player)
+│   │   └── pwa-register.tsx                ← Client Service Worker auto-register
+│   │
+│   ├── dashboard/                          ← [PWA] Smart Dashboard Components
+│   │   ├── greeting-section.tsx            ← Lời chào theo buổi (Sáng/Chiều/Tối)
+│   │   ├── continue-learning.tsx           ← Card tiếp tục bài học gần nhất
+│   │   ├── app-shortcuts.tsx               ← Lưới tiện ích micro-apps
+│   │   └── recent-stories.tsx              ← Carousel cuộn ngang bài học gần đây
+│   │
+│   ├── settings/                           ← [PWA] Profile & Settings Components
+│   │   ├── settings-group.tsx              ← Khung nhóm cấu hình
+│   │   ├── toggle-setting.tsx              ← Switch toggle (Dark mode, auto-advance)
+│   │   └── select-setting.tsx              ← Dropdown/Modal selector
+│   │
+│   └── story-shadowing/
+│       ├── sentence-card.tsx               ← Hiển thị câu + IPA ruby annotation
+│       ├── shadowing-player.tsx            ← [PWA] Player với fixed bottom controls 480px
+│       ├── progress-countdown.tsx          ← Thanh đếm ngược
+│       ├── segment-preview-dialog.tsx      ← Dialog xác nhận chia video dài
+│       └── agent-progress-toast.tsx        ← Global SSE Toast tiến trình Agent
+│
 ├── lib/
+│   ├── hooks/
+│   │   ├── use-settings.ts                 ← [PWA] LocalStorage settings & theme toggle
+│   │   ├── use-shadowing-player.ts         ← State Machine cho TTS Player
+│   │   └── useYouTubeShadowingPlayer.ts    ← State Machine cho YouTube Player
+│   │
 │   ├── agents/
 │   │   └── story-shadowing-agent/
-│   │       ├── state.ts                    ← LangGraph State (Text pipeline)
+│   │       ├── state.ts                    ← State Text pipeline
 │   │       ├── graph.ts                    ← Text Pipeline: split → TTS
-│   │       ├── youtube-state.ts            ← LangGraph State (YouTube pipeline)
+│   │       ├── youtube-state.ts            ← State YouTube pipeline
 │   │       ├── youtube-graph.ts            ← YouTube Pipeline: fetch → consolidate
-│   │       └── nodes/
-│   │           ├── sentence-splitter.node.ts           ← Gemini: chia câu + IPA + level
-│   │           ├── tts-generator.node.ts               ← Google TTS: base64 audio
-│   │           ├── keyword-identifier.node.ts          ← [Phase 8] Gemini: identify từ khó + idiom
-│   │           ├── keyword-enricher.node.ts            ← [Phase 8] Dict API + Gemini: enrich details
-│   │           ├── youtube-transcript-fetcher.node.ts  ← youtube-transcript package
-│   │           ├── youtube-sentence-consolidator.node.ts ← Gemini: gộp phụ đề thô
-│   │           └── youtube-segment-suggester.node.ts   ← Gemini: gợi ý chia video dài
+│   │       └── nodes/                      ← Các Graph Nodes (Splitter, TTS, Keywords, CC)
 │   │
 │   ├── schemas/
-│   │   └── story-shadowing.schema.ts           ← Tất cả Zod schemas (shared)
+│   │   └── story-shadowing.schema.ts       ← Zod validation schemas
 │   │
-│   ├── services/
-│   │   └── dictionary-api.service.ts           ← [Phase 8] Wrapper Free Dictionary API
-│   │
-│   ├── db/
-│   │   └── models/
-│   │       └── Storybook.ts                ← Mongoose Model (Storybook_v5)
-│   │
-│   └── hooks/
-│       ├── use-shadowing-player.ts         ← State Machine cho TTS Player
-│       └── [use-youtube-shadowing-player]  ← State Machine cho YouTube Player (dự kiến)
-│
-└── components/
-    └── story-shadowing/
-        ├── sentence-card.tsx               ← Hiển thị câu + IPA ruby annotation
-        ├── shadowing-player.tsx            ← Player component chính (TTS)
-        ├── progress-countdown.tsx          ← Thanh đếm ngược
-        └── segment-preview-dialog.tsx      ← Dialog xác nhận chia video dài
+│   └── db/
+│       └── models/
+│           └── Storybook.ts                ← MongoDB Mongoose Model
 ```
 
 ---
@@ -177,8 +219,8 @@ interface IStorybook {
   sourceType: "text" | "youtube";
   youtubeVideoId?: string;
 
-  // === Series (Phase 7) ===
-  seriesId?: string;      // UUID — group nhiều parts cùng video
+  // === Series ===
+  seriesId?: string;      // UUID — liên kết các parts cùng video
   partIndex?: number;     // Thứ tự part trong series (0-indexed)
   partTitle?: string;     // Tiêu đề riêng của part
   totalParts?: number;    // Tổng số parts trong series
@@ -187,10 +229,10 @@ interface IStorybook {
 interface IStorybookSentence {
   id: number;
   text: string;
-  audioBase64?: string;   // TTS source
+  audioBase64?: string;   // TTS audio
   words?: { word: string; ipa: string }[];  // IPA annotation
-  startMs?: number;       // YouTube source
-  endMs?: number;         // YouTube source
+  startMs?: number;       // YouTube timestamp
+  endMs?: number;         // YouTube timestamp
 }
 
 interface IStorybookKeyword {
@@ -205,85 +247,39 @@ interface IStorybookKeyword {
 
 ---
 
-## 6. Zod Schemas (Shared, `story-shadowing.schema.ts`)
+## 6. PWA & Navigation Architecture
 
-| Schema                            | Mục đích                                                                      |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `WordSchema`                    | `{word, ipa}` — 1 từ kèm phiên âm                                       |
-| `KeywordSchema`                 | Từ vựng khó (word, ipa, explanation, level, wordFamily, collocations)       |
-| `SentenceSchema`                | 1 câu processed (id, text, audioBase64, words, startMs, endMs)                |
-| `ProcessResponseSchema`         | Response từ POST /process và POST /youtube                                   |
-| `TtsRequestSchema`              | Request vào POST /tts (không còn dùng riêng biệt)                        |
-| `GeminiSentenceListSchema`      | Raw output từ Gemini khi chia câu (level + sentences + words IPA)            |
-| `IdentifiedKeywordListSchema`   | **[Phase 8]** Raw output từ Gemini khi identify từ khó (word, type, context) |
-| `GeminiKeywordListSchema`       | Raw output từ Gemini khi enrich idiom/phrasal verb (explanation + wordFamily) |
+### 6.1 Unified 4-Tab Navigation Model
+
+Hệ thống điều hướng sử dụng mô hình cố định ở đáy (**Bottom Tab Bar**) theo chuẩn ứng dụng di động:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                        APP SHELL                       │
+│  Tab 1: Home (/)             → Dashboard & Shortcuts  │
+│  Tab 2: Story (/apps/...)    → Kho bài học Shadowing   │
+│  Tab 3: Vocab (/vocab)       → Flashcards (Phase sau)  │
+│  Tab 4: Profile (/profile)   → Cài đặt & Tùy biến      │
+└────────────────────────────────────────────────────────┘
+```
+
+- **Quy tắc hiển thị Tab Bar**:
+  - Tab Bar hiển thị trên các màn hình chính (`/`, `/apps/story-shadowing`, `/vocab`, `/profile`).
+  - Tự động **ẨN** khi người dùng vào màn hình chi tiết như Player (`/apps/story-shadowing/player/*`) để nhường toàn bộ không gian cho thanh điều khiển phát âm.
+
+### 6.2 Settings Store (`useSettings`)
+
+Quản lý trạng thái cá nhân hóa thông qua `localStorage` (không yêu cầu tài khoản/auth ở phase hiện tại):
+- `darkMode`: Tự động toggle class `dark` trên thẻ `<html>`.
+- `defaultVoice`: Giọng đọc TTS ưa thích (`en-US-Journey-F`, `en-US-Journey-D`, ...).
+- `repeatTimeoutSeconds`: Thời gian chờ lặp lại sau mỗi câu.
+- `autoAdvance`: Tự động nhảy sang câu tiếp theo khi hết thời gian chờ.
 
 ---
 
-## 7. LangGraph Pipelines
+## 7. State Machine — Player
 
-### 7.1 Text Pipeline (`graph.ts`)
-
-```
-Input: rawText (string)
-       ↓
-[Node 1] sentenceSplitterNode
-  → Gọi Gemini Flash
-  → Trả về: rawSentences (với IPA), level
-       ↓ (parallel)
-[Node 2a] ttsGeneratorNode              [Node 2b] keywordIdentifierNode  ← [Phase 8]
-  → Gọi Google Cloud TTS                  → Gemini: identify từ khó + idiom + phrasal verb
-  → Trả về: sentences (+ audioBase64)     → Trả về: identifiedKeywords[]
-                                                 ↓
-                                          [Node 2c] keywordEnricherNode  ← [Phase 8]
-                                            → type="word": Dictionary API → Gemini fallback
-                                            → type="idiom": Gemini (giải thích theo context)
-                                            → Trả về: keywords[] (đầy đủ IPA, explanation, ...)
-       ↓ (merge)
-Output: sentences, keywords, level
-```
-
-### 7.2 YouTube Pipeline (`youtube-graph.ts`)
-
-```
-Input: youtubeUrl (string)
-       ↓
-[Node 1] transcriptFetcherNode
-  → Dùng youtube-transcript package
-  → Ưu tiên phụ đề thủ công (Manual CC)
-  → Trả về: rawTranscript (blocks), youtubeVideoId, title
-       ↓ (parallel)
-[Node 2a] sentenceConsolidatorNode      [Node 2b] keywordIdentifierNode  ← [Phase 8]
-  → Gemini: Map-Reduce + Chunking          → Gemini: identify từ khó + idiom
-  → Zero-shifting + Mid-point clamping     → Trả về: identifiedKeywords[]
-  → Trả về: sentences (startMs, endMs)           ↓
-                                          [Node 2c] keywordEnricherNode  ← [Phase 8]
-                                            → Shared logic với Text pipeline
-                                            → Trả về: keywords[]
-       ↓ (merge)
-Output: sentences, keywords, level, youtubeVideoId
-```
-
-### 7.3 Smart Splitting (Phase 7 — Video dài > 200 blocks)
-
-```
-[API] suggest-segments
-  → Fetch transcript
-  → Nếu > 200 blocks: gọi youtubeSegmentSuggesterNode (Gemini)
-  → Trả về danh sách segments gợi ý (title, startMs, endMs, blockStart, blockEnd)
-       ↓ (User confirm trên UI)
-[API] create-series (SSE Stream)
-  → Slice transcript cho từng segment
-  → Chạy YouTube Pipeline tuần tự cho từng segment (tránh rate limit)
-  → Lưu mỗi segment thành 1 Storybook riêng (seriesId liên kết)
-  → Stream log về UI real-time
-```
-
----
-
-## 8. State Machine — Player
-
-### 8.1 TTS Player (`useShadowingPlayer`)
+### 7.1 TTS Player (`useShadowingPlayer`)
 
 ```
 IDLE ──play()──→ AI_SPEAKING ──audio.ended──→ USER_SHADOWING ──timeout──→ (next sentence)
@@ -294,71 +290,45 @@ IDLE ──play()──→ AI_SPEAKING ──audio.ended──→ USER_SHADOWING
                                                                           DONE (last sentence)
 ```
 
-**Refs dùng để tránh memory leak:**
-
-- `audioRef` — HTMLAudioElement hiện tại
-- `shadowTimeoutRef` — setTimeout chờ user lặp
-- `countdownIntervalRef` — setInterval cập nhật countdown
-
-### 8.2 YouTube Player (`useYouTubeShadowingPlayer`)
+### 7.2 YouTube Player (`useYouTubeShadowingPlayer`)
 
 ```
 IDLE ──play()──→ AI_SPEAKING ──endMs reached──→ USER_SHADOWING ──timeout──→ (next sentence)
 ```
 
-Thay vì `<audio>`, hook điều khiển YouTube IFrame Player:
-
-- `requestAnimationFrame` để theo dõi `player.getCurrentTime()`
-- `hasSeekedRef` flag để xử lý Async Seek khi bấm Back
+- Điều khiển YouTube IFrame Player qua `requestAnimationFrame` và `player.getCurrentTime()`.
+- Đảm bảo thanh điều khiển Player được cố định ở đáy, căn chỉnh chuẩn trong khung 480px kèm `pb-safe`.
 
 ---
 
-## 9. User Flow
+## 8. User Flow
 
-### 9.1 Text Shadowing
-
-```
-/apps/story-shadowing (History)
-    → [Tạo bài luyện tập]
-        → /apps/story-shadowing/create
-            Form: Title | Thumbnail | Text (5000 ký tự) | Voice Select
-            → Submit → POST /api/story-shadowing/process
-                → LangGraph: split + TTS + keywords
-                → Redirect → /apps/story-shadowing/player/[id]
-```
-
-### 9.2 YouTube Shadowing
+### 8.1 Dashboard & Tiếp Tục Bài Học (Home Flow)
 
 ```
-/apps/story-shadowing/create (Tab: "Từ YouTube")
-    → Nhập YouTube URL
-    → [Phân tích link]
-        → POST /api/story-shadowing/youtube/suggest-segments
-            Nếu video ngắn (< 200 blocks):
-                → Trực tiếp POST /api/story-shadowing/youtube
-                → Redirect → /apps/story-shadowing/player/[id]
-            Nếu video dài (>= 200 blocks):
-                → Hiển thị SegmentPreviewDialog
-                → User confirm segments
-                → POST /api/story-shadowing/youtube/create-series (SSE)
-                → Hiển thị terminal log real-time
-                → Redirect → /apps/story-shadowing (History, group by seriesId)
+Mở App (/)
+  ├── Chào theo thời gian (Sáng / Chiều / Tối)
+  ├── Bấm [Luyện tập] ở Card bài gần nhất → /apps/story-shadowing/player/[id]
+  ├── Bấm Icon [Story Shadowing] → /apps/story-shadowing (Kho bài)
+  └── Bấm Tiện ích khác (White Noise, AHA-Opta) → Mở micro-app tương ứng
 ```
 
-### 9.3 Article Scraping
+### 8.2 Luyện Tập Shadowing (Player Flow)
 
 ```
-/apps/story-shadowing/create (Tab: "Nhập từ Link")
-    → Nhập URL bài báo
-    → [Phân tích link]
-        → GET /api/story-shadowing/scrape?url=...
-        → Tự động điền: Title, Thumbnail, Text vào form
-        → Người dùng duyệt → Submit → flow Text Shadowing
+/apps/story-shadowing/player/[id]
+  ├── Step 1: Vocabulary Review (Nếu có từ vựng then chốt)
+  │     └── Xem Word Family, Collocations, IPA → Bấm [Bắt đầu Shadowing]
+  └── Step 2: Shadowing Session
+        ├── Ẩn Bottom Tab Bar
+        ├── AI / Speaker đọc câu hiện tại (Highlight ruby IPA)
+        ├── Đếm ngược thời gian chờ người dùng lặp lại
+        └── Chuyển câu tiếp theo (hoặc bấm Next/Prev/Pause)
 ```
 
 ---
 
-## 10. API Routes Reference
+## 9. API Routes Reference
 
 | Method   | Route                                             | Mô tả                          | Input                                      | Output                                          |
 | -------- | ------------------------------------------------- | -------------------------------- | ------------------------------------------ | ----------------------------------------------- |
@@ -366,49 +336,46 @@ Thay vì `<audio>`, hook điều khiển YouTube IFrame Player:
 | `GET`  | `/api/story-shadowing/[id]`                     | Chi tiết 1 bài                 | `id` (param)                             | `IStorybook` (full)                           |
 | `POST` | `/api/story-shadowing/process`                  | Tạo bài từ text               | `{text, title?, thumbnail?, voice?}`     | `{id, totalCount}`                            |
 | `GET`  | `/api/story-shadowing/scrape`                   | Bóc nội dung từ URL           | `?url=...`                               | `{title, thumbnail, text}`                    |
-| `POST` | `/api/story-shadowing/youtube`                  | Tạo bài từ YouTube            | `{youtubeUrl, voice?}`                   | SSE Stream →`{id}`                           |
+| `POST` | `/api/story-shadowing/youtube`                  | Tạo bài từ YouTube            | `{youtubeUrl, voice?}`                   | SSE Stream → `{id}`                           |
 | `POST` | `/api/story-shadowing/youtube/suggest-segments` | Phân tích & gợi ý chia video | `{youtubeUrl}`                           | `{needsSplitting, segments?, rawTranscript?}` |
-| `POST` | `/api/story-shadowing/youtube/create-series`    | Tạo series từ segments         | `{selectedSegments, rawTranscript, ...}` | SSE Stream →`{done, seriesId, firstStoryId}` |
+| `POST` | `/api/story-shadowing/youtube/create-series`    | Tạo series từ segments         | `{selectedSegments, rawTranscript, ...}` | SSE Stream → `{done, seriesId, firstStoryId}` |
 | `GET`  | `/api/story-shadowing/series/[seriesId]`        | Lấy tất cả parts trong series | `seriesId` (param)                       | `IStorybook[]` (projection)                   |
 
 ---
 
-## 11. Phases Overview
+## 10. Phases Overview
 
-| Phase               | Tên                      | Trạng thái | Mô tả ngắn                                           |
-| ------------------- | ------------------------- | ------------ | ------------------------------------------------------- |
-| **Phase 1**   | Core Shadowing (Text)     | ✅ Done      | Nhập text → TTS → Player state machine               |
-| **Phase 2**   | Voice & AI Leveling       | ✅ Done      | Chọn giọng đọc, Gemini đánh giá level            |
-| **Phase 3**   | IPA Phonetic              | ✅ Done      | Ruby annotation hiển thị phiên âm IPA               |
-| **Phase 4**   | Article URL Import        | ✅ Done      | Scrape bài báo bằng Readability                      |
-| **Phase 5**   | Core Vocabulary           | ✅ Done      | Trích xuất từ vựng khó + Vocab step trước Player |
-| **Phase 5.1** | Deep Vocabulary           | ✅ Done      | Word Family + Collocations + IPA cho từ vựng          |
-| **Phase 6**   | YouTube Shadowing         | ✅ Done      | YouTube transcript → Shadowing với real audio         |
-| **Phase 6.1** | Vocabulary Enrichment     | ✅ Done      | Nâng cấp schema + UI accordion cho vocabulary         |
-| **Phase 7**   | Smart Video Splitting          | ✅ Done    | Video dài → AI gợi ý chia → Series management          |
-| **Phase 8**   | Keyword Pipeline Refactor      | 🔲 Planned | Hybrid pipeline: Gemini identify + Dict API enrich      |
-| **Phase 9**   | UI & UX Refinements            | ✅ Done    | Toast UI Agent Progress + YouTube Auto-Preview        |
-
----
-
-## 12. Key Design Decisions & Trade-offs
-
-| Quyết định | Lý do | Trade-off |
-|---|---|---|
-| **[Phase 8] Hybrid IPA**: Dict API cho single words, Gemini cho idiom | Dict API có IPA chuẩn xác (~98%); Gemini hiểu ngữ cảnh idiom tốt hơn | Thêm external call, latency tăng ~1-2s |
-| **[Phase 8] Tách keyword pipeline thành 2 nodes** | Single Responsibility: identifier chỉ list từ, enricher chỉ giải thích → Gemini tập trung hơn, coverage cao hơn | Thêm 1 LangGraph node, thêm intermediate state |
-| **[Phase 8] Shared helper functions** cho cả Text & YouTube pipeline | DRY principle: tránh duplicate logic; khi sửa prompt chỉ sửa 1 chỗ | Phải quản lý state type mapping giữa 2 pipelines |
-| **Pre-generate toàn bộ audio** (không stream TTS) | Tránh latency khi phát | Thời gian chờ ban đầu lâu hơn |
-| **Standard voice** thay vì WaveNet | Rẻ hơn 4x | Chất lượng audio kém hơn một chút |
-| **speakingRate = 1.0 cố định** | Tốc độ cao gây mất chữ | Không thể chậm hơn cho người mới |
-| **Mỗi segment = 1 Storybook riêng** | Tái sử dụng 100% Player hiện tại | Không có view tổng hợp toàn series |
-| **Zero-shifting timestamps** (YouTube) | Chống Time Hallucination của Gemini | Cần thêm bước tính toán offset |
-| **Manual CC ưu tiên** (YouTube) | Phụ đề tay chuẩn hơn ASR | Video không có Manual CC sẽ bị từ chối |
-| **SSE cho long-running tasks** | User thấy tiến trình real-time | Cần xử lý reconnect nếu mạng mất |
+| Phase | Tên | Trạng thái | Mô tả ngắn |
+| :--- | :--- | :---: | :--- |
+| **Phase 1** | Core Shadowing (Text) | ✅ Done | Nhập text → TTS → Player state machine |
+| **Phase 2** | Voice & AI Leveling | ✅ Done | Chọn giọng đọc, Gemini đánh giá level |
+| **Phase 3** | IPA Phonetic | ✅ Done | Ruby annotation hiển thị phiên âm IPA |
+| **Phase 4** | Article URL Import | ✅ Done | Scrape bài báo bằng Readability |
+| **Phase 5** | Core Vocabulary | ✅ Done | Trích xuất từ vựng khó + Vocab step trước Player |
+| **Phase 5.1** | Deep Vocabulary | ✅ Done | Word Family + Collocations + IPA cho từ vựng |
+| **Phase 6** | YouTube Shadowing | ✅ Done | YouTube transcript → Shadowing với real audio |
+| **Phase 6.1** | Vocabulary Enrichment | ✅ Done | Nâng cấp schema + UI accordion cho vocabulary |
+| **Phase 7** | Smart Video Splitting | ✅ Done | Video dài → AI gợi ý chia → Series management |
+| **Phase 8** | Keyword Pipeline Refactor | 🔲 Planned | Hybrid pipeline: Gemini identify + Dict API enrich |
+| **Phase 9** | Realtime Progress Toast | ✅ Done | Toast UI Agent Progress + SSE Stream logs |
+| **Phase 10** | **Mobile-First PWA UX Redesign** | ✅ **Done** | **App Shell 480px, 4-Tab Bottom Nav, Smart Dashboard, PWA Manifest & Service Worker, Settings Store** |
 
 ---
 
-## 13. Environment Variables
+## 11. Key Design Decisions & Trade-offs
+
+| Quyết định | Lý do | Đánh đổi (Trade-off) |
+| :--- | :--- | :--- |
+| **Unified 480px App Shell trên Desktop** | Đồng nhất trải nghiệm Mobile-First trên mọi màn hình | Màn hình máy tính lớn có khoảng viền 2 bên (giống giao diện mobile preview) |
+| **PWA Standalone thay vì Native App** | 1 codebase Next.js duy nhất, cập nhật tức thì không cần qua App Store | Một số API phần cứng sâu của iOS bị hạn chế |
+| **Ẩn Bottom Tab Bar khi vào Player** | Nhường trọn vẹn diện tích màn hình cho thanh điều khiển audio | Người dùng phải bấm nút Back trên Header để quay lại các tab khác |
+| **LocalStorage Settings Store** | Lưu cấu hình nhanh chóng, không yêu cầu người dùng phải đăng nhập | Cấu hình chỉ lưu trên thiết bị hiện tại, chưa đồng bộ qua cloud |
+| **Hybrid IPA (Phase 8)** | Dict API có IPA chuẩn (~98%), Gemini hiểu idiom ngữ cảnh | Thêm external call, latency tăng nhẹ |
+| **Zero-shifting timestamps (YouTube)** | Chống Time Hallucination của Gemini | Cần thêm bước tính toán offset |
+
+---
+
+## 12. Environment Variables
 
 ```bash
 GEMINI_API_KEY=           # Google AI Studio API Key

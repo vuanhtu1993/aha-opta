@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, BookOpen, GraduationCap, Settings } from "lucide-react";
+import useSWR from "swr";
 import { cn } from "@/lib/utils";
 
 interface TabItem {
@@ -39,11 +40,23 @@ const TABS: TabItem[] = [
   },
 ];
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function MobileTabBar() {
   const pathname = usePathname();
 
-  // Ẩn tab bar ở các trang chi tiết/player để nhường không gian cho thanh điều khiển
-  const isHidden = pathname.startsWith("/apps/story-shadowing/player");
+  // Fetch due count for Vocab tab badge
+  const { data: dueData } = useSWR("/api/vocab/due-count", fetcher, {
+    refreshInterval: 15000, // refresh every 15s
+    revalidateOnFocus: true,
+  });
+
+  const dueCount = dueData?.dueCount ?? 0;
+
+  // Ẩn tab bar ở các trang chi tiết/player/quiz review để nhường toàn bộ không gian
+  const isHidden =
+    pathname.startsWith("/apps/story-shadowing/player") ||
+    pathname.startsWith("/vocab/review");
   if (isHidden) return null;
 
   return (
@@ -57,13 +70,14 @@ export function MobileTabBar() {
             ? pathname === tab.href
             : pathname.startsWith(tab.href);
           const Icon = tab.icon;
+          const isVocabTab = tab.href === "/vocab";
 
           return (
             <Link
               key={tab.href}
               href={tab.href}
               className={cn(
-                "flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-200 gap-1",
+                "relative flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-200 gap-1",
                 isActive
                   ? "text-amber-500 font-bold dark:text-amber-400"
                   : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
@@ -71,13 +85,27 @@ export function MobileTabBar() {
             >
               <div
                 className={cn(
-                  "p-1 rounded-lg transition-transform",
+                  "relative p-1 rounded-lg transition-transform",
                   isActive ? "scale-110 bg-amber-50 dark:bg-amber-950/40" : ""
                 )}
               >
-                <Icon className={cn("w-5 h-5", isActive ? "stroke-[2.5]" : "stroke-[1.75]")} />
+                <Icon
+                  className={cn(
+                    "w-5 h-5",
+                    isActive ? "stroke-[2.5]" : "stroke-[1.75]"
+                  )}
+                />
+
+                {/* Badge indicator on Vocab tab */}
+                {isVocabTab && dueCount > 0 && (
+                  <span className="absolute -top-1 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-extrabold shadow-sm animate-pulse">
+                    {dueCount > 99 ? "99+" : dueCount}
+                  </span>
+                )}
               </div>
-              <span className="text-[11px] leading-none tracking-tight">{tab.label}</span>
+              <span className="text-[11px] leading-none tracking-tight">
+                {tab.label}
+              </span>
             </Link>
           );
         })}

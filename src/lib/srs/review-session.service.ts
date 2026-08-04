@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db/mongoose";
 import VocabCard from "@/lib/db/models/VocabCard";
+import Storybook from "@/lib/db/models/Storybook";
 import { getRandomDefaultDistractors } from "@/lib/srs/distractor-bank";
 
 export interface QuizOption {
@@ -34,7 +35,10 @@ export interface ReviewSessionData {
 
 /**
  * Service function to generate a batch of Quiz Questions on the Server.
- * Direct Database access via mongoose singleton.
+ * Enriched via Multi-Tier Distractor Architecture:
+ * 1. Personal VocabCard definitions
+ * 2. Global Storybook keywords definitions (Incidental Learning Pool)
+ * 3. Default CEFR Distractor Bank fallback
  */
 export async function getReviewSessionQuestions(options: {
   limit?: number;
@@ -53,12 +57,15 @@ export async function getReviewSessionQuestions(options: {
     query = {};
   }
 
-  const [targetCards, totalCount] = await Promise.all([
+  // Parallel Database Queries: Fetch due cards + all personal cards + all storybooks keywords
+  const [targetCards, totalCount, allPersonalCards, allStorybooks] = await Promise.all([
     VocabCard.find(query)
       .sort({ "fsrs.due": 1 })
       .limit(limit)
       .lean(),
     VocabCard.countDocuments({}),
+    VocabCard.find({}, { explanation: 1, word: 1 }).lean(),
+    Storybook.find({}, { "keywords.explanation": 1, "keywords.word": 1 }).lean(),
   ]);
 
   if (targetCards.length === 0 && !practiceAll) {
@@ -70,26 +77,43 @@ export async function getReviewSessionQuestions(options: {
     };
   }
 
-  // Get all explanations from the database to use as dynamic distractors
-  const allCards = await VocabCard.find({}, { explanation: 1, word: 1 }).lean();
-  const allExplanations = allCards.map((c: any) => c.explanation);
+  // 1. Collect explanations from personal saved cards
+  const personalExplanations = allPersonalCards
+    .map((c: any) => c.explanation?.trim())
+    .filter((exp: string | undefined): exp is string => Boolean(exp));
+
+  // 2. Collect explanations from ALL Storybook keywords across the entire system (Global Pool)
+  const storybookExplanations = allStorybooks
+    .flatMap((sb: any) => sb.keywords?.map((k: any) => k.explanation?.trim()) || [])
+    .filter((exp: string | undefined): exp is string => Boolean(exp));
+
+  // 3. Merge and deduplicate explanations into a unified Global Distractor Pool
+  const uniquePoolMap = new Map<string, string>(); // lowercase key -> original text
+  for (const exp of [...personalExplanations, ...storybookExplanations]) {
+    const key = exp.toLowerCase();
+    if (!uniquePoolMap.has(key)) {
+      uniquePoolMap.set(key, exp);
+    }
+  }
+  const globalExplanations = Array.from(uniquePoolMap.values());
 
   const questions: QuizQuestion[] = targetCards.map((card: any) => {
     const targetExplanation = (card.explanation || "").trim();
+    const targetKey = targetExplanation.toLowerCase();
 
-    // Collect distractors from user's other cards
-    const otherUserExplanations = allExplanations.filter(
-      (exp) => exp && exp.toLowerCase().trim() !== targetExplanation.toLowerCase()
+    // Filter out the correct explanation from the pool
+    const candidateDistractors = globalExplanations.filter(
+      (exp) => exp.toLowerCase() !== targetKey
     );
 
-    // Shuffle other user explanations
-    const shuffledUserDistractors = [...otherUserExplanations].sort(
+    // Shuffle candidate distractors
+    const shuffledDistractors = [...candidateDistractors].sort(
       () => Math.random() - 0.5
     );
 
-    let selectedDistractors = shuffledUserDistractors.slice(0, 3);
+    let selectedDistractors = shuffledDistractors.slice(0, 3);
 
-    // If we don't have 3 distractors from user's cards, fill from default bank
+    // If we still have fewer than 3 distractors, fill remaining slots from the Default CEFR Bank
     if (selectedDistractors.length < 3) {
       const needed = 3 - selectedDistractors.length;
       const fallbackDistractors = getRandomDefaultDistractors(

@@ -300,11 +300,6 @@ export default function StorybookPage() {
           })}
         </div>
       )}
-
-      {/* Footer copyright */}
-      <div className="pt-2 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
-        Made by Anh Tu - Share to be share
-      </div>
     </div>
   );
 }

@@ -42,11 +42,6 @@ export default function Home() {
 
       {/* 5. Danh sách bài học gần đây (cuộn ngang) */}
       {!loading && <RecentStories stories={recentStories} />}
-
-      {/* Footer copyright */}
-      <div className="pt-2 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
-        Made by Anh Tu - Share to be share
-      </div>
     </div>
   );
 }

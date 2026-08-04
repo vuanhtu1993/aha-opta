@@ -63,7 +63,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Bottom Navigation"
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2 pb-safe shadow-lg"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 pt-2 pb-[max(0.5rem,calc(env(safe-area-inset-bottom,0px)+0.25rem))] shadow-lg"
     >
       <div className="flex items-center justify-around">
         {TABS.map((tab) => {
@@ -92,7 +92,7 @@ export function MobileTabBar() {
               >
                 <Icon
                   className={cn(
-                    "w-5 h-5",
+                    "w-6 h-6",
                     isActive ? "stroke-[2.5]" : "stroke-[1.75]"
                   )}
                 />
@@ -110,6 +110,11 @@ export function MobileTabBar() {
             </Link>
           );
         })}
+      </div>
+
+      {/* Footer copyright */}
+      <div className="pt-1.5 text-center text-[10px] tracking-wider text-slate-400 dark:text-slate-500 font-medium select-none">
+        Made by Anh Tu - Share to be share
       </div>
     </nav>
   );

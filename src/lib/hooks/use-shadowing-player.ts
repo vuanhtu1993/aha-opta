@@ -14,7 +14,7 @@ function createSilentWavBlob(durationMs: number): Blob {
   // Make sure dataSize is even
   let dataSize = Math.floor((durationMs / 1000) * byteRate);
   if (dataSize % 2 !== 0) dataSize++;
-  
+
   const buffer = new ArrayBuffer(44 + dataSize);
   const view = new DataView(buffer);
 
@@ -48,11 +48,11 @@ export function useShadowingPlayer(sentences: Sentence[]) {
 
   // Sử dụng HTML5 Audio để tránh lỗi Silent Switch trên iOS (chuông tắt thì Web Audio API bị tắt)
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
+
   // Các URL Blob cần được giải phóng
   const currentBlobUrlRef = useRef<string | null>(null);
   const silentBlobUrlRef = useRef<string | null>(null);
-  
+
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const clearTimers = useCallback(() => {
@@ -107,7 +107,7 @@ export function useShadowingPlayer(sentences: Sentence[]) {
       // BẮT ĐẦU GIAI ĐOẠN SHADOWING (Phát khoảng lặng)
       const duration = isNaN(audio.duration) ? 3 : audio.duration;
       const userTime = (duration * 1000) + 1500; // duration + 1.5s
-      
+
       setPlayerState("USER_SHADOWING");
       setCountdown(Math.round(userTime));
 
@@ -126,10 +126,10 @@ export function useShadowingPlayer(sentences: Sentence[]) {
       const silentBlob = createSilentWavBlob(userTime);
       const silentUrl = URL.createObjectURL(silentBlob);
       silentBlobUrlRef.current = silentUrl;
-      
+
       audio.src = silentUrl;
       audio.load();
-      
+
       // Định nghĩa lại onended cho đoạn khoảng lặng
       audio.onended = () => {
         // Khi khoảng lặng kết thúc, phát câu tiếp theo ngay trong chuỗi sự kiện onended
@@ -156,7 +156,7 @@ export function useShadowingPlayer(sentences: Sentence[]) {
       audioRef.current = new Audio();
       audioRef.current.setAttribute("playsinline", "true");
     }
-    
+
     if (playerState === "PAUSED") {
       playSentence(currentIndex);
     } else {

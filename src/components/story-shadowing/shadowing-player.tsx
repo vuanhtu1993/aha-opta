@@ -5,6 +5,7 @@ import YouTube, { YouTubePlayer } from "react-youtube";
 import { useShadowingPlayer } from "@/lib/hooks/use-shadowing-player";
 import { useYouTubeShadowingPlayer } from "@/lib/hooks/useYouTubeShadowingPlayer";
 import { SentenceCard } from "./sentence-card";
+import { Button } from "@/components/ui/button";
 import type { Sentence } from "@/lib/schemas/story-shadowing.schema";
 import { Play, Pause, ChevronLeft, ChevronRight, Volume2, Mic, CheckCircle2 } from "lucide-react";
 
@@ -30,7 +31,10 @@ export function ShadowingPlayer({
 
   // === YouTube Player Hook ===
   const [ytPlayer, setYtPlayer] = useState<YouTubePlayer | null>(null);
-  const youtubePlayer = useYouTubeShadowingPlayer(sourceType === "youtube" ? sentences : [], ytPlayer);
+  const youtubePlayer = useYouTubeShadowingPlayer(
+    sourceType === "youtube" ? sentences : [],
+    ytPlayer
+  );
 
   // Chọn player phù hợp
   const isYoutube = sourceType === "youtube";
@@ -43,24 +47,33 @@ export function ShadowingPlayer({
       : player.playerState
     : player.playerState;
 
-  const currentIndex = isYoutube ? youtubePlayer.currentSentenceIndex : textPlayer.currentIndex;
+  const currentIndex = isYoutube
+    ? youtubePlayer.currentSentenceIndex
+    : textPlayer.currentIndex;
   const countdown = isYoutube ? youtubePlayer.countdownMs : textPlayer.countdown;
   const isPlaying = isYoutube
-    ? youtubePlayer.playerState === "PLAYING_AUDIO" || youtubePlayer.playerState === "USER_SHADOWING"
+    ? youtubePlayer.playerState === "PLAYING_AUDIO" ||
+      youtubePlayer.playerState === "USER_SHADOWING"
     : textPlayer.isPlaying;
 
-  const play = isYoutube ? () => youtubePlayer.playSentence(currentIndex) : textPlayer.play;
+  const play = isYoutube
+    ? () => youtubePlayer.playSentence(currentIndex)
+    : textPlayer.play;
   const pause = isYoutube ? youtubePlayer.pause : textPlayer.pause;
 
   const goToNext = useCallback(() => {
     if (currentIndex < sentences.length - 1) {
-      isYoutube ? youtubePlayer.playSentence(currentIndex + 1) : textPlayer.goToNext();
+      isYoutube
+        ? youtubePlayer.playSentence(currentIndex + 1)
+        : textPlayer.goToNext();
     }
   }, [currentIndex, sentences.length, isYoutube, youtubePlayer, textPlayer]);
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
-      isYoutube ? youtubePlayer.playSentence(currentIndex - 1) : textPlayer.goToPrev();
+      isYoutube
+        ? youtubePlayer.playSentence(currentIndex - 1)
+        : textPlayer.goToPrev();
     }
   }, [currentIndex, isYoutube, youtubePlayer, textPlayer]);
 
@@ -78,12 +91,30 @@ export function ShadowingPlayer({
 
   return (
     <div className="space-y-4">
-      {/* Ẩn YouTube Iframe theo Option 2 */}
+      {/* Off-screen YouTube Iframe tuân thủ WebKit/iOS Safari audio pipeline */}
       {isYoutube && youtubeVideoId && (
-        <div style={{ display: "none" }}>
+        <div
+          className="fixed -left-[9999px] top-0 pointer-events-none opacity-0 w-1 h-1 overflow-hidden"
+          aria-hidden="true"
+        >
           <YouTube
             videoId={youtubeVideoId}
-            opts={{ height: "0", width: "0", playerVars: { controls: 0, disablekb: 1 } }}
+            opts={{
+              height: "100",
+              width: "100",
+              playerVars: {
+                controls: 0,
+                disablekb: 1,
+                playsinline: 1,
+                rel: 0,
+                modestbranding: 1,
+                enablejsapi: 1,
+                origin:
+                  typeof window !== "undefined"
+                    ? window.location.origin
+                    : undefined,
+              },
+            }}
             onReady={handleYtReady}
           />
         </div>
@@ -92,7 +123,10 @@ export function ShadowingPlayer({
       {/* Header Info (Title, Player State Status Pill) */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h1 className="text-base font-extrabold text-slate-900 dark:text-white truncate" title={title || "Luyện Shadowing"}>
+          <h1
+            className="text-base font-extrabold text-slate-900 dark:text-white truncate"
+            title={title || "Luyện Shadowing"}
+          >
             {title || "Luyện Shadowing"}
           </h1>
         </div>
@@ -121,7 +155,9 @@ export function ShadowingPlayer({
               <span>Lặp lại theo mẫu</span>
             </>
           )}
-          {(currentState === "IDLE" || currentState === "WAITING") && <span>Sẵn sàng</span>}
+          {(currentState === "IDLE" || currentState === "WAITING") && (
+            <span>Sẵn sàng</span>
+          )}
           {currentState === "PAUSED" && <span>Tạm dừng</span>}
           {currentState === "DONE" && (
             <>
@@ -133,7 +169,7 @@ export function ShadowingPlayer({
       </div>
 
       {/* Danh sách câu */}
-      <div className="space-y-3 pb-32">
+      <div className="space-y-3 pb-44">
         {sentences.map((s, i) => (
           <SentenceCard
             key={s.id}
@@ -150,59 +186,69 @@ export function ShadowingPlayer({
         ))}
       </div>
 
-      {/* Fixed Bottom Control Bar (Contained in 480px app-shell) */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-3 pb-safe shadow-2xl z-50">
+      {/* Fixed Bottom Control Bar (Contained in 480px app-shell with iOS Safe Area) */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 px-4 pt-3.5 pb-[max(1.25rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))] shadow-[0_-10px_30px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_30px_-5px_rgba(0,0,0,0.5)] z-50">
         <div className="flex items-center justify-between gap-3">
           {/* Nút Câu Trước */}
-          <button
+          <Button
+            variant="control"
+            size="control-square-lg"
+            shape="rounded2Xl"
             onClick={goToPrev}
             disabled={currentIndex === 0}
-            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
             aria-label="Câu trước"
+            className="shadow-2xs active:scale-95"
           >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+            <ChevronLeft className="w-6 h-6 stroke-[2.2]" />
+          </Button>
 
           {/* Nút Play / Pause Trung Tâm */}
           {isPlaying ? (
-            <button
+            <Button
+              variant="dark"
+              size="2xl"
+              shape="rounded2Xl"
               onClick={pause}
-              className="flex-1 py-3 px-4 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white font-bold hover:bg-slate-800 transition-colors shadow-md flex items-center justify-center gap-2 text-xs"
+              className="flex-1 text-sm font-black shadow-md active:scale-[0.98]"
               aria-label="Tạm dừng"
+              leftIcon={<Pause className="w-5 h-5 fill-white" />}
             >
-              <Pause className="w-4 h-4 fill-white" />
-              <span>Tạm dừng</span>
-            </button>
+              Tạm dừng
+            </Button>
           ) : (
-            <button
+            <Button
+              variant="amber"
+              size="2xl"
+              shape="rounded2Xl"
               onClick={play as () => void}
               disabled={isYoutube && !ytPlayer}
-              className="flex-1 py-3 px-4 rounded-2xl bg-[#FFBA49] hover:bg-[#e6a640] text-slate-900 font-extrabold transition-colors shadow-md flex items-center justify-center gap-2 text-xs disabled:opacity-50"
+              className="flex-1 text-sm font-black shadow-md active:scale-[0.98]"
               aria-label="Phát"
+              leftIcon={<Play className="w-5 h-5 fill-slate-900" />}
             >
-              <Play className="w-4 h-4 fill-slate-900" />
-              <span>
-                {currentState === "PAUSED"
-                  ? "Tiếp tục"
-                  : isYoutube && !ytPlayer
-                  ? "Đang tải Audio..."
-                  : "Bắt đầu đọc"}
-              </span>
-            </button>
+              {currentState === "PAUSED"
+                ? "Tiếp tục"
+                : isYoutube && !ytPlayer
+                ? "Đang tải Audio..."
+                : "Bắt đầu đọc"}
+            </Button>
           )}
 
           {/* Nút Câu Tiếp Theo */}
-          <button
+          <Button
+            variant="control"
+            size="control-square-lg"
+            shape="rounded2Xl"
             onClick={goToNext}
             disabled={currentIndex >= sentences.length - 1}
-            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
             aria-label="Câu tiếp"
+            className="shadow-2xs active:scale-95"
           >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+            <ChevronRight className="w-6 h-6 stroke-[2.2]" />
+          </Button>
 
           {/* Chỉ số tiến độ câu */}
-          <div className="text-right text-[11px] font-bold text-slate-400 dark:text-slate-500 shrink-0 min-w-[40px]">
+          <div className="text-right text-xs font-extrabold text-slate-400 dark:text-slate-500 shrink-0 min-w-[42px] font-mono">
             {Math.min(currentIndex + 1, sentences.length)}/{sentences.length}
           </div>
         </div>
@@ -210,3 +256,4 @@ export function ShadowingPlayer({
     </div>
   );
 }
+

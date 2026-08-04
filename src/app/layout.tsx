@@ -43,10 +43,21 @@ export const metadata: Metadata = {
     description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
     images: ["/og-image.png"],
   },
+  icons: {
+    icon: [
+      { url: "/logo2.png", sizes: "192x192", type: "image/png" },
+      { url: "/logo2.png", sizes: "512x512", type: "image/png" },
+      { url: "/logo2.png", sizes: "1024x1024", type: "image/png" },
+    ],
+    apple: [
+      { url: "/logo2.png", sizes: "180x180", type: "image/png" },
+      { url: "/logo2.png", sizes: "1024x1024", type: "image/png" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "AHA-MIND",
+    title: "Aha-Mind",
   },
 };
 
@@ -66,7 +77,7 @@ export default function RootLayout({
       name: "Anh Tu",
       logo: {
         "@type": "ImageObject",
-        url: "https://aha-mind.vercel.app/logo.svg"
+        url: "https://aha-mind.vercel.app/logo2.png"
       }
     }
   };
@@ -74,6 +85,8 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/logo2.png" />
+        <link rel="apple-touch-icon" href="/logo2.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

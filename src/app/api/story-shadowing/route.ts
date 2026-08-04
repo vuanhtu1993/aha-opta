@@ -1,32 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db/mongoose";
-import Storybook from "@/lib/db/models/Storybook";
+import { getStoryList } from "@/lib/story-shadowing/story-shadowing.service";
 
+/**
+ * GET /api/story-shadowing
+ * Reuses the shared getStoryList service function.
+ */
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
-    // Lấy 50 bài mới nhất, bao gồm các trường series để hiển thị group
-    const stories = await Storybook.find(
-      {},
-      {
-        title: 1,
-        thumbnail: 1,
-        originalText: 1,
-        createdAt: 1,
-        level: 1,
-        sourceType: 1,
-        youtubeVideoId: 1,
-        seriesId: 1,
-        partIndex: 1,
-        partTitle: 1,
-        totalParts: 1,
-      }
-    )
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .lean();
-
+    const stories = await getStoryList(50);
     return NextResponse.json(stories);
   } catch (err) {
     console.error("[API/story-shadowing GET list]", err);

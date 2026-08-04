@@ -15,12 +15,7 @@ interface VocabPageProps {
   }>;
 }
 
-export default async function VocabPage({ searchParams }: VocabPageProps) {
-  const params = await searchParams;
-  const search = params.search || "";
-  const level = params.level || "all";
-  const sort = params.sort || "due_asc";
-
+export default function VocabPage({ searchParams }: VocabPageProps) {
   return (
     <div className="p-4 space-y-5 pb-28">
       {/* 1. Static Header Shell (0ms Fast First Paint) */}
@@ -36,12 +31,9 @@ export default async function VocabPage({ searchParams }: VocabPageProps) {
         <VocabSearchFilter />
       </Suspense>
 
-      {/* 4. Dynamic Hole: Personal Vocabulary Cards List */}
-      <Suspense
-        key={`${search}-${level}-${sort}`}
-        fallback={<VocabListSkeleton />}
-      >
-        <VocabCardList search={search} level={level} sort={sort} />
+      {/* 4. Dynamic Hole: Personal Vocabulary Cards List (Awaited inside Suspense) */}
+      <Suspense fallback={<VocabListSkeleton />}>
+        <VocabCardList searchParamsPromise={searchParams} />
       </Suspense>
     </div>
   );

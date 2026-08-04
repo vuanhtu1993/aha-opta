@@ -6,6 +6,11 @@ import VocabCard from "@/lib/db/models/VocabCard";
 import VocabCardItem, { VocabCardData } from "./VocabCardItem";
 
 interface VocabCardListProps {
+  searchParamsPromise?: Promise<{
+    search?: string;
+    level?: string;
+    sort?: string;
+  }>;
   search?: string;
   level?: string;
   sort?: string;
@@ -14,12 +19,19 @@ interface VocabCardListProps {
 /**
  * VocabCardList - Async Server Component
  * Truy vấn danh sách thẻ trực tiếp từ MongoDB theo bộ lọc URL và render các Client Island (VocabCardItem).
+ * Await searchParamsPromise ngay bên trong Suspense Boundary để không chặn Static Shell của trang.
  */
 export default async function VocabCardList({
-  search = "",
-  level = "all",
-  sort = "due_asc",
+  searchParamsPromise,
+  search: directSearch = "",
+  level: directLevel = "all",
+  sort: directSort = "due_asc",
 }: VocabCardListProps) {
+  const params = searchParamsPromise ? await searchParamsPromise : null;
+  const search = params?.search ?? directSearch;
+  const level = params?.level ?? directLevel;
+  const sort = params?.sort ?? directSort;
+
   await connectDB();
 
   const filter: Record<string, any> = {};

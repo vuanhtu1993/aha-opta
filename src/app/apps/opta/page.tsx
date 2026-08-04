@@ -15,31 +15,28 @@ const TOURNAMENT_DATES = [
   "2026-07-15", "2026-07-16", "2026-07-19", "2026-07-20"
 ];
 
-const getInitialDate = () => {
-  // Use current local date
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-  
-  if (TOURNAMENT_DATES.includes(todayStr)) {
-    return todayStr;
-  }
-  
-  // Find the closest past date or default to the first day
-  const pastDates = TOURNAMENT_DATES.filter(d => d <= todayStr);
-  if (pastDates.length > 0) {
-    return pastDates[pastDates.length - 1];
-  }
-  
-  return TOURNAMENT_DATES[0];
-};
-
 export default function OptaDashboard() {
-  const [selectedDate, setSelectedDate] = useState<string>(getInitialDate);
+  const [selectedDate, setSelectedDate] = useState<string>(TOURNAMENT_DATES[0]);
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Sync client local date on mount safely
+  useEffect(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    if (TOURNAMENT_DATES.includes(todayStr)) {
+      setSelectedDate(todayStr);
+    } else {
+      const pastDates = TOURNAMENT_DATES.filter((d) => d <= todayStr);
+      if (pastDates.length > 0) {
+        setSelectedDate(pastDates[pastDates.length - 1]);
+      }
+    }
+  }, []);
 
   const dateIndex = TOURNAMENT_DATES.indexOf(selectedDate);
 

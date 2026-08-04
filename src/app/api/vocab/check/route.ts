@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import VocabCard from "@/lib/db/models/VocabCard";
 
-export const dynamic = "force-dynamic";
-
 function escapeRegex(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

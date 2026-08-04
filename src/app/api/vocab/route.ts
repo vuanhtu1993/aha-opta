@@ -4,8 +4,6 @@ import VocabCard from "@/lib/db/models/VocabCard";
 import { saveVocabCardSchema } from "@/lib/schemas/vocab.schema";
 import { createInitialFSRSState } from "@/lib/srs/fsrs-engine";
 
-export const dynamic = "force-dynamic";
-
 /**
  * GET /api/vocab
  * Lists all saved vocabulary cards with search, level filtering, and sorting

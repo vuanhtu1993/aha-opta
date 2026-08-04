@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import VocabCard from "@/lib/db/models/VocabCard";
 
-export const dynamic = "force-dynamic";
-
 /**
  * GET /api/vocab/due-count
  * Returns statistics and number of cards due for review today

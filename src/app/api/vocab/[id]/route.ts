@@ -3,8 +3,6 @@ import { connectDB } from "@/lib/db/mongoose";
 import VocabCard from "@/lib/db/models/VocabCard";
 import VocabReviewLog from "@/lib/db/models/VocabReviewLog";
 
-export const dynamic = "force-dynamic";
-
 /**
  * DELETE /api/vocab/[id]
  * Removes a vocabulary card and its review logs from SRS

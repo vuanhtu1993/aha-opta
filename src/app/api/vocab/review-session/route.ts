@@ -3,8 +3,6 @@ import { connectDB } from "@/lib/db/mongoose";
 import VocabCard, { IVocabCard } from "@/lib/db/models/VocabCard";
 import { getRandomDefaultDistractors } from "@/lib/srs/distractor-bank";
 
-export const dynamic = "force-dynamic";
-
 interface QuizOption {
   id: string; // "A" | "B" | "C" | "D"
   text: string;

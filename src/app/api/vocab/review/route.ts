@@ -5,8 +5,6 @@ import VocabReviewLog from "@/lib/db/models/VocabReviewLog";
 import { submitQuizReviewSchema } from "@/lib/schemas/vocab.schema";
 import { calculateFSRSRating, scheduleNextReview } from "@/lib/srs/fsrs-engine";
 
-export const dynamic = "force-dynamic";
-
 /**
  * POST /api/vocab/review
  * Processes quiz submission for a card, updates FSRS state and writes review log

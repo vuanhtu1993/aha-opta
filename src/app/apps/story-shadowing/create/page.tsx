@@ -1,13 +1,86 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
 import { SegmentPreviewDialog } from "@/components/story-shadowing/segment-preview-dialog";
 import type { SuggestedSegment } from "@/lib/agents/story-shadowing-agent/nodes/youtube-segment-suggester.node";
+import {
+  Globe,
+  FileText,
+  Clipboard,
+  Sparkles,
+  Loader2,
+  Mic,
+  AlertCircle,
+  Play,
+  CheckCircle2,
+} from "lucide-react";
+
+function YoutubeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+  );
+}
+
+interface VoiceOption {
+  id: string;
+  name: string;
+  gender: "Nữ" | "Nam";
+  type: "Journey" | "Neural2" | "Standard";
+  desc: string;
+}
+
+const VOICE_OPTIONS: VoiceOption[] = [
+  {
+    id: "en-US-Journey-F",
+    name: "Journey Female",
+    gender: "Nữ",
+    type: "Journey",
+    desc: "Tự nhiên & Biểu cảm (Khuyên dùng)",
+  },
+  {
+    id: "en-US-Journey-D",
+    name: "Journey Male",
+    gender: "Nam",
+    type: "Journey",
+    desc: "Tự nhiên & Biểu cảm (Khuyên dùng)",
+  },
+  {
+    id: "en-US-Neural2-H",
+    name: "Neural2 Female",
+    gender: "Nữ",
+    type: "Neural2",
+    desc: "Giọng đọc ấm áp, truyền cảm",
+  },
+  {
+    id: "en-US-Neural2-J",
+    name: "Neural2 Male",
+    gender: "Nam",
+    type: "Neural2",
+    desc: "Giọng đọc trầm ấm, lưu loát",
+  },
+  {
+    id: "en-US-Standard-C",
+    name: "Standard Female",
+    gender: "Nữ",
+    type: "Standard",
+    desc: "Giọng chuẩn Mỹ phổ thông",
+  },
+  {
+    id: "en-US-Standard-D",
+    name: "Standard Male",
+    gender: "Nam",
+    type: "Standard",
+    desc: "Giọng chuẩn Mỹ phổ thông",
+  },
+];
 
 export default function CreatePlayerPage() {
-  const [inputType, setInputType] = useState<"manual" | "url" | "youtube">("youtube");
+  const [inputType, setInputType] = useState<"youtube" | "url" | "manual">("youtube");
   const [urlInput, setUrlInput] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [scraping, setScraping] = useState(false);
@@ -19,7 +92,7 @@ export default function CreatePlayerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Phase 7 Segment Dialog States
+  // Segment Dialog States for YouTube series splitting
   const [showSegmentDialog, setShowSegmentDialog] = useState(false);
   const [videoTitle, setVideoTitle] = useState("");
   const [videoId, setVideoId] = useState("");
@@ -27,7 +100,8 @@ export default function CreatePlayerPage() {
   const [rawTranscript, setRawTranscript] = useState<any[]>([]);
 
   // YouTube Preview State
-  const [youtubePreview, setYoutubePreview] = useState<{title: string, thumbnail: string} | null>(null);
+  const [youtubePreview, setYoutubePreview] = useState<{ title: string; thumbnail: string } | null>(null);
+  const [fetchingPreview, setFetchingPreview] = useState(false);
 
   const router = useRouter();
   const { fetchSSE } = useAgentFetch();
@@ -38,8 +112,7 @@ export default function CreatePlayerPage() {
       setYoutubePreview(null);
       return;
     }
-    
-    // Check if it looks like a valid youtube url
+
     const isYoutube = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))/.test(youtubeUrl);
     if (!isYoutube) {
       setYoutubePreview(null);
@@ -47,24 +120,38 @@ export default function CreatePlayerPage() {
     }
 
     const fetchPreview = async () => {
+      setFetchingPreview(true);
       try {
         const res = await fetch(`https://noembed.com/embed?dataType=json&url=${encodeURIComponent(youtubeUrl)}`);
         const data = await res.json();
         if (data.title && data.thumbnail_url) {
           setYoutubePreview({
             title: data.title,
-            thumbnail: data.thumbnail_url
+            thumbnail: data.thumbnail_url,
           });
         }
       } catch (err) {
         console.error("Failed to fetch youtube preview", err);
+      } finally {
+        setFetchingPreview(false);
       }
     };
 
-    // Debounce slightly to avoid spamming while typing
-    const timeout = setTimeout(fetchPreview, 500);
+    const timeout = setTimeout(fetchPreview, 400);
     return () => clearTimeout(timeout);
   }, [youtubeUrl]);
+
+  // Quick Paste Helper
+  const handlePasteClipboard = async (setter: (val: string) => void) => {
+    try {
+      const clipText = await navigator.clipboard.readText();
+      if (clipText) {
+        setter(clipText.trim());
+      }
+    } catch (err) {
+      console.warn("Clipboard read not supported or permission denied", err);
+    }
+  };
 
   const handleScrape = async () => {
     if (!urlInput) return;
@@ -73,13 +160,13 @@ export default function CreatePlayerPage() {
     try {
       const res = await fetch(`/api/story-shadowing/scrape?url=${encodeURIComponent(urlInput)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Lỗi khi phân tích link");
+      if (!res.ok) throw new Error(data.error || "Lỗi khi phân tích link bài viết");
 
       setTitle(data.title || "");
       setThumbnail(data.thumbnail || "");
       setText(data.text || "");
 
-      // Chuyển về tab manual để user review
+      // Chuyển sang tab manual để user review
       setInputType("manual");
     } catch (err) {
       setError((err as Error).message);
@@ -88,8 +175,8 @@ export default function CreatePlayerPage() {
     }
   };
 
-  const handleYoutubeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleYoutubeSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!youtubeUrl) return;
     setLoading(true);
     setError(null);
@@ -106,7 +193,7 @@ export default function CreatePlayerPage() {
       if (!res.ok) throw new Error(data.error || "Lỗi khi phân tích video YouTube");
 
       if (data.needsSplitting) {
-        // Video dài >= 15 phút → Mở dialog gợi ý phân đoạn
+        // Video dài >= 15 phút -> Mở Bottom Sheet gợi ý phân đoạn
         setVideoTitle(data.title);
         setVideoId(data.videoId);
         setSuggestedSegments(data.segments);
@@ -114,7 +201,7 @@ export default function CreatePlayerPage() {
         setShowSegmentDialog(true);
         setLoading(false);
       } else {
-        // Video ngắn → Chạy flow 1 bài đơn lẻ như cũ
+        // Video ngắn -> Chạy flow 1 bài đơn lẻ
         const result = await fetchSSE<{ id: string }>("/api/story-shadowing/youtube", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -162,8 +249,8 @@ export default function CreatePlayerPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleManualSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setError(null);
 
@@ -183,193 +270,393 @@ export default function CreatePlayerPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 py-12">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/apps/story-shadowing"
-          className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-        </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Creating story</h1>
+    <div className="px-4 pt-3 pb-24 space-y-4">
+      {/* Title & Badge */}
+      <div className="space-y-1">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-bold">
+          <Sparkles className="w-3.5 h-3.5" /> Tạo bài học thông minh
+        </div>
+        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+          Luyện nói Shadowing
+        </h1>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Chuyển đổi Video YouTube, Bài báo hoặc Văn bản thành bài luyện phản xạ
+        </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex p-1 bg-slate-100 rounded-xl">
+      {/* Segmented Control Tabs */}
+      <div className="p-1 bg-slate-200/80 dark:bg-slate-800 rounded-2xl flex relative">
         <button
-          onClick={() => setInputType("manual")}
-          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "manual" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-            }`}
-        >
-          Nhập Text
-        </button>
-        <button
-          onClick={() => setInputType("url")}
-          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "url" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-            }`}
-        >
-          Nhập Article URL
-        </button>
-        <button
+          type="button"
           onClick={() => setInputType("youtube")}
-          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${inputType === "youtube" ? "bg-[#FF0000] text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
-            }`}
+          className={`flex-1 relative py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all z-10 ${
+            inputType === "youtube"
+              ? "text-rose-600 dark:text-rose-400 shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+          }`}
         >
-          Nhập YouTube
+          {inputType === "youtube" && (
+            <motion.div
+              layoutId="createTabIndicator"
+              className="absolute inset-0 bg-white dark:bg-slate-700 rounded-xl shadow-xs"
+              transition={{ type: "spring", stiffness: 450, damping: 35 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-1.5">
+            <YoutubeIcon className="w-4 h-4 text-rose-500" /> YouTube
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setInputType("url")}
+          className={`flex-1 relative py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all z-10 ${
+            inputType === "url"
+              ? "text-blue-600 dark:text-blue-400 shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+          }`}
+        >
+          {inputType === "url" && (
+            <motion.div
+              layoutId="createTabIndicator"
+              className="absolute inset-0 bg-white dark:bg-slate-700 rounded-xl shadow-xs"
+              transition={{ type: "spring", stiffness: 450, damping: 35 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-1.5">
+            <Globe className="w-4 h-4 text-blue-500" /> Article URL
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setInputType("manual")}
+          className={`flex-1 relative py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all z-10 ${
+            inputType === "manual"
+              ? "text-amber-600 dark:text-amber-400 shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+          }`}
+        >
+          {inputType === "manual" && (
+            <motion.div
+              layoutId="createTabIndicator"
+              className="absolute inset-0 bg-white dark:bg-slate-700 rounded-xl shadow-xs"
+              transition={{ type: "spring", stiffness: 450, damping: 35 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-1.5">
+            <FileText className="w-4 h-4 text-amber-500" /> Nhập Text
+          </span>
         </button>
       </div>
 
-      {inputType === "url" && (
-        <div className="space-y-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Đường dẫn bài viết (URL)</label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://example.com/article..."
-                className="flex-1 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
-                onKeyDown={(e) => e.key === 'Enter' && handleScrape()}
-              />
+      {/* Error Alert Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-start gap-2.5 text-xs text-rose-700 dark:text-rose-300"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+            <div className="flex-1">{error}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 1. YouTube Form */}
+      {inputType === "youtube" && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Đường dẫn Video YouTube
+              </label>
               <button
-                onClick={handleScrape}
-                disabled={!urlInput || scraping}
-                className="px-6 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-colors whitespace-nowrap"
+                type="button"
+                onClick={() => handlePasteClipboard(setYoutubeUrl)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
               >
-                {scraping ? "Đang xử lý..." : "Phân tích"}
+                <Clipboard className="w-3 h-3" /> Dán link
               </button>
             </div>
-            <p className="text-xs text-slate-500">Hệ thống sẽ tự động bóc tách Tiêu đề, Hình ảnh và Nội dung bài viết từ link bạn cung cấp.</p>
-          </div>
 
-          {error && (
-            <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
-          )}
-        </div>
-      )}
-
-      {inputType === "youtube" && (
-        <div className="space-y-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          {youtubePreview && (
-            <div className="flex gap-4 items-center p-3 bg-slate-50 border border-slate-100 rounded-xl mb-4">
-              <img 
-                src={youtubePreview.thumbnail} 
-                alt="Youtube Thumbnail" 
-                className="w-24 h-16 object-cover rounded-lg shadow-sm shrink-0"
-              />
-              <p className="font-semibold text-slate-800 text-sm line-clamp-2">
-                {youtubePreview.title}
-              </p>
-            </div>
-          )}
-          <form onSubmit={handleYoutubeSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">Đường dẫn video YouTube</label>
+            <div className="relative">
               <input
                 type="url"
                 value={youtubeUrl}
                 onChange={(e) => setYoutubeUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF0000] text-slate-700"
-                required
+                className="w-full px-3.5 py-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
               />
-              <p className="text-xs text-slate-500">Video phải có tính năng hiển thị phụ đề (CC) tiếng Anh.</p>
             </div>
 
-            {error && (
-              <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
-            )}
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              💡 Lưu ý: Video cần có phụ đề tiếng Anh (CC) để AI tạo kịch bản luyện nói.
+            </p>
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading || !youtubeUrl}
-              className="w-full py-4 px-6 bg-[#FF0000] text-white font-bold rounded-xl hover:bg-[#cc0000] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+          {/* YouTube Video Preview Card */}
+          {fetchingPreview && (
+            <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex items-center justify-center gap-2 text-xs text-slate-500">
+              <Loader2 className="w-4 h-4 animate-spin text-rose-500" /> Đang tải thông tin video...
+            </div>
+          )}
+
+          {youtubePreview && !fetchingPreview && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-3.5 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 rounded-2xl shadow-xs flex items-center gap-3.5"
             >
-              {loading ? "Đang xử lý Video ..." : "Phân tích Video"}
-            </button>
-          </form>
-        </div>
+              <div className="relative w-24 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-100 shadow-2xs">
+                <img
+                  src={youtubePreview.thumbnail}
+                  alt="YouTube Preview"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                  <Play className="w-5 h-5 text-white fill-white opacity-80" />
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
+                  YouTube
+                </span>
+                <p className="font-bold text-xs text-slate-800 dark:text-slate-100 line-clamp-2 mt-1">
+                  {youtubePreview.title}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">
+            <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+              Hệ thống tự động phát hiện các video dài trên 15 phút và gợi ý phân đoạn thành chuỗi bài học nhỏ giúp bạn dễ dàng luyện tập hàng ngày.
+            </p>
+          </div>
+
+          {/* Primary Submit Button */}
+          <button
+            type="button"
+            disabled={loading || !youtubeUrl}
+            onClick={() => handleYoutubeSubmit()}
+            className="w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-md shadow-rose-600/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Đang phân tích Video...
+              </>
+            ) : (
+              <>
+                <YoutubeIcon className="w-4 h-4" /> Phân tích Video YouTube ➔
+              </>
+            )}
+          </button>
+        </motion.div>
       )}
 
-      {inputType === "manual" && (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Tiêu đề (Tùy chọn)</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ví dụ: Luyện đọc 10/10/2026"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
-            />
-          </div>
+      {/* 2. Article URL Form */}
+      {inputType === "url" && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Đường dẫn bài viết (Article URL)
+              </label>
+              <button
+                type="button"
+                onClick={() => handlePasteClipboard(setUrlInput)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <Clipboard className="w-3 h-3" /> Dán link
+              </button>
+            </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Ảnh bìa / Thumbnail URL (Tùy chọn)</label>
             <input
               type="url"
-              value={thumbnail}
-              onChange={(e) => setThumbnail(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="https://example.com/english-article..."
+              className="w-full px-3.5 py-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
             />
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Bóc tách tự động Tiêu đề, Hình ảnh đại diện và Nội dung bài viết tiếng Anh chuẩn xác.
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Giọng đọc (Voice)</label>
-            <select
-              value={voice}
-              onChange={(e) => setVoice(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700 bg-white"
-            >
-              <optgroup label="Giọng Cao Cấp (Journey)">
-                <option value="en-US-Journey-F">Nữ - Tự nhiên & Biểu cảm (Journey F)</option>
-                <option value="en-US-Journey-D">Nam - Tự nhiên & Biểu cảm (Journey D)</option>
-              </optgroup>
-              <optgroup label="Giọng Truyền Thống (Standard)">
-                <option value="en-US-Standard-C">Nữ - Tiêu chuẩn (Standard C)</option>
-                <option value="en-US-Standard-D">Nam - Tiêu chuẩn (Standard D)</option>
-              </optgroup>
-              <optgroup label="Giọng Neural (Chất lượng cao)">
-                <option value="en-US-Neural2-H">Nữ - Ấm áp (Neural2 H)</option>
-                <option value="en-US-Neural2-J">Nam - Trầm ấm (Neural2 J)</option>
-              </optgroup>
-            </select>
-          </div>
+          {/* Primary Scrape Button */}
+          <button
+            type="button"
+            disabled={scraping || !urlInput}
+            onClick={handleScrape}
+            className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-md shadow-blue-600/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+          >
+            {scraping ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Đang bóc tách bài viết...
+              </>
+            ) : (
+              <>
+                <Globe className="w-4 h-4" /> Phân tích Link Bài Viết ➔
+              </>
+            )}
+          </button>
+        </motion.div>
+      )}
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Đoạn văn tiếng Anh <span className="text-red-500">*</span></label>
+      {/* 3. Manual Text Form */}
+      {inputType === "manual" && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          {/* Main Text Area */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Đoạn văn tiếng Anh <span className="text-rose-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => handlePasteClipboard(setText)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+              >
+                <Clipboard className="w-3 h-3" /> Dán văn bản
+              </button>
+            </div>
+
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Dán đoạn văn tiếng Anh vào đây... (10–10000 ký tự)"
-              className="w-full h-48 p-4 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FFBA49] text-slate-700"
+              placeholder="Dán đoạn văn bản tiếng Anh cần luyện nói vào đây... (10–10000 ký tự)"
+              className="w-full h-36 p-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
               maxLength={10000}
-              required
             />
-            <div className="flex justify-between text-xs text-slate-400">
+
+            <div className="flex justify-end text-[10px] font-medium text-slate-400">
               <span>{text.length} / 10000 ký tự</span>
             </div>
           </div>
 
-          {error && (
-            <p className="text-red-600 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>
-          )}
+          {/* Voice Selection Cards */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Mic className="w-3.5 h-3.5 text-amber-500" /> Chọn Giọng đọc AI (Voice)
+              </label>
+            </div>
 
+            <div className="grid grid-cols-1 gap-2">
+              {VOICE_OPTIONS.map((v) => {
+                const isSelected = voice === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVoice(v.id)}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-500/80 text-amber-950 dark:text-amber-200 ring-1 ring-amber-500/30"
+                        : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                          {v.name}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold">
+                          {v.gender}
+                        </span>
+                        {v.type === "Journey" && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500 text-slate-950 font-bold">
+                            Tự nhiên
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                        {v.desc}
+                      </p>
+                    </div>
+
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                        isSelected
+                          ? "bg-amber-500 text-slate-950"
+                          : "border border-slate-300 dark:border-slate-600"
+                      }`}
+                    >
+                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Optional Meta fields (Title & Thumbnail) */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Tiêu đề bài học (Tùy chọn)
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ví dụ: Daily English Practice #1"
+                className="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-slate-100"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Ảnh bìa / Thumbnail URL (Tùy chọn)
+              </label>
+              <input
+                type="url"
+                value={thumbnail}
+                onChange={(e) => setThumbnail(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          {/* Primary Create Button */}
           <button
-            type="submit"
+            type="button"
             disabled={loading || text.length < 10}
-            className="w-full py-4 px-6 bg-[#FFBA49] text-slate-900 font-bold rounded-xl hover:bg-[#e6a640] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+            onClick={() => handleManualSubmit()}
+            className="w-full py-3.5 px-4 bg-[#FFBA49] hover:bg-[#e6a640] disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-sm rounded-xl shadow-md shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
           >
-            {loading ? "Đang xử lý ..." : "Tạo bài luyện tập"}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Đang tạo bài học...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" /> Tạo bài luyện tập ➔
+              </>
+            )}
           </button>
-        </form>
+        </motion.div>
       )}
 
-      {/* Segment Dialog for long YouTube videos */}
+      {/* Segment Dialog for long YouTube videos (Mobile Bottom Sheet) */}
       <SegmentPreviewDialog
         open={showSegmentDialog}
         videoTitle={videoTitle}

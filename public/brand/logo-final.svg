@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="15.7778 84.3687 120 103.92" width="120px" height="103.92px">
+  <g transform="matrix(1, 0, 0, 1, -24.222158432006836, 64.36871337890625)">
+    <polygon points="80,20 120,20 100,54.64" fill="#44ABAC" stroke="#44ABAC" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="80,20 60,54.64 100,54.64" fill="#4FB5B5" stroke="#4FB5B5" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="120,20 100,54.64 140,54.64" fill="#4FB5B5" stroke="#4FB5B5" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="60,54.64 100,54.64 80,89.28" fill="#44ABAC" stroke="#44ABAC" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="60,54.64 40,89.28 80,89.28" fill="#4FB5B5" stroke="#4FB5B5" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="40,89.28 80,89.28 60,123.92" fill="#44ABAC" stroke="#44ABAC" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="120,123.92 80,123.92 100,89.28" fill="#FDC425" stroke="#FDC425" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="120,123.92 140,89.28 100,89.28" fill="#FFD043" stroke="#FFD043" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="80,123.92 100,89.28 60,89.28" fill="#FFD043" stroke="#FFD043" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="140,89.28 100,89.28 120,54.64" fill="#FDC425" stroke="#FDC425" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="140,89.28 160,54.64 120,54.64" fill="#FFD043" stroke="#FFD043" stroke-width="0.5" stroke-linejoin="round"/>
+    <polygon points="160,54.64 120,54.64 140,20" fill="#FDC425" stroke="#FDC425" stroke-width="0.5" stroke-linejoin="round"/>
+  </g>
+</svg>

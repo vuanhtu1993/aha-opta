@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import Image from 'next/image'
 
 export function MobileHeader() {
   const pathname = usePathname();
@@ -23,12 +24,7 @@ export function MobileHeader() {
           </button>
         )}
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-black text-sm shadow-sm">
-            A
-          </div>
-          <span className="font-extrabold text-slate-900 dark:text-white tracking-tight text-base">
-            AHA<span className="text-amber-500">·MIND</span>
-          </span>
+          <Image src={"/brand/logo-full-light.png"} width={150} height={50} alt="full-logo" />
         </Link>
       </div>
 

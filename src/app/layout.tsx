@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { brand } from "@/lib/config/brand";
 import { AppShell } from "@/components/mobile-shell/app-shell";
 import { MobileHeader } from "@/components/mobile-shell/mobile-header";
 import { MobileTabBar } from "@/components/mobile-shell/mobile-tab-bar";
@@ -10,7 +11,7 @@ import { AgentProgressToast } from "@/components/story-shadowing/agent-progress-
 const inter = Inter({ subsets: ["latin"] });
 
 export const viewport: Viewport = {
-  themeColor: "#FFBA49",
+  themeColor: brand.colors.primary,
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -18,46 +19,46 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://aha-mind.vercel.app"),
-  title: "Aha-Mind | AI Story Shadowing & Micro-Apps",
-  description: "Ứng dụng AI thông minh hỗ trợ học tiếng Anh bằng phương pháp Shadowing và các tiện ích vi mô.",
+  metadataBase: new URL(brand.url),
+  title: brand.seo.defaultTitle,
+  description: brand.seo.description,
   openGraph: {
-    title: "Aha-Mind | Tổ hợp Ứng dụng AI thông minh",
-    description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
-    url: "https://aha-mind.vercel.app",
-    siteName: "Aha-Mind",
+    title: brand.seo.openGraph.title,
+    description: brand.seo.openGraph.description,
+    url: brand.url,
+    siteName: brand.identity.name,
     images: [
       {
-        url: "/og-image.png",
+        url: brand.assets.ogImage,
         width: 1200,
         height: 630,
-        alt: "Aha-Mind Logo",
+        alt: `${brand.identity.name} Logo`,
       },
     ],
-    locale: "vi_VN",
+    locale: brand.seo.openGraph.locale,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Aha-Mind | Tổ hợp Ứng dụng AI thông minh",
-    description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
-    images: ["/og-image.png"],
+    title: brand.seo.openGraph.title,
+    description: brand.seo.openGraph.description,
+    images: [brand.assets.ogImage],
   },
   icons: {
     icon: [
-      { url: "/logo2.png", sizes: "192x192", type: "image/png" },
-      { url: "/logo2.png", sizes: "512x512", type: "image/png" },
-      { url: "/logo2.png", sizes: "1024x1024", type: "image/png" },
+      { url: brand.assets.favicon, sizes: "any" },
+      { url: brand.assets.icon192, sizes: "192x192", type: "image/png" },
+      { url: brand.assets.icon512, sizes: "512x512", type: "image/png" },
+      { url: brand.assets.icon1024, sizes: "1024x1024", type: "image/png" },
     ],
     apple: [
-      { url: "/logo2.png", sizes: "180x180", type: "image/png" },
-      { url: "/logo2.png", sizes: "1024x1024", type: "image/png" },
+      { url: brand.assets.appleTouchIcon, sizes: "180x180", type: "image/png" },
     ],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Aha-Mind",
+    title: brand.identity.name,
   },
 };
 
@@ -69,24 +70,25 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Aha-Mind",
-    url: "https://aha-mind.vercel.app",
-    description: "Ứng dụng AI agent và micro frontend giúp cuộc sống trở nên dễ dàng hơn.",
+    name: brand.identity.name,
+    url: brand.url,
+    description: brand.seo.openGraph.description,
     publisher: {
       "@type": "Organization",
-      name: "Anh Tu",
+      name: brand.identity.publisherName,
       logo: {
         "@type": "ImageObject",
-        url: "https://aha-mind.vercel.app/logo2.png"
-      }
-    }
+        url: `${brand.url}${brand.assets.logo}`,
+      },
+    },
   };
 
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" sizes="180x180" href="/logo2.png" />
-        <link rel="apple-touch-icon" href="/logo2.png" />
+        <link rel="icon" href={brand.assets.favicon} sizes="any" />
+        <link rel="apple-touch-icon" sizes="180x180" href={brand.assets.appleTouchIcon} />
+        <link rel="apple-touch-icon" href={brand.assets.appleTouchIcon} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -10,6 +10,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
+  :root {
+    /* Brand Design Tokens (Single Source of Truth đồng bộ với src/lib/config/brand.ts) */
+    --brand-primary: #FFBA49;
+    --brand-primary-hover: #e6a640;
+    --brand-bg-dark: #0f172a;
+    --brand-bg-light: #e2e8f0;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

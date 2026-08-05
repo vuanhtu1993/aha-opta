@@ -1,10 +1,26 @@
-// Service Worker cơ bản cho AHA-MIND PWA
-const CACHE_NAME = "aha-mind-cache-v1";
+/**
+ * Service Worker cho AHA-MIND PWA
+ * 
+ * ĐỒNG BỘ CẤU HÌNH (Option A):
+ * Các hằng số CACHE_NAME và STATIC_ASSETS dưới đây được đồng bộ thủ công
+ * với cấu hình Single Source of Truth tại `src/lib/config/brand.ts` (thuộc tính `brand.pwa`).
+ * Khi thay đổi cấu hình brand hoặc update version, hãy cập nhật đồng bộ tại đây.
+ * 
+ * Made by Anh Tu - Share to be share
+ */
+const CACHE_NAME = "aha-mind-cache-v2";
 const STATIC_ASSETS = [
   "/",
-  "/favicon.ico",
-  "/logo.svg",
+  "/brand/favicon.ico",
+  "/brand/logo-final.svg",
+  "/brand/logo-full-final.svg",
+  "/brand/icon-192.png",
+  "/brand/icon-512.png",
+  "/brand/apple-touch-icon.png",
+  "/brand/og-image.png",
 ];
+
+
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

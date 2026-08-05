@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
+import { brand } from "@/lib/config/brand";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://aha-mind.vercel.app";
+  const baseUrl = brand.url;
 
   return [
     {

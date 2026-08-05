@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { brand } from "@/lib/config/brand";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -7,6 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/apps/story-shadowing/player/"],
     },
-    sitemap: "https://aha-mind.vercel.app/sitemap.xml",
+    sitemap: `${brand.url}/sitemap.xml`,
   };
 }
+

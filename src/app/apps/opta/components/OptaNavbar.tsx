@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Activity, Trophy, BarChart3, Database, Menu, X } from "lucide-react";
+import { brand } from "@/lib/config/brand";
 
 export function OptaNavbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,8 +23,8 @@ export function OptaNavbar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
             <Link href="/apps/opta" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3B5BDB] to-[#121C42] flex items-center justify-center shadow-lg shadow-[#3B5BDB]/20 group-hover:shadow-[#3B5BDB]/40 transition-shadow">
-                <Image src="/logo.jpg" alt="Logo" width={50} height={50} />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3B5BDB] to-[#121C42] flex items-center justify-center shadow-lg shadow-[#3B5BDB]/20 group-hover:shadow-[#3B5BDB]/40 transition-shadow overflow-hidden">
+                <Image src={brand.assets.logo} alt={brand.identity.name} width={50} height={50} className="object-cover" />
               </div>
               <span className="font-bold text-xl tracking-tight text-[#121C42]">
                 <span className="text-[#3B5BDB]">WC26</span>

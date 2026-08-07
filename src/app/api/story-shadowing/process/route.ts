@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { runStorybookPipeline } from "@/lib/agents/story-shadowing-agent/graph";
 import { connectDB } from "@/lib/db/mongoose";
 import Storybook from "@/lib/db/models/Storybook";
@@ -48,6 +49,9 @@ export const POST = withAgentSSE(async (request: NextRequest, log) => {
     });
 
     log(`[API Process] ✅ Đã lưu thành công vào Database (ID: ${newStory._id})`);
+
+    // Invalidate static cache để trang danh sách bài học hiển thị bài mới
+    revalidatePath("/apps/story-shadowing");
 
     return {
       id: newStory._id,

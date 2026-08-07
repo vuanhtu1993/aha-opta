@@ -1,6 +1,7 @@
 export const maxDuration = 300;
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { connectDB } from "@/lib/db/mongoose";
 import Storybook from "@/lib/db/models/Storybook";
 import { youtubeSentenceConsolidatorNode } from "@/lib/agents/story-shadowing-agent/nodes/youtube-sentence-consolidator.node";
@@ -160,6 +161,9 @@ export async function POST(request: NextRequest) {
             progress: { type: 'update', stepId: 'enrich', status: 'completed' }
           });
         }
+
+        // Invalidate static cache để trang danh sách cập nhật series mới
+        revalidatePath("/apps/story-shadowing");
 
         sendLog(`🎉 Đã tạo thành công Series (${createdStoryIds.length}/${totalParts} bài). Đang chuyển hướng...`);
         controller.enqueue(

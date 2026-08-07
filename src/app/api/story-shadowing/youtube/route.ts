@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { runYouTubeShadowingPipeline } from "@/lib/agents/story-shadowing-agent/youtube-graph";
 import { connectDB } from "@/lib/db/mongoose";
 import Storybook from "@/lib/db/models/Storybook";
@@ -38,6 +39,9 @@ async function youtubeHandler(req: NextRequest, log: (msg: string) => void) {
   });
 
   log(`[API] ✅ Hoàn tất! ID: ${newStory._id}`);
+
+  // Invalidate static cache để trang danh sách bài học hiển thị bài mới
+  revalidatePath("/apps/story-shadowing");
 
   return {
     id: newStory._id,

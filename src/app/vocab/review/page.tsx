@@ -3,6 +3,9 @@ import { getReviewSessionQuestions } from "@/lib/srs/review-session.service";
 import { QuizPlayer } from "@/components/vocab/review/QuizPlayer";
 import { QuizSkeleton } from "@/components/vocab/review/QuizSkeleton";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export interface VocabReviewPageProps {
   searchParams: Promise<{
     practice_all?: string;

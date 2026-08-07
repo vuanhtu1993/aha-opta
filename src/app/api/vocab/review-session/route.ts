@@ -7,6 +7,9 @@ import {
 
 export type { QuizQuestion, QuizOption };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 /**
  * GET /api/vocab/review-session
  * Generates a Quiz Session batch (up to `limit` cards) with 4 English choices per card.

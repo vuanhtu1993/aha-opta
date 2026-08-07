@@ -6,6 +6,9 @@ import VocabCardSection from "@/components/vocab/VocabCardSection";
 import VocabListSkeleton from "@/components/vocab/VocabListSkeleton";
 import { getInitialVocabCards } from "@/lib/vocab/vocab.service";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 /**
  * VocabCardDataLoader - Server Component
  * Nạp sẵn 50 thẻ từ vựng ban đầu để gieo mầm (Seed) vào Client Island VocabCardSection.

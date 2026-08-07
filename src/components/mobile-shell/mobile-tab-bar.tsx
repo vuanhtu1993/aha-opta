@@ -47,9 +47,9 @@ export function MobileTabBar() {
 
   // Fetch due count for Vocab tab badge
   const { data: dueData } = useSWR("/api/vocab/due-count", fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    dedupingInterval: 60000,
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    dedupingInterval: 5000,
   });
 
   const dueCount = dueData?.dueCount ?? 0;

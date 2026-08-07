@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { mutate } from "swr";
 import { Volume2, ChevronDown, Trash2, Clock, Sparkles } from "lucide-react";
 
 export interface VocabCardData {
@@ -54,6 +55,7 @@ export default function VocabCardItem({ card }: VocabCardItemProps) {
       setIsDeleting(true);
       const res = await fetch(`/api/vocab/${card._id}`, { method: "DELETE" });
       if (res.ok) {
+        mutate("/api/vocab/due-count");
         router.refresh();
       }
     } catch (err) {

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { mutate } from "swr";
 import {
   X,
   Volume2,
@@ -97,6 +98,9 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
         };
         setCurrentResult(result);
         setSessionResults((prev) => [...prev, result]);
+
+        // Cập nhật tức thì số lượng từ cần ôn trên toàn ứng dụng (Navbar, TabBar, Dashboard)
+        mutate("/api/vocab/due-count");
       }
     } catch (err) {
       console.error("Failed to submit review", err);
@@ -108,6 +112,9 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       setIsFinished(true);
+      // Khi hoàn thành hết bộ câu hỏi, làm tươi lại dữ liệu server
+      mutate("/api/vocab/due-count");
+      router.refresh();
     }
   };
 
@@ -137,6 +144,12 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       default:
         return { label: "Again (Ôn lại)", color: "bg-rose-50 text-rose-600 border-rose-200" };
     }
+  };
+
+  const handleExit = (href: string = "/vocab") => {
+    mutate("/api/vocab/due-count");
+    router.push(href);
+    router.refresh();
   };
 
   // Finished Screen / Empty Session
@@ -223,20 +236,20 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
 
         {/* Action Buttons */}
         <div className="space-y-2 pt-6">
-          <Link
-            href="/vocab"
+          <button
+            onClick={() => handleExit("/vocab")}
             className="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold rounded-2xl transition-all text-xs shadow-sm flex items-center justify-center gap-2 active:scale-98"
           >
             <GraduationCap className="w-4 h-4" />
             <span>Về Kho Từ Vựng</span>
-          </Link>
-          <Link
-            href="/apps/story-shadowing"
+          </button>
+          <button
+            onClick={() => handleExit("/apps/story-shadowing")}
             className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2"
           >
             <BookOpen className="w-4 h-4" />
             <span>Tiếp tục luyện Story Shadowing</span>
-          </Link>
+          </button>
         </div>
       </div>
     );
@@ -250,7 +263,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.push("/vocab")}
+            onClick={() => handleExit("/vocab")}
             className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors"
             title="Thoát phiên ôn tập"
           >

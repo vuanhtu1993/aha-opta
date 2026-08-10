@@ -5,6 +5,7 @@ export const saveVocabCardSchema = z.object({
   ipa: z.string().optional(),
   explanation: z.string().min(1, "Explanation is required"),
   level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]).default("B1"),
+  audioUrl: z.string().optional(),
   wordFamily: z
     .array(
       z.object({

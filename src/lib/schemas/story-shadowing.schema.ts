@@ -14,6 +14,7 @@ export const KeywordSchema = z.object({
   ipa: z.string().optional(),
   explanation: z.string(),
   level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
+  audioUrl: z.string().optional(),
   wordFamily: z.array(z.object({
     word: z.string(),
     partOfSpeech: z.string().optional(),
@@ -84,6 +85,7 @@ export type IdentifiedKeywordItem = z.infer<typeof IdentifiedKeywordListSchema>[
 // Schema trả về từ Gemini khi enrich idiom/phrasal verb (Step 2b)
 export const GeminiKeywordEnrichSchema = z.object({
   explanation: z.string(),
+  audioUrl: z.string().optional(),
   wordFamily: z.array(z.object({
     word: z.string(),
     partOfSpeech: z.string().optional(),
@@ -101,6 +103,7 @@ export const GeminiBatchKeywordEnrichSchema = z.object({
   items: z.array(z.object({
     word: z.string(), // Để match lại với original item
     explanation: z.string(),
+    audioUrl: z.string().optional(),
     wordFamily: z.array(z.object({
       word: z.string(),
       partOfSpeech: z.string().optional(),

@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       ipa: data.ipa,
       explanation: data.explanation,
       level: data.level,
+      audioUrl: data.audioUrl,
       wordFamily: data.wordFamily,
       collocations: data.collocations,
       sourceStorybookId: data.sourceStorybookId,

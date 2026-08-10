@@ -18,6 +18,7 @@ export interface IVocabCard extends Document {
   ipa?: string;
   explanation: string;
   level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+  audioUrl?: string;
   wordFamily?: IVocabWordFamily[];
   collocations?: IVocabCollocation[];
   
@@ -74,6 +75,7 @@ const VocabCardSchema = new Schema<IVocabCard>(
       required: true,
       default: "B1",
     },
+    audioUrl: { type: String, required: false },
     wordFamily: { type: [VocabWordFamilySchema], required: false },
     collocations: { type: [VocabCollocationSchema], required: false },
     sourceStorybookId: { type: Schema.Types.ObjectId, ref: "Storybook_v5", required: false },

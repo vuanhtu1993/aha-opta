@@ -22,6 +22,7 @@ export interface KeywordItem {
   ipa?: string;
   explanation: string;
   level?: string;
+  audioUrl?: string;
   wordFamily?: WordFamilyItem[];
   collocations?: CollocationItem[];
 }
@@ -63,6 +64,7 @@ export function VocabCard({
           ipa: keyword.ipa,
           explanation: keyword.explanation,
           level: keyword.level || "B1",
+          audioUrl: keyword.audioUrl,
           wordFamily: keyword.wordFamily,
           collocations: keyword.collocations,
           sourceStorybookId: storybookId,
@@ -85,6 +87,13 @@ export function VocabCard({
 
   const playPronunciation = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    if (keyword.audioUrl) {
+      const audio = new Audio(keyword.audioUrl);
+      audio.play().catch(err => console.warn("[VocabCard] Failed to play audioUrl:", err));
+      return;
+    }
+
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       // Huỷ các phát âm đang dở trước đó để tránh nghẽn hàng đợi trên Safari
       window.speechSynthesis.cancel();
@@ -156,30 +165,27 @@ export function VocabCard({
         <div className="flex items-center gap-2 shrink-0 pt-0.5">
           {keyword.level && (
             <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold whitespace-nowrap ${
-                isAdvancedLevel
+              className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold whitespace-nowrap ${isAdvancedLevel
                   ? "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900"
                   : "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900"
-              }`}
+                }`}
             >
               {keyword.level.toUpperCase()}
             </span>
           )}
           <ChevronDown
-            className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${
-              isExpanded ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""
+              }`}
           />
         </div>
       </div>
 
       {/* Expanded Content: Word Family & Collocations */}
       <div
-        className={`px-4 transition-all duration-300 ease-in-out ${
-          isExpanded
+        className={`px-4 transition-all duration-300 ease-in-out ${isExpanded
             ? "max-h-96 py-3 border-t border-slate-100 dark:border-slate-700/60 opacity-100"
             : "max-h-0 opacity-0 overflow-hidden"
-        }`}
+          }`}
       >
         <div className="space-y-3">
           {keyword.wordFamily && keyword.wordFamily.length > 0 && (

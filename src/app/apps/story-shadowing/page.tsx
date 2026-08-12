@@ -8,6 +8,8 @@ import { StoryListSkeleton } from "@/components/story-shadowing/StoryListSkeleto
  * Async Loader Component: Connects directly to MongoDB on Server and fetches 50 stories.
  * Wrapped in Suspense to enable Streaming SSR (0ms initial TTFB).
  */
+export const revalidate = 3600 // invalidate every hour
+
 async function StoryListLoader() {
   const stories = await getStoryList(50);
   return <StoryListContainer initialStories={stories} />;

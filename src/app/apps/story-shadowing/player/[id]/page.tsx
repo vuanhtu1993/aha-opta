@@ -17,8 +17,6 @@ type SeriesPart = {
   totalParts?: number;
 };
 
-export const revalidate = 3600 // invalidate every hour
-
 export default function PlayerPage({
   params,
 }: {

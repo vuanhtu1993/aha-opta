@@ -4,8 +4,6 @@ import VocabCard from "@/lib/db/models/VocabCard";
 import { saveVocabCardSchema } from "@/lib/schemas/vocab.schema";
 import { createInitialFSRSState } from "@/lib/srs/fsrs-engine";
 
-import { generateAndSaveExampleSentences } from "@/lib/vocab/cloze-enricher";
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -108,14 +106,6 @@ export async function POST(request: NextRequest) {
       sourceStorybookTitle: data.sourceStorybookTitle,
       fsrs: initialFSRS,
     });
-
-    // Background non-blocking sentence enrichment
-    generateAndSaveExampleSentences(
-      newCard._id.toString(),
-      newCard.word,
-      newCard.explanation,
-      newCard.level
-    ).catch((err) => console.error("[API/vocab] Background enrich error:", err));
 
     return NextResponse.json(
       {

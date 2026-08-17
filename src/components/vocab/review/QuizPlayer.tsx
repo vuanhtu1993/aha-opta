@@ -58,39 +58,35 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
 
   const currentQ = questions[currentIndex];
 
-  const playAudio = async (word: string, audioUrl?: string) => {
+  const playAudio = (word: string, audioUrl?: string) => {
     const targetUrl = audioUrl || currentQ?.audioUrl;
-    if (targetUrl) {
+    // 1. Direct MP3 URL playback from MongoDB (0ms delay, 0 API calls)
+    if (targetUrl && targetUrl.startsWith("http") && targetUrl !== "undefined") {
       try {
         const audio = new Audio(targetUrl);
-        await audio.play();
+        audio.play().catch((err) => {
+          console.warn("[Audio] Direct audioUrl playback blocked/failed:", err);
+          fallbackWebSpeech(word);
+        });
         return;
       } catch (err) {
-        console.warn("[Audio] Direct audioUrl playback failed, attempting Free Dictionary fallback...", err);
+        console.warn("[Audio] Direct audioUrl init failed:", err);
       }
     }
 
-    try {
-      const res = await fetch(`/api/vocab/audio?word=${encodeURIComponent(word)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.audioUrl) {
-          const audio = new Audio(data.audioUrl);
-          await audio.play();
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn("[Audio] Server audio proxy fetch failed", err);
-    }
+    // 2. High-quality Web Speech API fallback for idioms/phrases
+    fallbackWebSpeech(word);
+  };
 
+  const fallbackWebSpeech = (word: string) => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(word);
       const voices = window.speechSynthesis.getVoices();
-      const enVoice = voices.find(
-        (v) => v.lang.startsWith("en-US") || v.lang.startsWith("en-GB")
-      );
+      const enVoice =
+        voices.find((v) => v.lang === "en-US" && v.name.includes("Natural")) ||
+        voices.find((v) => v.lang.startsWith("en-US")) ||
+        voices.find((v) => v.lang.startsWith("en-GB"));
       if (enVoice) utterance.voice = enVoice;
       utterance.lang = "en-US";
       utterance.rate = 0.9;

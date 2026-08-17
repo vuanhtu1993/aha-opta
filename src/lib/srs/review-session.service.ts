@@ -142,10 +142,13 @@ export async function getReviewSessionQuestions(options: {
       }));
 
     const stability = card.fsrs?.stability ?? 0;
+    const reps = card.fsrs?.reps ?? 0;
     const exampleSentences = card.exampleSentences || [];
-    const CLOZE_THRESHOLD_STABILITY = 3;
+    
+    // Trigger Cloze mode when card has been reviewed at least once (reps >= 2 OR stability >= 1.0)
+    const CLOZE_THRESHOLD_STABILITY = 1.0;
     const quizMode: "mcq" | "cloze" =
-      stability >= CLOZE_THRESHOLD_STABILITY && exampleSentences.length > 0
+      (reps >= 2 || stability >= CLOZE_THRESHOLD_STABILITY) && exampleSentences.length > 0
         ? "cloze"
         : "mcq";
 

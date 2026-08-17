@@ -1,6 +1,11 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 import { IFSRSCardState } from "@/lib/srs/fsrs-engine";
 
+export interface IVocabExampleSentence {
+  sentence: string;
+  answer: string;
+}
+
 export interface IVocabWordFamily {
   word: string;
   partOfSpeech?: string;
@@ -19,6 +24,7 @@ export interface IVocabCard extends Document {
   explanation: string;
   level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
   audioUrl?: string;
+  exampleSentences?: IVocabExampleSentence[];
   wordFamily?: IVocabWordFamily[];
   collocations?: IVocabCollocation[];
   
@@ -30,6 +36,14 @@ export interface IVocabCard extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const VocabExampleSentenceSchema = new Schema<IVocabExampleSentence>(
+  {
+    sentence: { type: String, required: true },
+    answer: { type: String, required: true },
+  },
+  { _id: false }
+);
 
 const VocabWordFamilySchema = new Schema<IVocabWordFamily>(
   {
@@ -76,6 +90,7 @@ const VocabCardSchema = new Schema<IVocabCard>(
       default: "B1",
     },
     audioUrl: { type: String, required: false },
+    exampleSentences: { type: [VocabExampleSentenceSchema], required: false },
     wordFamily: { type: [VocabWordFamilySchema], required: false },
     collocations: { type: [VocabCollocationSchema], required: false },
     sourceStorybookId: { type: Schema.Types.ObjectId, ref: "Storybook_v5", required: false },

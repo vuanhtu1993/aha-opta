@@ -1,14 +1,20 @@
-import mongoose from "mongoose";
 import * as dotenv from "dotenv";
-dotenv.config();
+import path from "path";
 
+// Load environment variables BEFORE importing services that initialize Gemini
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+
+import mongoose from "mongoose";
 import { connectDB } from "../src/lib/db/mongoose";
 import VocabCard from "../src/lib/db/models/VocabCard";
-import { generateExampleSentences } from "../src/lib/vocab/cloze-enricher";
 
 async function main() {
   console.log("🚀 Starting Vocab Example Sentences Backfill Script...");
   await connectDB();
+
+  // Dynamically import cloze-enricher after env variables are loaded
+  const { generateExampleSentences } = await import("../src/lib/vocab/cloze-enricher");
 
   // Find cards missing exampleSentences or empty array
   const targetCards = await VocabCard.find({

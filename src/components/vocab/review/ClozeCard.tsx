@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Volume2, Sparkles, Send } from "lucide-react";
+import { Volume2, Sparkles, Send, HelpCircle } from "lucide-react";
 import type { QuizQuestion } from "@/lib/srs/review-session.service";
 import { isClozeCorrect } from "@/lib/srs/cloze-scorer";
 
@@ -9,7 +9,7 @@ interface ClozeCardProps {
   question: QuizQuestion;
   isAnswered: boolean;
   onSubmitAnswer: (userInput: string, isCorrect: boolean) => void;
-  onPlayAudio: (word: string) => void;
+  onPlayAudio: (word: string, audioUrl?: string) => void;
 }
 
 export function ClozeCard({
@@ -42,17 +42,22 @@ export function ClozeCard({
     onSubmitAnswer(userInput, correct);
   };
 
+  const handleGiveUp = () => {
+    if (isAnswered) return;
+    onSubmitAnswer("", false); // Mark incorrect (Rating.Again) and reveal answer
+  };
+
   return (
-    <div className="space-y-5 my-auto py-4">
+    <div className="space-y-4 my-auto py-2">
       {/* Cloze Sentence Box */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-700 shadow-sm text-center space-y-4">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700 shadow-sm text-center space-y-4">
         <div className="flex items-center justify-center gap-1.5 text-xs font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-900 w-fit mx-auto">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Fill in the Blank</span>
         </div>
 
         {/* Sentence Prompt */}
-        <p className="text-base font-medium text-slate-800 dark:text-slate-100 leading-relaxed px-2">
+        <p className="text-base font-medium text-slate-800 dark:text-slate-100 leading-relaxed px-1">
           {activeSentence.sentence.split("___").map((part, i, arr) => (
             <React.Fragment key={i}>
               {part}
@@ -65,22 +70,22 @@ export function ClozeCard({
           ))}
         </p>
 
-        {/* Word Explanation & Level Hint */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-slate-700 dark:text-slate-300">
+        {/* Word Explanation & Audio / Level Bar */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+          <div className="flex items-start gap-1.5 text-left">
+            <span className="font-semibold text-slate-700 dark:text-slate-300 shrink-0">
               Nghĩa:
             </span>
-            <span className="line-clamp-1 max-w-[200px] text-left">
+            <span className="text-slate-600 dark:text-slate-300 font-medium leading-normal">
               {question.explanation}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2 shrink-0 self-end sm:self-center">
             <button
-              onClick={() => onPlayAudio(question.word)}
-              className="p-1 text-slate-400 hover:text-indigo-500 transition-colors"
-              title="Nghe từ"
+              onClick={() => onPlayAudio(question.word, question.audioUrl)}
+              className="p-1 text-slate-400 hover:text-indigo-500 transition-colors cursor-pointer"
+              title="Nghe phát âm chuẩn"
             >
               <Volume2 className="w-4 h-4" />
             </button>
@@ -91,9 +96,9 @@ export function ClozeCard({
         </div>
       </div>
 
-      {/* Input Form */}
+      {/* Input Form & Give Up Action */}
       {!isAnswered && (
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2.5">
           <div className="relative">
             <input
               ref={inputRef}
@@ -101,7 +106,7 @@ export function ClozeCard({
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               placeholder="Nhập từ vựng tiếng Anh..."
-              className="w-full py-4 pl-4 pr-12 text-sm bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 rounded-2xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-semibold text-slate-900 dark:text-white shadow-sm transition-all"
+              className="w-full py-3.5 pl-4 pr-12 text-sm bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 rounded-2xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-semibold text-slate-900 dark:text-white shadow-sm transition-all"
               autoCapitalize="none"
               autoComplete="off"
               autoCorrect="off"
@@ -109,11 +114,20 @@ export function ClozeCard({
             <button
               type="submit"
               disabled={!userInput.trim()}
-              className="absolute right-2 top-2 bottom-2 px-3.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white rounded-xl font-extrabold flex items-center justify-center transition-all active:scale-95"
+              className="absolute right-2 top-1.5 bottom-1.5 px-3.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white rounded-xl font-extrabold flex items-center justify-center transition-all active:scale-95 cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={handleGiveUp}
+            className="w-full py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>Tôi chưa nhớ từ này (Xem đáp án)</span>
+          </button>
         </form>
       )}
     </div>

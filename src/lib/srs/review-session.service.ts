@@ -13,6 +13,7 @@ export interface QuizQuestion {
   cardId: string;
   word: string;
   ipa?: string;
+  audioUrl?: string;
   level: string;
   wordFamily?: any[];
   collocations?: any[];
@@ -156,6 +157,7 @@ export async function getReviewSessionQuestions(options: {
       cardId: card._id.toString(),
       word: card.word,
       ipa: card.ipa || "",
+      audioUrl: card.audioUrl || "",
       level: card.level || "A1",
       wordFamily: card.wordFamily || [],
       collocations: card.collocations || [],

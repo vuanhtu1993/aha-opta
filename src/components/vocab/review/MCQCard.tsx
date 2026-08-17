@@ -9,7 +9,7 @@ interface MCQCardProps {
   selectedOptionId: string | null;
   isAnswered: boolean;
   onSelectOption: (optionId: string, isCorrect: boolean) => void;
-  onPlayAudio: (word: string) => void;
+  onPlayAudio: (word: string, audioUrl?: string) => void;
 }
 
 export function MCQCard({
@@ -28,8 +28,8 @@ export function MCQCard({
             {question.word}
           </span>
           <button
-            onClick={() => onPlayAudio(question.word)}
-            className="p-1.5 text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/40 rounded-full transition-transform active:scale-90"
+            onClick={() => onPlayAudio(question.word, question.audioUrl)}
+            className="p-1.5 text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/40 rounded-full transition-transform active:scale-90 cursor-pointer"
             title="Phát âm"
           >
             <Volume2 className="w-4 h-4" />

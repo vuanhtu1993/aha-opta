@@ -58,9 +58,46 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
 
   const currentQ = questions[currentIndex];
 
-  const playAudio = (word: string) => {
+  const playAudio = async (word: string, audioUrl?: string) => {
+    const targetUrl = audioUrl || currentQ?.audioUrl;
+    if (targetUrl) {
+      try {
+        const audio = new Audio(targetUrl);
+        await audio.play();
+        return;
+      } catch (err) {
+        console.warn("[Audio] Direct audioUrl playback failed, attempting Free Dictionary fallback...", err);
+      }
+    }
+
+    try {
+      const res = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const phonetics = data[0]?.phonetics || [];
+        const foundPhonetic = phonetics.find(
+          (p: any) => p.audio && p.audio.trim().length > 0
+        );
+        if (foundPhonetic?.audio) {
+          const audio = new Audio(foundPhonetic.audio);
+          await audio.play();
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("[Audio] Free Dictionary API fetch failed", err);
+    }
+
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(word);
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice = voices.find(
+        (v) => v.lang.startsWith("en-US") || v.lang.startsWith("en-GB")
+      );
+      if (enVoice) utterance.voice = enVoice;
       utterance.lang = "en-US";
       utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
@@ -252,9 +289,9 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
   return (
-    <div className="min-h-screen flex flex-col justify-between p-4 max-w-[480px] mx-auto pb-10">
+    <div className="h-[100dvh] flex flex-col justify-between p-4 max-w-[480px] mx-auto overflow-hidden">
       {/* Top Header Bar */}
-      <div className="space-y-3">
+      <div className="space-y-3 shrink-0">
         <div className="flex items-center justify-between">
           <button
             onClick={() => handleExit("/vocab")}
@@ -282,23 +319,25 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
         </div>
       </div>
 
-      {/* Main Question View (Conditional Render based on quizMode) */}
-      {currentQ.quizMode === "cloze" ? (
-        <ClozeCard
-          question={currentQ}
-          isAnswered={isAnswered}
-          onSubmitAnswer={handleSubmitCloze}
-          onPlayAudio={playAudio}
-        />
-      ) : (
-        <MCQCard
-          question={currentQ}
-          selectedOptionId={selectedOptionId}
-          isAnswered={isAnswered}
-          onSelectOption={handleSelectOption}
-          onPlayAudio={playAudio}
-        />
-      )}
+      {/* Main Question View Container (Scrollable if soft keyboard shrinks viewport) */}
+      <div className="flex-1 overflow-y-auto flex flex-col justify-center my-auto py-2 no-scrollbar">
+        {currentQ.quizMode === "cloze" ? (
+          <ClozeCard
+            question={currentQ}
+            isAnswered={isAnswered}
+            onSubmitAnswer={handleSubmitCloze}
+            onPlayAudio={playAudio}
+          />
+        ) : (
+          <MCQCard
+            question={currentQ}
+            selectedOptionId={selectedOptionId}
+            isAnswered={isAnswered}
+            onSelectOption={handleSelectOption}
+            onPlayAudio={playAudio}
+          />
+        )}
+      </div>
 
       {/* Feedback Drawer */}
       {isAnswered && currentResult && (
@@ -311,7 +350,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
 
       {/* Bottom Continue Button */}
       {isAnswered && (
-        <div className="pt-4">
+        <div className="pt-2 shrink-0">
           <button
             onClick={handleNextQuestion}
             className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold rounded-2xl transition-all text-xs shadow-md flex items-center justify-center gap-2 active:scale-98"

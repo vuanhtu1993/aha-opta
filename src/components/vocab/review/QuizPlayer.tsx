@@ -71,23 +71,17 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
     }
 
     try {
-      const res = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`
-      );
+      const res = await fetch(`/api/vocab/audio?word=${encodeURIComponent(word)}`);
       if (res.ok) {
         const data = await res.json();
-        const phonetics = data[0]?.phonetics || [];
-        const foundPhonetic = phonetics.find(
-          (p: any) => p.audio && p.audio.trim().length > 0
-        );
-        if (foundPhonetic?.audio) {
-          const audio = new Audio(foundPhonetic.audio);
+        if (data.audioUrl) {
+          const audio = new Audio(data.audioUrl);
           await audio.play();
           return;
         }
       }
     } catch (err) {
-      console.warn("[Audio] Free Dictionary API fetch failed", err);
+      console.warn("[Audio] Server audio proxy fetch failed", err);
     }
 
     if (typeof window !== "undefined" && "speechSynthesis" in window) {

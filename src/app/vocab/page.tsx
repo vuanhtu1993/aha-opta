@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import VocabHeader from "@/components/vocab/VocabHeader";
 import VocabStatsBar from "@/components/vocab/VocabStatsBar";
 import VocabStatsSkeleton from "@/components/vocab/VocabStatsSkeleton";
+import VocabClozeBatchBanner from "@/components/vocab/VocabClozeBatchBanner";
 import VocabCardSection from "@/components/vocab/VocabCardSection";
 import VocabListSkeleton from "@/components/vocab/VocabListSkeleton";
 import { getInitialVocabCards } from "@/lib/vocab/vocab.service";
@@ -29,7 +30,10 @@ export default function VocabPage() {
         <VocabStatsBar />
       </Suspense>
 
-      {/* 3. Dynamic Hole: Vocabulary Interactive Section (State-based Search & API Fetching) */}
+      {/* 3. Interactive Batch Cloze AI Banner */}
+      <VocabClozeBatchBanner />
+
+      {/* 4. Dynamic Hole: Vocabulary Interactive Section (State-based Search & API Fetching) */}
       <Suspense fallback={<VocabListSkeleton />}>
         <VocabCardDataLoader />
       </Suspense>

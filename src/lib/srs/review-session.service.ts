@@ -19,6 +19,8 @@ export interface QuizQuestion {
   sourceStorybookTitle?: string;
   explanation: string;
   options: QuizOption[];
+  exampleSentences?: Array<{ sentence: string; answer: string }>;
+  quizMode: "mcq" | "cloze";
   fsrsState: {
     due: string;
     reps: number;
@@ -139,6 +141,14 @@ export async function getReviewSessionQuestions(options: {
         isCorrect: opt.isCorrect,
       }));
 
+    const stability = card.fsrs?.stability ?? 0;
+    const exampleSentences = card.exampleSentences || [];
+    const CLOZE_THRESHOLD_STABILITY = 3;
+    const quizMode: "mcq" | "cloze" =
+      stability >= CLOZE_THRESHOLD_STABILITY && exampleSentences.length > 0
+        ? "cloze"
+        : "mcq";
+
     return {
       cardId: card._id.toString(),
       word: card.word,
@@ -149,6 +159,8 @@ export async function getReviewSessionQuestions(options: {
       sourceStorybookTitle: card.sourceStorybookTitle || "",
       explanation: card.explanation || "",
       options: shuffledOptions,
+      exampleSentences: exampleSentences,
+      quizMode: quizMode,
       fsrsState: {
         due: card.fsrs?.due ? new Date(card.fsrs.due).toISOString() : new Date().toISOString(),
         reps: card.fsrs?.reps ?? 0,

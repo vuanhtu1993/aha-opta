@@ -2,26 +2,27 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { mutate } from "swr";
 import {
   X,
-  Volume2,
-  CheckCircle2,
-  XCircle,
   ArrowRight,
   Sparkles,
   Trophy,
   BookOpen,
   GraduationCap,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import type { QuizQuestion } from "@/lib/srs/review-session.service";
+import { MCQCard } from "./MCQCard";
+import { ClozeCard } from "./ClozeCard";
+import { QuizFeedback } from "./QuizFeedback";
 
 interface ReviewResult {
   cardId: string;
   word: string;
   isCorrect: boolean;
-  rating: number; // 1: Again, 2: Hard, 3: Good, 4: Easy
+  rating: number;
   responseTimeMs: number;
   nextDue: string;
   stability: number;
@@ -34,7 +35,6 @@ interface QuizPlayerProps {
 export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const router = useRouter();
 
-  // State seeded directly from Server Component props (0ms Loading Spinner!)
   const [questions] = useState<QuizQuestion[]>(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -42,17 +42,17 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const [currentResult, setCurrentResult] = useState<ReviewResult | null>(null);
   const [sessionResults, setSessionResults] = useState<ReviewResult[]>([]);
   const [isFinished, setIsFinished] = useState(false);
+  const [completedSentence, setCompletedSentence] = useState<string | undefined>(undefined);
 
-  // Response latency timer (measured in milliseconds for FSRS engine)
   const questionStartTimeRef = useRef<number>(Date.now());
 
-  // Reset timer and answer state whenever moving to next question
   useEffect(() => {
     if (questions.length > 0 && currentIndex < questions.length) {
       questionStartTimeRef.current = Date.now();
       setSelectedOptionId(null);
       setIsAnswered(false);
       setCurrentResult(null);
+      setCompletedSentence(undefined);
     }
   }, [currentIndex, questions]);
 
@@ -67,11 +67,10 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
     }
   };
 
-  const handleSelectOption = async (optionId: string, isCorrect: boolean) => {
+  const submitReview = async (isCorrect: boolean) => {
     if (isAnswered || !currentQ) return;
 
     const responseTimeMs = Date.now() - questionStartTimeRef.current;
-    setSelectedOptionId(optionId);
     setIsAnswered(true);
 
     try {
@@ -98,8 +97,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
         };
         setCurrentResult(result);
         setSessionResults((prev) => [...prev, result]);
-
-        // Cập nhật tức thì số lượng từ cần ôn trên toàn ứng dụng (Navbar, TabBar, Dashboard)
         mutate("/api/vocab/due-count");
       }
     } catch (err) {
@@ -107,12 +104,27 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
     }
   };
 
+  const handleSelectOption = (optionId: string, isCorrect: boolean) => {
+    setSelectedOptionId(optionId);
+    submitReview(isCorrect);
+  };
+
+  const handleSubmitCloze = (userInput: string, isCorrect: boolean) => {
+    if (currentQ.exampleSentences && currentQ.exampleSentences.length > 0) {
+      const full = currentQ.exampleSentences[0].sentence.replace(
+        "___",
+        currentQ.word
+      );
+      setCompletedSentence(full);
+    }
+    submitReview(isCorrect);
+  };
+
   const handleNextQuestion = () => {
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       setIsFinished(true);
-      // Khi hoàn thành hết bộ câu hỏi, làm tươi lại dữ liệu server
       mutate("/api/vocab/due-count");
       router.refresh();
     }
@@ -132,20 +144,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
     return `${days} ngày`;
   };
 
-  const getRatingBadge = (rating: number) => {
-    switch (rating) {
-      case 4:
-        return { label: "Easy (Dễ)", color: "bg-emerald-50 text-emerald-600 border-emerald-200" };
-      case 3:
-        return { label: "Good (Tốt)", color: "bg-blue-50 text-blue-600 border-blue-200" };
-      case 2:
-        return { label: "Hard (Khó)", color: "bg-amber-50 text-amber-600 border-amber-200" };
-      case 1:
-      default:
-        return { label: "Again (Ôn lại)", color: "bg-rose-50 text-rose-600 border-rose-200" };
-    }
-  };
-
   const handleExit = (href: string = "/vocab") => {
     mutate("/api/vocab/due-count");
     router.push(href);
@@ -161,7 +159,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
     return (
       <div className="p-4 min-h-screen flex flex-col justify-between max-w-[480px] mx-auto pb-10">
         <div className="space-y-6 pt-8">
-          {/* Trophy Icon */}
           <div className="text-center space-y-3">
             <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center mx-auto shadow-inner animate-bounce">
               <Trophy className="w-10 h-10" />
@@ -176,7 +173,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
             </p>
           </div>
 
-          {/* Results Summary Box */}
           {totalAnswered > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-4">
               <div className="grid grid-cols-3 gap-2 text-center">
@@ -204,7 +200,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
                 </div>
               </div>
 
-              {/* Reviewed Words Mini List */}
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                 <div className="text-[11px] font-bold text-slate-400">Kết quả từng từ:</div>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar">
@@ -234,7 +229,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
           )}
         </div>
 
-        {/* Action Buttons */}
         <div className="space-y-2 pt-6">
           <button
             onClick={() => handleExit("/vocab")}
@@ -272,7 +266,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
 
           <div className="flex items-center gap-1 text-xs font-black text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-900">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>FSRS Quiz</span>
+            <span>{currentQ.quizMode === "cloze" ? "Cloze Sentence" : "FSRS Quiz"}</span>
           </div>
 
           <div className="text-xs font-bold text-slate-400">
@@ -280,7 +274,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-amber-400 transition-all duration-300 rounded-full"
@@ -289,113 +282,32 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
         </div>
       </div>
 
-      {/* Main Question Card Area */}
-      <div className="space-y-5 my-auto py-4">
-        {/* Word Prompt Box */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700 shadow-sm text-center space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              {currentQ.word}
-            </span>
-            <button
-              onClick={() => playAudio(currentQ.word)}
-              className="p-1.5 text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/40 rounded-full transition-transform active:scale-90"
-              title="Phát âm"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
-          </div>
+      {/* Main Question View (Conditional Render based on quizMode) */}
+      {currentQ.quizMode === "cloze" ? (
+        <ClozeCard
+          question={currentQ}
+          isAnswered={isAnswered}
+          onSubmitAnswer={handleSubmitCloze}
+          onPlayAudio={playAudio}
+        />
+      ) : (
+        <MCQCard
+          question={currentQ}
+          selectedOptionId={selectedOptionId}
+          isAnswered={isAnswered}
+          onSelectOption={handleSelectOption}
+          onPlayAudio={playAudio}
+        />
+      )}
 
-          {currentQ.ipa && (
-            <div className="font-mono text-xs text-slate-400 font-normal">
-              {currentQ.ipa}
-            </div>
-          )}
-
-          {currentQ.level && (
-            <div className="pt-1">
-              <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold border border-amber-200 dark:border-amber-900">
-                {currentQ.level}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* 4 English Answer Choices */}
-        <div className="space-y-2.5">
-          {currentQ.options.map((opt) => {
-            const isSelected = selectedOptionId === opt.id;
-            let btnStyle =
-              "bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-amber-400 dark:hover:border-amber-500";
-
-            if (isAnswered) {
-              if (opt.isCorrect) {
-                btnStyle =
-                  "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-800 dark:text-emerald-300 font-bold shadow-xs";
-              } else if (isSelected && !opt.isCorrect) {
-                btnStyle =
-                  "bg-rose-50 dark:bg-rose-950/50 border-rose-500 text-rose-800 dark:text-rose-300";
-              } else {
-                btnStyle =
-                  "bg-slate-50/50 dark:bg-slate-850 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 opacity-60";
-              }
-            }
-
-            return (
-              <button
-                key={opt.id}
-                onClick={() => handleSelectOption(opt.id, opt.isCorrect)}
-                disabled={isAnswered}
-                className={`w-full p-4 rounded-2xl border text-left text-xs transition-all duration-200 flex items-start gap-3 shadow-2xs ${btnStyle}`}
-              >
-                <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-black flex items-center justify-center shrink-0">
-                  {opt.id}
-                </span>
-                <span className="flex-1 leading-relaxed">{opt.text}</span>
-                {isAnswered && opt.isCorrect && (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                )}
-                {isAnswered && isSelected && !opt.isCorrect && (
-                  <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Feedback & Word Family Drawer after answering */}
-        {isAnswered && currentResult && (
-          <div className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold border ${getRatingBadge(currentResult.rating).color
-                    }`}
-                >
-                  {getRatingBadge(currentResult.rating).label}
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  ⚡ {Math.round(currentResult.responseTimeMs / 100) / 10}s
-                </span>
-              </div>
-
-              <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                Ôn lại: +{formatIntervalDays(currentResult.nextDue)}
-              </div>
-            </div>
-
-            {/* Word Family / Collocations hint */}
-            {currentQ.wordFamily && currentQ.wordFamily.length > 0 && (
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-700/60 pt-2">
-                <span className="font-bold text-slate-700 dark:text-slate-300">
-                  👨‍👩‍👧‍👦 Family:{" "}
-                </span>
-                {currentQ.wordFamily.map((wf: any) => wf.word).join(", ")}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Feedback Drawer */}
+      {isAnswered && currentResult && (
+        <QuizFeedback
+          question={currentQ}
+          result={currentResult}
+          completedSentence={completedSentence}
+        />
+      )}
 
       {/* Bottom Continue Button */}
       {isAnswered && (

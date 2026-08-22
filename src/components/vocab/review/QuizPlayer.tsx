@@ -249,7 +249,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
   return (
-    <div className="h-[100dvh] flex flex-col justify-between p-4 max-w-[480px] mx-auto overflow-y-auto">
+    <div className="h-[100dvh] flex flex-col p-4 max-w-[480px] mx-auto overflow-hidden">
       {/* Top Header Bar */}
       <div className="space-y-3 shrink-0">
         <div className="flex items-center justify-between">
@@ -280,7 +280,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       </div>
 
       {/* Main Question View Container (Scrollable if soft keyboard shrinks viewport) */}
-      <div className={`flex-1 overflow-y-auto flex flex-col ${currentQ.quizMode === "cloze" ? "justify-start pt-2" : "justify-center"} my-auto py-2 no-scrollbar`}>
+      <div className="flex-1 overflow-y-auto flex flex-col justify-start pt-2 py-2 no-scrollbar">
         {currentQ.quizMode === "cloze" ? (
           <ClozeCard
             question={currentQ}

@@ -29,11 +29,11 @@ export function ClozeCard({
 
   useEffect(() => {
     setUserInput("");
-    if (!isAnswered) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 300);
+    if (!isAnswered && inputRef.current) {
+      inputRef.current.focus();
+      requestAnimationFrame(() => {
+        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
     }
   }, [question, isAnswered]);
 
@@ -106,6 +106,7 @@ export function ClozeCard({
             <input
               ref={inputRef}
               type="text"
+              autoFocus
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               placeholder="Nhập từ vựng tiếng Anh..."

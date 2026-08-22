@@ -30,7 +30,10 @@ export function ClozeCard({
   useEffect(() => {
     setUserInput("");
     if (!isAnswered) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
     }
   }, [question, isAnswered]);
 
@@ -110,6 +113,7 @@ export function ClozeCard({
               autoCapitalize="none"
               autoComplete="off"
               autoCorrect="off"
+              enterKeyHint="send"
             />
             <button
               type="submit"

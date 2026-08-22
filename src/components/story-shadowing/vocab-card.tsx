@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { mutate } from "swr";
 import { ChevronDown, BookmarkPlus, Check, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
 
 export interface WordFamilyItem {
   word: string;
@@ -45,6 +46,7 @@ export function VocabCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSaved, setIsSaved] = useState(isInitiallySaved);
   const [isSaving, setIsSaving] = useState(false);
+  const { speak } = useVocabSpeaker();
 
   useEffect(() => {
     setIsSaved(isInitiallySaved);
@@ -87,21 +89,7 @@ export function VocabCard({
 
   const playPronunciation = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (keyword.audioUrl) {
-      const audio = new Audio(keyword.audioUrl);
-      audio.play().catch(err => console.warn("[VocabCard] Failed to play audioUrl:", err));
-      return;
-    }
-
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      // Huỷ các phát âm đang dở trước đó để tránh nghẽn hàng đợi trên Safari
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(keyword.word);
-      utterance.lang = "en-US";
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    speak(keyword.word, keyword.audioUrl);
   };
 
   const isAdvancedLevel =

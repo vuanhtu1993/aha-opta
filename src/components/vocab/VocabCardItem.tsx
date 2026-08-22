@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
 import { Volume2, ChevronDown, Trash2, Clock, Sparkles } from "lucide-react";
+import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
 
 export interface VocabCardData {
   _id: string;
@@ -34,15 +35,11 @@ export default function VocabCardItem({ card }: VocabCardItemProps) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { speak } = useVocabSpeaker();
 
   const playAudio = (word: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = "en-US";
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    speak(word, (card as any).audioUrl);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {

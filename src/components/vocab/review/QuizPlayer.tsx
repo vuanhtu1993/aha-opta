@@ -17,6 +17,7 @@ import type { QuizQuestion } from "@/lib/srs/review-session.service";
 import { MCQCard } from "./MCQCard";
 import { ClozeCard } from "./ClozeCard";
 import { QuizFeedback } from "./QuizFeedback";
+import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
 
 interface ReviewResult {
   cardId: string;
@@ -34,6 +35,7 @@ interface QuizPlayerProps {
 
 export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const router = useRouter();
+  const { speak } = useVocabSpeaker();
 
   const [questions] = useState<QuizQuestion[]>(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -59,39 +61,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const currentQ = questions[currentIndex];
 
   const playAudio = (word: string, audioUrl?: string) => {
-    const targetUrl = audioUrl || currentQ?.audioUrl;
-    // 1. Direct MP3 URL playback from MongoDB (0ms delay, 0 API calls)
-    if (targetUrl && targetUrl.startsWith("http") && targetUrl !== "undefined") {
-      try {
-        const audio = new Audio(targetUrl);
-        audio.play().catch((err) => {
-          console.warn("[Audio] Direct audioUrl playback blocked/failed:", err);
-          fallbackWebSpeech(word);
-        });
-        return;
-      } catch (err) {
-        console.warn("[Audio] Direct audioUrl init failed:", err);
-      }
-    }
-
-    // 2. High-quality Web Speech API fallback for idioms/phrases
-    fallbackWebSpeech(word);
-  };
-
-  const fallbackWebSpeech = (word: string) => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word);
-      const voices = window.speechSynthesis.getVoices();
-      const enVoice =
-        voices.find((v) => v.lang === "en-US" && v.name.includes("Natural")) ||
-        voices.find((v) => v.lang.startsWith("en-US")) ||
-        voices.find((v) => v.lang.startsWith("en-GB"));
-      if (enVoice) utterance.voice = enVoice;
-      utterance.lang = "en-US";
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    speak(word, audioUrl || currentQ?.audioUrl);
   };
 
   const submitReview = async (isCorrect: boolean) => {
@@ -279,7 +249,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
   return (
-    <div className="h-[100dvh] flex flex-col justify-between p-4 max-w-[480px] mx-auto overflow-hidden">
+    <div className="h-[100dvh] flex flex-col justify-between p-4 max-w-[480px] mx-auto overflow-y-auto">
       {/* Top Header Bar */}
       <div className="space-y-3 shrink-0">
         <div className="flex items-center justify-between">
@@ -310,7 +280,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       </div>
 
       {/* Main Question View Container (Scrollable if soft keyboard shrinks viewport) */}
-      <div className="flex-1 overflow-y-auto flex flex-col justify-center my-auto py-2 no-scrollbar">
+      <div className={`flex-1 overflow-y-auto flex flex-col ${currentQ.quizMode === "cloze" ? "justify-start pt-2" : "justify-center"} my-auto py-2 no-scrollbar`}>
         {currentQ.quizMode === "cloze" ? (
           <ClozeCard
             question={currentQ}

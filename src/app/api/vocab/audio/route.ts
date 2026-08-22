@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-
 /**
  * GET /api/vocab/audio?word=...
- * Server-side audio lookup to bypass browser CORS / AdBlocker blocks when fetching Free Dictionary API
+ * Server-side audio lookup to bypass browser CORS / AdBlocker blocks when fetching Free Dictionary API.
+ * Uses Next.js fetch cache (revalidate 24h).
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

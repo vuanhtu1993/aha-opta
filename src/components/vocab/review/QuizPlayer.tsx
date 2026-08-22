@@ -18,6 +18,8 @@ import { MCQCard } from "./MCQCard";
 import { ClozeCard } from "./ClozeCard";
 import { QuizFeedback } from "./QuizFeedback";
 import { formatIntervalDays } from "@/lib/utils/format-interval";
+import { soundEffects } from "@/lib/services/sound-effects";
+import { fireCompletionConfetti } from "@/lib/utils/confetti";
 
 interface ReviewResult {
   cardId: string;
@@ -56,6 +58,14 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       setCompletedSentence(undefined);
     }
   }, [currentIndex, questions]);
+
+  // Trigger completion UX effects (Chime Sound & Confetti Burst)
+  useEffect(() => {
+    if (isFinished && sessionResults.length > 0) {
+      soundEffects.playSuccessChime();
+      fireCompletionConfetti();
+    }
+  }, [isFinished, sessionResults.length]);
 
   const currentQ = questions[currentIndex];
 

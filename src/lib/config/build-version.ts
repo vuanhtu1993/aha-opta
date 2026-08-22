@@ -28,11 +28,12 @@ export const buildVersion = {
   date: process.env.NEXT_PUBLIC_BUILD_DATE || new Date().toISOString(),
 
   /**
-   * Format ngắn gọn cho Header Badge
-   * VD: "v0.1.0-837f610"
+   * Format ngắn gọn cho Header Badge (Dùng 3 ký tự cuối của hash)
+   * VD: "v1.0-610"
    */
   get compact(): string {
-    return `v${this.version}-${this.hash}`;
+    const shortHash = this.hash.length > 3 ? this.hash.slice(-3) : this.hash;
+    return `v${this.version}-${shortHash}`;
   },
 
   /**

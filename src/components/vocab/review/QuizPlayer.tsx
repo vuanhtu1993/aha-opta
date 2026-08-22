@@ -20,6 +20,7 @@ import { QuizFeedback } from "./QuizFeedback";
 import { formatIntervalDays } from "@/lib/utils/format-interval";
 import { soundEffects } from "@/lib/services/sound-effects";
 import { fireCompletionConfetti } from "@/lib/utils/confetti";
+import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
 
 interface ReviewResult {
   cardId: string;
@@ -37,6 +38,7 @@ interface QuizPlayerProps {
 
 export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const router = useRouter();
+  const { speak } = useVocabSpeaker();
 
   const [questions] = useState<QuizQuestion[]>(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -74,6 +76,14 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
 
     const responseTimeMs = Date.now() - questionStartTimeRef.current;
     setIsAnswered(true);
+
+    // Phản hồi âm thanh tức thì cho từng câu hỏi + phát âm từ vựng khi đúng
+    if (isCorrect) {
+      soundEffects.playCorrectSound();
+      speak(currentQ.word, currentQ.audioUrl);
+    } else {
+      soundEffects.playIncorrectSound();
+    }
 
     try {
       const res = await fetch("/api/vocab/review", {
@@ -126,9 +136,11 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
+      // Direct user gesture activation for Web Audio & Confetti
+      soundEffects.playSuccessChime();
+      fireCompletionConfetti();
       setIsFinished(true);
       mutate("/api/vocab/due-count");
-      router.refresh();
     }
   };
 
@@ -148,9 +160,16 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       <div className="p-4 min-h-screen flex flex-col justify-between max-w-[480px] mx-auto pb-10">
         <div className="space-y-6 pt-8">
           <div className="text-center space-y-3">
-            <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center mx-auto shadow-inner animate-bounce">
+            <button
+              onClick={() => {
+                soundEffects.playSuccessChime();
+                fireCompletionConfetti();
+              }}
+              className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center mx-auto shadow-inner animate-bounce active:scale-95 transition-transform cursor-pointer"
+              title="Nhấn để phát lại hiệu ứng chúc mừng"
+            >
               <Trophy className="w-10 h-10" />
-            </div>
+            </button>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">
               {totalAnswered > 0 ? "Hoàn thành phiên ôn tập!" : "Chưa có từ nào cần ôn"}
             </h1>

@@ -19,6 +19,7 @@ export function ClozeCard({
 }: ClozeCardProps) {
   const { speak } = useVocabSpeaker();
   const [userInput, setUserInput] = useState("");
+  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Pick the first example sentence available
@@ -27,26 +28,34 @@ export function ClozeCard({
       ? question.exampleSentences[0]
       : { sentence: "___", answer: question.word };
 
+  // Reset state when switching to a new question
   useEffect(() => {
     setUserInput("");
+    setLastCorrect(null);
+  }, [question]);
+
+  // Focus input when question becomes active
+  useEffect(() => {
     if (!isAnswered && inputRef.current) {
       inputRef.current.focus();
       requestAnimationFrame(() => {
         inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
     }
-  }, [question, isAnswered]);
+  }, [isAnswered]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (isAnswered || !userInput.trim()) return;
 
     const correct = isClozeCorrect(userInput, activeSentence.answer);
+    setLastCorrect(correct);
     onSubmitAnswer(userInput, correct);
   };
 
   const handleGiveUp = () => {
     if (isAnswered) return;
+    setLastCorrect(false);
     onSubmitAnswer("", false); // Mark incorrect (Rating.Again) and reveal answer
   };
 
@@ -65,7 +74,15 @@ export function ClozeCard({
             <React.Fragment key={i}>
               {part}
               {i < arr.length - 1 && (
-                <span className="inline-block px-3 py-0.5 mx-1 border-b-2 border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold rounded">
+                <span
+                  className={`inline-block px-3 py-0.5 mx-1 font-bold rounded-lg transition-all duration-300 ${
+                    isAnswered
+                      ? lastCorrect
+                        ? "border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-200/50 dark:shadow-emerald-900/50 animate-in zoom-in-95"
+                        : "border-2 border-rose-400 bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300"
+                      : "border-b-2 border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300"
+                  }`}
+                >
                   {isAnswered ? activeSentence.answer : userInput || "___"}
                 </span>
               )}

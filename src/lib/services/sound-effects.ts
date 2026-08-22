@@ -29,6 +29,64 @@ class SoundEffectsService {
   }
 
   /**
+   * Phát tiếng "Ting" nhẹ vui tươi khi trả lời ĐÚNG từng câu (C6 -> E6)
+   */
+  public playCorrectSound(): void {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1046.5, now); // C6
+      osc.frequency.exponentialRampToValueAtTime(1318.51, now + 0.08); // E6
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch (e) {
+      console.warn("Could not play correct sound", e);
+    }
+  }
+
+  /**
+   * Phát tiếng "Thud" trầm đục nhẹ khi trả lời SAI từng câu
+   */
+  public playIncorrectSound(): void {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.12);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch (e) {
+      console.warn("Could not play incorrect sound", e);
+    }
+  }
+
+  /**
    * Phát tiếng chime "Ting" kép chúc mừng hoàn thành (E6 -> A6)
    */
   public playSuccessChime(): void {

@@ -62,10 +62,10 @@ export function MCQCard({
           if (isAnswered) {
             if (opt.isCorrect) {
               btnStyle =
-                "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-800 dark:text-emerald-300 font-bold shadow-xs";
+                "bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-500 text-emerald-800 dark:text-emerald-300 font-extrabold shadow-sm shadow-emerald-200/50 dark:shadow-emerald-900/50 scale-[1.01] animate-in zoom-in-95";
             } else if (isSelected && !opt.isCorrect) {
               btnStyle =
-                "bg-rose-50 dark:bg-rose-950/50 border-rose-500 text-rose-800 dark:text-rose-300";
+                "bg-rose-50 dark:bg-rose-950/50 border-2 border-rose-500 text-rose-800 dark:text-rose-300 font-semibold";
             } else {
               btnStyle =
                 "bg-slate-50/50 dark:bg-slate-850 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 opacity-60";

@@ -230,7 +230,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
   return (
-    <div className="h-[100dvh] flex flex-col p-4 max-w-[480px] mx-auto overflow-hidden">
+    <div className="flex flex-col p-4 max-w-[480px] mx-auto overflow-hidden">
       {/* Top Header Bar */}
       <div className="space-y-3 shrink-0">
         <div className="flex items-center justify-between">

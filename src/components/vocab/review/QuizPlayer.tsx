@@ -17,7 +17,7 @@ import type { QuizQuestion } from "@/lib/srs/review-session.service";
 import { MCQCard } from "./MCQCard";
 import { ClozeCard } from "./ClozeCard";
 import { QuizFeedback } from "./QuizFeedback";
-import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
+import { formatIntervalDays } from "@/lib/utils/format-interval";
 
 interface ReviewResult {
   cardId: string;
@@ -35,7 +35,6 @@ interface QuizPlayerProps {
 
 export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const router = useRouter();
-  const { speak } = useVocabSpeaker();
 
   const [questions] = useState<QuizQuestion[]>(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -59,10 +58,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   }, [currentIndex, questions]);
 
   const currentQ = questions[currentIndex];
-
-  const playAudio = (word: string, audioUrl?: string) => {
-    speak(word, audioUrl || currentQ?.audioUrl);
-  };
 
   const submitReview = async (isCorrect: boolean) => {
     if (isAnswered || !currentQ) return;
@@ -125,20 +120,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       mutate("/api/vocab/due-count");
       router.refresh();
     }
-  };
-
-  const formatIntervalDays = (nextDueStr?: string) => {
-    if (!nextDueStr) return "";
-    const due = new Date(nextDueStr);
-    const now = new Date();
-    const diffMs = due.getTime() - now.getTime();
-    if (diffMs <= 0) return "Hôm nay";
-    const diffMinutes = Math.round(diffMs / (1000 * 60));
-    if (diffMinutes < 60) return `${diffMinutes} phút`;
-    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-    if (diffHours < 24) return `${diffHours} giờ`;
-    const days = Math.round(diffHours / 24);
-    return `${days} ngày`;
   };
 
   const handleExit = (href: string = "/vocab") => {
@@ -286,7 +267,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
             question={currentQ}
             isAnswered={isAnswered}
             onSubmitAnswer={handleSubmitCloze}
-            onPlayAudio={playAudio}
           />
         ) : (
           <MCQCard
@@ -294,7 +274,6 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
             selectedOptionId={selectedOptionId}
             isAnswered={isAnswered}
             onSelectOption={handleSelectOption}
-            onPlayAudio={playAudio}
           />
         )}
       </div>

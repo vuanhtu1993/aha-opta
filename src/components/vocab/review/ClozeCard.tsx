@@ -4,20 +4,20 @@ import React, { useState, useEffect, useRef } from "react";
 import { Volume2, Sparkles, Send, HelpCircle } from "lucide-react";
 import type { QuizQuestion } from "@/lib/srs/review-session.service";
 import { isClozeCorrect } from "@/lib/srs/cloze-scorer";
+import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
 
 interface ClozeCardProps {
   question: QuizQuestion;
   isAnswered: boolean;
   onSubmitAnswer: (userInput: string, isCorrect: boolean) => void;
-  onPlayAudio: (word: string, audioUrl?: string) => void;
 }
 
 export function ClozeCard({
   question,
   isAnswered,
   onSubmitAnswer,
-  onPlayAudio,
 }: ClozeCardProps) {
+  const { speak } = useVocabSpeaker();
   const [userInput, setUserInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -51,7 +51,7 @@ export function ClozeCard({
   };
 
   return (
-    <div className="space-y-4 my-auto py-2">
+    <div className="space-y-4 w-full py-2">
       {/* Cloze Sentence Box */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700 shadow-sm text-center space-y-4">
         <div className="flex items-center justify-center gap-1.5 text-xs font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-900 w-fit mx-auto">
@@ -86,7 +86,7 @@ export function ClozeCard({
 
           <div className="flex items-center justify-end gap-2 shrink-0 self-end sm:self-center">
             <button
-              onClick={() => onPlayAudio(question.word, question.audioUrl)}
+              onClick={() => speak(question.word, question.audioUrl)}
               className="p-1 text-slate-400 hover:text-indigo-500 transition-colors cursor-pointer"
               title="Nghe phát âm chuẩn"
             >

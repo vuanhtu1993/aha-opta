@@ -3,13 +3,13 @@
 import React from "react";
 import { Volume2, CheckCircle2, XCircle } from "lucide-react";
 import type { QuizQuestion } from "@/lib/srs/review-session.service";
+import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
 
 interface MCQCardProps {
   question: QuizQuestion;
   selectedOptionId: string | null;
   isAnswered: boolean;
   onSelectOption: (optionId: string, isCorrect: boolean) => void;
-  onPlayAudio: (word: string, audioUrl?: string) => void;
 }
 
 export function MCQCard({
@@ -17,10 +17,11 @@ export function MCQCard({
   selectedOptionId,
   isAnswered,
   onSelectOption,
-  onPlayAudio,
 }: MCQCardProps) {
+  const { speak } = useVocabSpeaker();
+
   return (
-    <div className="space-y-5 my-auto py-4">
+    <div className="space-y-4 w-full py-2">
       {/* Word Prompt Box */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700 shadow-sm text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
@@ -28,7 +29,7 @@ export function MCQCard({
             {question.word}
           </span>
           <button
-            onClick={() => onPlayAudio(question.word, question.audioUrl)}
+            onClick={() => speak(question.word, question.audioUrl)}
             className="p-1.5 text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/40 rounded-full transition-transform active:scale-90 cursor-pointer"
             title="Phát âm"
           >

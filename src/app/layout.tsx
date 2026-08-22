@@ -16,6 +16,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // Khi bàn phím ảo mở trên iOS Safari, Layout Viewport sẽ co lại
+  // thay vì bàn phím overlay đè lên nội dung (mặc định: resizes-visual)
+  interactiveWidget: "resizes-content",
 };
 
 export const metadata: Metadata = {

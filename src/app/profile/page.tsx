@@ -5,6 +5,7 @@ import { SettingsGroup } from "@/components/settings/settings-group";
 import { ToggleSetting } from "@/components/settings/toggle-setting";
 import { SelectSetting } from "@/components/settings/select-setting";
 import { Moon, Globe, Volume2, Timer, RotateCcw, Info, MessageSquare, BookOpen } from "lucide-react";
+import { buildVersion } from "@/lib/config/build-version";
 
 export default function ProfilePage() {
   const { settings, isLoaded, updateSetting } = useSettings();
@@ -66,7 +67,7 @@ export default function ProfilePage() {
         <SelectSetting
           icon={<Info className="w-5 h-5 text-slate-500" />}
           label="Phiên bản"
-          value="v1.0.0 (PWA)"
+          value={buildVersion.full}
         />
         <SelectSetting
           icon={<BookOpen className="w-5 h-5 text-slate-500" />}

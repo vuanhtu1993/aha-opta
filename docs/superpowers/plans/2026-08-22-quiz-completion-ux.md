@@ -164,12 +164,12 @@ export function fireCompletionConfetti(): void {
 }
 ```
 
-- [ ] **Step 2: Check TypeScript types**
+- [x] **Step 2: Check TypeScript types**
 
 Run: `npx tsc --noEmit`
 Expected: PASS
 
-- [ ] **Step 3: Commit confetti utility**
+- [x] **Step 3: Commit confetti utility**
 
 ```bash
 git add src/lib/utils/confetti.ts
@@ -183,7 +183,7 @@ git commit -m "feat: add brand-colored completion confetti utility"
 **Files:**
 - Modify: `src/components/vocab/review/QuizPlayer.tsx`
 
-- [ ] **Step 1: Add completion effect trigger in `QuizPlayer.tsx`**
+- [x] **Step 1: Add completion effect trigger in `QuizPlayer.tsx`**
 
 Import `soundEffects` and `fireCompletionConfetti`:
 ```typescript

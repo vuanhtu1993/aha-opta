@@ -1,47 +1,39 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { Volume2, Sparkles, Send, HelpCircle } from "lucide-react";
+import React from "react";
+import { Volume2, Sparkles } from "lucide-react";
 import type { QuizQuestion } from "@/lib/srs/review-session.service";
-import { isClozeCorrect } from "@/lib/srs/cloze-scorer";
 import { useVocabSpeaker } from "@/lib/hooks/use-vocab-speaker";
 
 interface ClozeCardProps {
   question: QuizQuestion;
   isAnswered: boolean;
-  onSubmitAnswer: (userInput: string, isCorrect: boolean) => void;
+  /** Input hiện tại của user — được truyền từ parent để render vào blank */
+  userInput: string;
+  /** Kết quả đúng/sai — dùng để render màu sắc sau khi trả lời */
+  lastCorrect: boolean | null;
 }
 
+/**
+ * ClozeCard — Display-only component.
+ *
+ * WHY display-only?
+ * Input form cần nằm ở bottom zone của QuizPlayer (bên ngoài vùng scroll)
+ * để khi bàn phím iOS mở và container co lại, input luôn visible.
+ * Đặt form trong ClozeCard (bên trong scrollable area) sẽ bị keyboard che.
+ */
 export function ClozeCard({
   question,
   isAnswered,
-  onSubmitAnswer,
+  userInput,
+  lastCorrect,
 }: ClozeCardProps) {
   const { speak } = useVocabSpeaker();
-  const [userInput, setUserInput] = useState("");
-  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Pick the first example sentence available
   const activeSentence =
     question.exampleSentences && question.exampleSentences.length > 0
       ? question.exampleSentences[0]
       : { sentence: "___", answer: question.word };
-
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (isAnswered || !userInput.trim()) return;
-
-    const correct = isClozeCorrect(userInput, activeSentence.answer);
-    setLastCorrect(correct);
-    onSubmitAnswer(userInput, correct);
-  };
-
-  const handleGiveUp = () => {
-    if (isAnswered) return;
-    setLastCorrect(false);
-    onSubmitAnswer("", false);
-  };
 
   return (
     <div className="space-y-4 w-full py-2">
@@ -74,7 +66,7 @@ export function ClozeCard({
           ))}
         </p>
 
-        {/* Word Explanation & Audio / Level Bar */}
+        {/* Word Explanation & Audio / Level */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
           <div className="flex items-start gap-1.5 text-left">
             <span className="font-semibold text-slate-700 dark:text-slate-300 shrink-0">
@@ -99,42 +91,6 @@ export function ClozeCard({
           </div>
         </div>
       </div>
-
-      {/* Input Form & Give Up Action */}
-      {!isAnswered && (
-        <form onSubmit={handleSubmit} className="space-y-2.5">
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              placeholder="Nhập từ vựng tiếng Anh..."
-              className="w-full py-3.5 pl-4 pr-12 text-sm bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 rounded-2xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-semibold text-slate-900 dark:text-white shadow-sm transition-all"
-              autoCapitalize="none"
-              autoComplete="off"
-              autoCorrect="off"
-              enterKeyHint="send"
-            />
-            <button
-              type="submit"
-              disabled={!userInput.trim()}
-              className="absolute right-2 top-1.5 bottom-1.5 px-3.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white rounded-xl font-extrabold flex items-center justify-center transition-all active:scale-95 cursor-pointer"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleGiveUp}
-            className="w-full py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Tôi chưa nhớ từ này (Xem đáp án)</span>
-          </button>
-        </form>
-      )}
     </div>
   );
 }

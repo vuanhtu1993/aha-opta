@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
 import { useVisualViewport } from "@/lib/hooks/use-visual-viewport";
+import { isClozeCorrect } from "@/lib/srs/cloze-scorer";
 import {
   X,
   ArrowRight,
@@ -13,6 +14,8 @@ import {
   GraduationCap,
   CheckCircle2,
   XCircle,
+  Send,
+  HelpCircle,
 } from "lucide-react";
 import type { QuizQuestion } from "@/lib/srs/review-session.service";
 import { MCQCard } from "./MCQCard";
@@ -55,6 +58,11 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
   const [isFinished, setIsFinished] = useState(false);
   const [completedSentence, setCompletedSentence] = useState<string | undefined>(undefined);
 
+  // Cloze input state — lifted từ ClozeCard lên đây để form có thể nằm ở bottom zone
+  // bên ngoài vùng scroll, tránh bị keyboard che.
+  const [clozeInput, setClozeInput] = useState("");
+  const [clozeLastCorrect, setClozeLastCorrect] = useState<boolean | null>(null);
+
   const questionStartTimeRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -64,6 +72,9 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       setIsAnswered(false);
       setCurrentResult(null);
       setCompletedSentence(undefined);
+      // Reset cloze input mỗi khi sang câu mới
+      setClozeInput("");
+      setClozeLastCorrect(null);
     }
   }, [currentIndex, questions]);
 
@@ -127,15 +138,30 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
     submitReview(isCorrect);
   };
 
-  const handleSubmitCloze = (userInput: string, isCorrect: boolean) => {
+  const handleSubmitCloze = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isAnswered || !clozeInput.trim() || !currentQ) return;
+
+    const activeSentence =
+      currentQ.exampleSentences && currentQ.exampleSentences.length > 0
+        ? currentQ.exampleSentences[0]
+        : { sentence: "___", answer: currentQ.word };
+
+    const correct = isClozeCorrect(clozeInput, activeSentence.answer);
+    setClozeLastCorrect(correct);
+
     if (currentQ.exampleSentences && currentQ.exampleSentences.length > 0) {
-      const full = currentQ.exampleSentences[0].sentence.replace(
-        "___",
-        currentQ.word
+      setCompletedSentence(
+        currentQ.exampleSentences[0].sentence.replace("___", currentQ.word)
       );
-      setCompletedSentence(full);
     }
-    submitReview(isCorrect);
+    submitReview(correct);
+  };
+
+  const handleGiveUpCloze = () => {
+    if (isAnswered || !currentQ) return;
+    setClozeLastCorrect(false);
+    submitReview(false);
   };
 
   const handleNextQuestion = () => {
@@ -319,13 +345,14 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
         </div>
       </div>
 
-      {/* Main Question View Container (Scrollable if soft keyboard shrinks viewport) */}
+      {/* Main Question View Container — Scrollable, KHÔNG chứa form input */}
       <div className="flex-1 overflow-y-auto flex flex-col justify-start py-2 no-scrollbar">
         {currentQ.quizMode === "cloze" ? (
           <ClozeCard
             question={currentQ}
             isAnswered={isAnswered}
-            onSubmitAnswer={handleSubmitCloze}
+            userInput={clozeInput}
+            lastCorrect={clozeLastCorrect}
           />
         ) : (
           <MCQCard
@@ -336,6 +363,41 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
           />
         )}
       </div>
+
+      {/* Cloze Input Zone — nằm NGOÀI scroll area, luôn visible sát top của keyboard.
+          Khi visualViewport.height co lại (keyboard mở), zone này vẫn ở đáy container fixed. */}
+      {currentQ.quizMode === "cloze" && !isAnswered && (
+        <form onSubmit={handleSubmitCloze} className="shrink-0 space-y-2 pt-1 pb-1">
+          <div className="relative">
+            <input
+              type="text"
+              value={clozeInput}
+              onChange={(e) => setClozeInput(e.target.value)}
+              placeholder="Nhập từ vựng tiếng Anh..."
+              className="w-full py-3.5 pl-4 pr-12 text-sm bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 rounded-2xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-semibold text-slate-900 dark:text-white shadow-sm transition-all"
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              enterKeyHint="send"
+            />
+            <button
+              type="submit"
+              disabled={!clozeInput.trim()}
+              className="absolute right-2 top-1.5 bottom-1.5 px-3.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white rounded-xl font-extrabold flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={handleGiveUpCloze}
+            className="w-full py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>Tôi chưa nhớ từ này (Xem đáp án)</span>
+          </button>
+        </form>
+      )}
 
       {/* Feedback Drawer */}
       {isAnswered && currentResult && (

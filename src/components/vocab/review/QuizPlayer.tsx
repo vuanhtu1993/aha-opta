@@ -320,7 +320,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       </div>
 
       {/* Main Question View Container (Scrollable if soft keyboard shrinks viewport) */}
-      <div className="flex-1 overflow-y-auto flex flex-col justify-start pt-2 py-2 no-scrollbar">
+      <div className="flex-1 overflow-y-auto flex flex-col justify-start pt-2 pb-8 no-scrollbar">
         {currentQ.quizMode === "cloze" ? (
           <ClozeCard
             question={currentQ}

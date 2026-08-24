@@ -28,21 +28,37 @@ export function ClozeCard({
       ? question.exampleSentences[0]
       : { sentence: "___", answer: question.word };
 
+  // Scroll input element nicely into view inside the scrollable container
+  const scrollToInput = () => {
+    if (inputRef.current) {
+      inputRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  };
+
   // Reset state when switching to a new question
   useEffect(() => {
     setUserInput("");
     setLastCorrect(null);
   }, [question]);
 
-  // Focus input when question becomes active
+  // Focus input & scroll into view when question becomes active or switches
   useEffect(() => {
     if (!isAnswered && inputRef.current) {
       inputRef.current.focus();
-      requestAnimationFrame(() => {
-        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
+      // On iOS Safari, keyboard animation takes ~300ms.
+      // Scroll into view after keyboard fully opens so block: "center" works against the shrunk viewport!
+      const timer1 = setTimeout(scrollToInput, 100);
+      const timer2 = setTimeout(scrollToInput, 350);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
-  }, [isAnswered]);
+  }, [isAnswered, question]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -126,6 +142,9 @@ export function ClozeCard({
               autoFocus
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
+              onFocus={() => {
+                setTimeout(scrollToInput, 300);
+              }}
               placeholder="Nhập từ vựng tiếng Anh..."
               className="w-full py-3.5 pl-4 pr-12 text-sm bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 rounded-2xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-semibold text-slate-900 dark:text-white shadow-sm transition-all"
               autoCapitalize="none"

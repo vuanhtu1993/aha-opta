@@ -5,20 +5,22 @@ import { useState, useEffect } from "react";
 interface VisualViewportState {
   height: number;
   offsetTop: number;
-  isKeyboardOpen: boolean;
 }
 
 /**
- * useVisualViewport — Track chiều cao, vị trí và trạng thái bàn phím Visual Viewport.
+ * useVisualViewport — Track chiều cao và vị trí thực tế của Visual Viewport.
  *
- * WHY:
- * 1. iOS Safari thu nhỏ Visual Viewport khi bàn phím xuất hiện nhưng không đổi Layout Viewport.
- * 2. iOS Safari cố gắng cuộn layout window khi focus input, gây trôi layout fixed (window.scrollY > 0).
+ * WHY: iOS Safari có behavior đặc biệt khi bàn phím ảo mở:
+ *  - Layout Viewport KHÔNG co lại (100vh vẫn = toàn màn hình)
+ *  - Visual Viewport co lại theo phần màn hình còn lại
+ *  - Kết quả: nội dung bị đẩy lên / bị che nếu dùng 100vh làm container
  *
- * SOLUTION:
- * - Trả về height và offsetTop thực tế của visualViewport.
- * - Đặt window.scrollTo(0,0) trong handler để chống trôi layout body trên iOS.
- * - Thêm isKeyboardOpen boolean để components chủ động cuộn nội dung vừa vặn màn hình.
+ * SOLUTION: Đọc visualViewport.height và offsetTop để QuizPlayer tính
+ * chính xác vị trí và kích thước của container position:fixed.
+ *
+ * NOTE: Không dùng window.scrollTo(0,0) ở đây vì:
+ *  - Container đã dùng position:fixed → đã thoát khỏi document scroll flow
+ *  - Forcing scroll gây re-layout và "giật" khi bàn phím animate
  */
 export function useVisualViewport() {
   const [viewport, setViewport] = useState<VisualViewportState | null>(null);
@@ -26,31 +28,22 @@ export function useVisualViewport() {
   useEffect(() => {
     const getState = (): VisualViewportState => {
       if (window.visualViewport) {
-        const isKeyboardOpen = window.visualViewport.height < window.innerHeight - 150;
         return {
           height: window.visualViewport.height,
           offsetTop: window.visualViewport.offsetTop,
-          isKeyboardOpen,
         };
       }
-      return {
-        height: window.innerHeight,
-        offsetTop: 0,
-        isKeyboardOpen: false,
-      };
+      return { height: window.innerHeight, offsetTop: 0 };
     };
 
+    // Đọc giá trị ngay khi mount (client-side hydration)
     setViewport(getState());
 
     if (!window.visualViewport) return;
 
-    const handler = () => {
-      // Triệt tiêu việc iOS Safari tự động cuộn window làm trôi container fixed
-      if (window.scrollY > 0) {
-        window.scrollTo(0, 0);
-      }
-      setViewport(getState());
-    };
+    // "resize" fires khi keyboard xuất hiện/ẩn trên iOS
+    // "scroll" fires khi iOS tự scroll page để reveal focused input
+    const handler = () => setViewport(getState());
 
     window.visualViewport.addEventListener("resize", handler);
     window.visualViewport.addEventListener("scroll", handler);

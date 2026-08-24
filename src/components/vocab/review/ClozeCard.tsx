@@ -114,7 +114,7 @@ export function ClozeCard({
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               placeholder="Nhập từ vựng tiếng Anh..."
-              className="w-full py-3.5 pl-4 pr-12 text-sm bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 rounded-2xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-semibold text-slate-900 dark:text-white shadow-sm transition-all scroll-mb-6"
+              className="w-full py-3.5 pl-4 pr-12 text-sm bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 rounded-2xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-semibold text-slate-900 dark:text-white shadow-sm transition-all"
               autoCapitalize="none"
               autoComplete="off"
               autoCorrect="off"

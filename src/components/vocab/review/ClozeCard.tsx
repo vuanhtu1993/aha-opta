@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Volume2, Sparkles, Send, HelpCircle } from "lucide-react";
 import type { QuizQuestion } from "@/lib/srs/review-session.service";
 import { isClozeCorrect } from "@/lib/srs/cloze-scorer";
@@ -12,6 +12,34 @@ interface ClozeCardProps {
   onSubmitAnswer: (userInput: string, isCorrect: boolean) => void;
 }
 
+/**
+ * Normalizes and splits sentence around cloze blank ("___"),
+ * handling edge cases like "__", "[blank]", or target word included in full text.
+ */
+function getSentenceParts(sentence: string, targetWord: string): string[] {
+  if (!sentence) return ["", ""];
+
+  // 1. Standardize existing blanks (___, ____, __, [blank])
+  let normalized = sentence.replace(/_{2,}|\[blank\]/gi, "___");
+
+  // 2. If no ___ blank exists, attempt to replace targetWord (case-insensitive)
+  if (!normalized.includes("___") && targetWord) {
+    const escaped = targetWord.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+    if (regex.test(normalized)) {
+      normalized = normalized.replace(regex, "___");
+    } else if (normalized.toLowerCase().includes(targetWord.toLowerCase())) {
+      const fallbackRegex = new RegExp(escaped, "gi");
+      normalized = normalized.replace(fallbackRegex, "___");
+    } else {
+      // 3. Fallback: append blank at end
+      normalized = `${normalized} (___)`;
+    }
+  }
+
+  return normalized.split("___");
+}
+
 export function ClozeCard({
   question,
   isAnswered,
@@ -20,6 +48,7 @@ export function ClozeCard({
   const { speak } = useVocabSpeaker();
   const [userInput, setUserInput] = useState("");
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Pick the first example sentence available
   const activeSentence =
@@ -27,17 +56,23 @@ export function ClozeCard({
       ? question.exampleSentences[0]
       : { sentence: "___", answer: question.word };
 
-  // Reset state when switching to a new question
+  const targetAnswer = activeSentence.answer || question.word;
+
+  // Auto focus input and reset state when switching questions
   useEffect(() => {
     setUserInput("");
     setLastCorrect(null);
-  }, [question]);
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [question.cardId]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (isAnswered || !userInput.trim()) return;
 
-    const correct = isClozeCorrect(userInput, activeSentence.answer);
+    const correct = isClozeCorrect(userInput, targetAnswer);
     setLastCorrect(correct);
     onSubmitAnswer(userInput, correct);
   };
@@ -47,6 +82,8 @@ export function ClozeCard({
     setLastCorrect(false);
     onSubmitAnswer("", false);
   };
+
+  const sentenceParts = getSentenceParts(activeSentence.sentence, targetAnswer);
 
   return (
     <div className="space-y-4 w-full">
@@ -59,12 +96,16 @@ export function ClozeCard({
 
         {/* Sentence Prompt */}
         <p className="text-base font-medium text-slate-800 dark:text-slate-100 leading-relaxed px-1">
-          {activeSentence.sentence.split("___").map((part, i, arr) => (
+          {sentenceParts.map((part, i, arr) => (
             <React.Fragment key={i}>
               {part}
               {i < arr.length - 1 && (
                 <span
+                  onClick={() => !isAnswered && inputRef.current?.focus()}
+                  title={!isAnswered ? "Nhấn để nhập đáp án" : undefined}
                   className={`inline-block px-3 py-0.5 mx-1 font-bold rounded-lg transition-all duration-300 ${
+                    !isAnswered ? "cursor-pointer hover:ring-2 hover:ring-indigo-400/80" : ""
+                  } ${
                     isAnswered
                       ? lastCorrect
                         ? "border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-200/50 dark:shadow-emerald-900/50 animate-in zoom-in-95"
@@ -72,7 +113,7 @@ export function ClozeCard({
                       : "border-b-2 border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300"
                   }`}
                 >
-                  {isAnswered ? activeSentence.answer : userInput || "___"}
+                  {isAnswered ? targetAnswer : userInput || "___"}
                 </span>
               )}
             </React.Fragment>
@@ -110,6 +151,7 @@ export function ClozeCard({
         <form onSubmit={handleSubmit} className="space-y-2.5">
           <div className="relative">
             <input
+              ref={inputRef}
               type="text"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
@@ -119,6 +161,7 @@ export function ClozeCard({
               autoComplete="off"
               autoCorrect="off"
               enterKeyHint="send"
+              autoFocus
             />
             <button
               type="submit"
@@ -142,3 +185,4 @@ export function ClozeCard({
     </div>
   );
 }
+

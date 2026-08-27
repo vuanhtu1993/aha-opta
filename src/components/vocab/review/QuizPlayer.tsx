@@ -288,7 +288,7 @@ export function QuizPlayer({ initialQuestions }: QuizPlayerProps) {
       </div>
 
       {/* Main Question View */}
-      <div className="flex-1 flex flex-col justify-center py-2">
+      <div className="flex-1 flex flex-col py-2">
         {currentQ.quizMode === "cloze" ? (
           <ClozeCard
             question={currentQ}

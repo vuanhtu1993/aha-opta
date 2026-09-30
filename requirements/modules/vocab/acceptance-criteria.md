@@ -106,4 +106,45 @@ Scenario: Enrich cards lacking example sentences
 
 ---
 
+### AC-VOCAB-06: Scaffolded PREP Display & Concealed Model Answer
+- **Target User Story:** [`US-VOCAB-03`](spec.md#us-vocab-03)
+- **Target API:** [`GET /api/vocab/speak-your-mind`](api-contract.md#16-get-apivocabspeak-your-mind)
+- **Governing Business Rule:** [`BR-08`](../../global/business-rules.md#br-08)
+
+```gherkin
+Scenario: Render speaking challenge with concealed model answers by default
+  Given a valid speaking question is retrieved
+  When the learner opens the "Speak Your Mind" quiz interface
+  Then the dilemma question and target vocabulary words are visible
+    And 4 PREP cards are displayed with guiding signposts and conceptual hints
+    And all 4 model answer texts remain completely hidden from view
+    And a 30-60 second practice timer control is ready for interaction
+```
+
+```gherkin
+Scenario: Reveal model answer on learner demand
+  Given the learner has finished self-directed speaking practice
+  When the learner taps the "Mở bài mẫu đối chiếu" (Reveal Model Answer) button
+  Then all 4 model sentences (Point, Reason, Example, Conclusion) become visible
+    And signpost discourse markers and target vocabulary terms are highlighted
+    And speaker playback buttons are rendered for each sentence
+```
+
+---
+
+### AC-VOCAB-07: Offline Speech Synthesis Playback for Model Sentences
+- **Target User Story:** [`US-VOCAB-03`](spec.md#us-vocab-03)
+- **Target Contract:** `VocabSpeaker.speak()` via Web Speech API
+
+```gherkin
+Scenario: Play model answer audio using native browser Web Speech API
+  Given the model answer is revealed on screen
+  When the learner clicks the speaker button next to a model sentence
+  Then "window.speechSynthesis.speak" is triggered with "en-US" language setting
+    And clear native audio plays through the device speakers
+    And exactly 0 network requests are made to external audio servers
+```
+
+---
+
 *Made by Anh Tu - Share to be share*

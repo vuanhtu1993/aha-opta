@@ -21,6 +21,7 @@ Accelerate long-term vocabulary acquisition and prevent forgetting through the m
 | **FR-VOCAB-03** | Submit Card Review Rating & Update FSRS State | Learner | Active quiz question completed | Atomic FSRS recalculation, log entry saved, next interval scheduled | [`POST /api/vocab/review`](api-contract.md#13-post-apivocabreview) | [`AC-VOCAB-03`](acceptance-criteria.md#ac-vocab-03) |
 | **FR-VOCAB-04** | Batch Generate AI Cloze Example Sentences | Curator | Cards lack example sentences | Gemini AI generates contextual sentences with blanks; card updated | [`POST /api/vocab/generate-cloze-batch`](api-contract.md#14-post-apivocabgenerate-cloze-batch) | [`AC-VOCAB-04`](acceptance-criteria.md#ac-vocab-04) |
 | **FR-VOCAB-05** | Stream Word Pronunciation Audio | Learner | Audio icon clicked in card or quiz | Returns binary audio/mpeg from Google TTS or local cache | [`GET /api/vocab/audio`](api-contract.md#15-get-apivocabaudio) | [`AC-VOCAB-05`](acceptance-criteria.md#ac-vocab-05) |
+| **FR-VOCAB-06** | Practice Short Speaking via PREP Framework ("Speak Your Mind") | Learner | Speaking question loaded | Renders 4 scaffolded PREP stages with signposts, timer (30-60s), and on-demand model answer reveal | [`GET /api/vocab/speak-your-mind`](api-contract.md#16-get-apivocabspeak-your-mind) | [`AC-VOCAB-06`](acceptance-criteria.md#ac-vocab-06), [`AC-VOCAB-07`](acceptance-criteria.md#ac-vocab-07) |
 
 ---
 
@@ -104,6 +105,46 @@ sequenceDiagram
     API->>DB: Bulk write update exampleSentences
     API-->>UI: 200 OK { updatedCount: 10 }
     UI-->>Curator: Display toast notification & update card tags
+```
+
+---
+
+### US-VOCAB-03: Practice Short Opinion Speaking (Speak Your Mind)
+- **ID:** `US-VOCAB-03`
+- **Actor:** Learner
+- **Priority:** Must-have
+- **Mapped FR:** [`FR-VOCAB-06`](#2-functional-requirements)
+- **Mapped API:** [`GET /api/vocab/speak-your-mind`](api-contract.md#16-get-apivocabspeak-your-mind)
+- **Mapped Acceptance Criteria:** [`AC-VOCAB-06`](acceptance-criteria.md#ac-vocab-06), [`AC-VOCAB-07`](acceptance-criteria.md#ac-vocab-07)
+
+**User Story Statement:**
+> As an intermediate learner seeking spoken fluency,  
+> I want to practice expressing my opinion on a topic in 30–60 seconds guided by the PREP framework,  
+> So that I can overcome hesitation, speak with clear logical structure, and compare my thoughts against a native model answer.
+
+#### Sequence Diagram
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Learner as Language Learner
+    participant UI as SpeakYourMind Player
+    participant API as Next.js API (/api/vocab/speak-your-mind)
+    participant Speaker as VocabSpeaker (Web Speech API)
+
+    Learner->>UI: Open "Speak Your Mind" Quiz
+    UI->>API: GET /api/vocab/speak-your-mind
+    API-->>UI: Return ISpeakingQuestion (Topic, Dilemma, Target Vocab, PREP Hints)
+    UI-->>Learner: Display Challenge Question, Target Words, and 4 PREP Scaffold Boxes (Model Answers hidden)
+
+    Learner->>UI: Tap "Start Timer (45s)" and speaks out loud using signpost hints
+    UI->>UI: Countdown timer elapses / Learner taps "Finish Speaking"
+    
+    Learner->>UI: Tap "Reveal Model Answer" (Accordion)
+    UI-->>Learner: Display 4 model sentences (Point, Reason, Example, Conclusion)
+    
+    Learner->>UI: Click Speaker Icon next to model sentence
+    UI->>Speaker: vocabSpeaker.speak(modelSentence)
+    Speaker-->>Learner: Native pronunciation playback via browser audio
 ```
 
 ---

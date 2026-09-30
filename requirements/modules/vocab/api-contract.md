@@ -130,4 +130,50 @@
 
 ---
 
+### 1.6 `GET /api/vocab/speak-your-mind`
+- **Mapped Requirement:** [`FR-VOCAB-06`](spec.md#2-functional-requirements)
+- **Mapped User Story:** [`US-VOCAB-03`](spec.md#us-vocab-03)
+- **Governing Business Rules:** [`BR-08`](../../global/business-rules.md#br-08)
+* **Purpose:** Fetches a structured PREP speaking challenge question with scaffolded signposts, hints, and model answer.
+* **Query Parameters:**
+  * `id` (string, optional: specific question ID or random if omitted)
+* **Response (HTTP 200 OK):**
+  ```json
+  {
+    "id": "sq-01",
+    "topic": "Technology & Education",
+    "question": "Should AI be allowed to replace human teachers?",
+    "level": "B2",
+    "targetKeywords": [
+      { "word": "empathy", "ipa": "/ˈem.pə.θi/", "meaning": "Sự thấu cảm, khả năng hiểu cảm xúc người khác" },
+      { "word": "irreplaceable", "ipa": "/ˌɪr.ɪˈpleɪ.sə.bəl/", "meaning": "Không thể thay thế được" }
+    ],
+    "prepScaffold": {
+      "point": {
+        "signposts": ["In my opinion, ...", "I strongly believe that ...", "From my perspective, ..."],
+        "hint": "Nêu rõ quan điểm của bạn: đồng ý hay phản đối việc AI thay thế giáo viên.",
+        "modelAnswer": "In my opinion, AI can assist but should never fully replace human teachers."
+      },
+      "reason": {
+        "signposts": ["The main reason is that ...", "Because ...", "Since ..."],
+        "hint": "Chỉ ra lý do cốt lõi: giáo dục cần sự thấu cảm và kết nối cảm xúc giữa người với người.",
+        "modelAnswer": "The primary reason is that genuine education requires empathy and emotional bonding, which algorithms completely lack."
+      },
+      "example": {
+        "signposts": ["For instance, ...", "In my personal experience, ...", "Take ... as an example"],
+        "hint": "Đưa ra ví dụ thực tế: lúc học sinh gặp khó khăn tâm lý, sự động viên của thầy cô tạo động lực thế nào.",
+        "modelAnswer": "For instance, when students struggle with self-doubt or personal challenges, an empathetic teacher provides inspiration that no automated chatbot can offer."
+      },
+      "conclusion": {
+        "signposts": ["Therefore, ...", "That is why ...", "To sum up, ..."],
+        "hint": "Chốt lại luận điểm: AI là trợ thủ đắc lực, nhưng con người là không thể thay thế.",
+        "modelAnswer": "Therefore, while AI is an extraordinary instructional assistant, the human essence of teaching remains truly irreplaceable."
+      }
+    }
+  }
+  ```
+
+---
+
 *Made by Anh Tu - Share to be share*
+

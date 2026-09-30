@@ -29,6 +29,7 @@
 | **BR-05** | **Prediction Probability Conservation:** Sum of AI predicted outcome probabilities must equal 100% ($\text{home} + \text{draw} + \text{away} \approx 100\%$, tolerance $\pm 0.1\%$). Individual probabilities must be bounded within $[0, 100]$. | `Prediction` | Zod Validation Schema | ✅ Enforced |
 | **BR-06** | **Storybook Sentence Alignment & IPA:** Each sentence in a Storybook must have a sequential 1-based `id`. For YouTube content, `0 <= startMs < endMs` must strictly hold. Word tokens must contain valid IPA transcriptions. | `Storybook` | LangGraph `sentenceSplitterNode` | ✅ Enforced |
 | **BR-07** | **Zero-Network Audio Synthesis:** Procedural ambient sound (white/brown noise) must be computed in real-time using browser `AudioBuffer` and `BiquadFilterNode`. No streaming MP3 or network bandwidth may be consumed. | `WhiteNoise` Hook | Web Audio API Native Synthesis | ✅ Enforced |
+| **BR-08** | **PREP Speaking Scaffold & Progressive Disclosure:** Every `prep_speaking` ("Speak Your Mind") quiz must provide 4 structured stages (Point, Reason, Example, Conclusion) with predefined signpost discourse markers. Model answers must remain strictly concealed during the speaking practice phase and may only be revealed upon explicit user request. | `SpeakingQuestion`, Quiz UI | Client-side State & Progressive Reveal | ✅ Enforced |
 
 ---
 

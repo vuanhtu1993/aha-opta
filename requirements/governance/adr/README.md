@@ -26,6 +26,7 @@
 | [ADR-003](003-langgraph-agent-orchestration.md) | Multi-Agent Orchestration via LangGraph StateGraph | `Accepted` | 2026-09-30 | Decomposing monolithic prompts into fault-tolerant, streaming pipelines |
 | [ADR-004](004-web-audio-api-synthesis.md) | In-Browser Web Audio API Mathematical Synthesis for White Noise | `Accepted` | 2026-09-30 | Eliminating bandwidth cost and loop stutters via client-side synthesis |
 | [ADR-005](005-mongodb-fact-opinion-split.md) | Separation of Objective Facts (Match) and Subjective Opinions (Prediction) | `Accepted` | 2026-09-30 | Isolating immutable sports results from AI predictions to enable back-testing |
+| [ADR-006](006-prep-scaffolded-speaking-quiz.md) | PREP Framework & Progressive Model Disclosure for Speaking Quizzes | `Accepted` | 2026-09-30 | Scaffold-first speaking practice with zero-token local audio feedback |
 
 ---
 

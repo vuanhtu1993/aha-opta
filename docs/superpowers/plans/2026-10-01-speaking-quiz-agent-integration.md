@@ -1,6 +1,6 @@
 # Speaking Quiz Agent Integration (Bước 2 & 3) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Tích hợp mô-đun **Speaking Quiz Agent** từ microservice `aha-mind-agents` vào `aha-tools` theo chuẩn hợp đồng API ([`speaking-quiz-api-contract.md`](file:///Users/anhtus/Documents/Development/NextJS/aha-tools/requirements/modules/vocab/speaking-quiz-api-contract.md)), bao gồm Client SDK, cơ chế SSE stream thời gian thực, bộ xử lý Cache Hit (<50ms), và giao diện Generator hiển thị thanh tiến trình 4 chặng PREP trực quan.
 
@@ -19,7 +19,7 @@
 **Files:**
 - Modify: `src/lib/types/speaking-quiz.ts`
 
-- [ ] **Step 1: Cập nhật `src/lib/types/speaking-quiz.ts` với đầy đủ DTOs theo API Contract**
+- [x] **Step 1: Cập nhật `src/lib/types/speaking-quiz.ts` với đầy đủ DTOs theo API Contract**
 
 ```typescript
 /**
@@ -147,12 +147,12 @@ export type ISpeakingScaffold = SpeakingPrepScaffold;
 export type ISpeakingQuestion = SpeakingQuestionDetail;
 ```
 
-- [ ] **Step 2: Kiểm tra biên dịch TypeScript**
+- [x] **Step 2: Kiểm tra biên dịch TypeScript**
 
 Run: `npx tsc --noEmit`  
 Expected: Exit code 0, không có lỗi type.
 
-- [ ] **Step 3: Commit task**
+- [x] **Step 3: Commit task**
 
 ```bash
 git add src/lib/types/speaking-quiz.ts
@@ -166,7 +166,7 @@ git commit -m "feat(vocab): update speaking quiz types for agent integration"
 **Files:**
 - Create: `src/lib/services/speaking-quiz-client.ts`
 
-- [ ] **Step 1: Viết module Client SDK kết nối với Gateway `aha-mind-agents`**
+- [x] **Step 1: Viết module Client SDK kết nối với Gateway `aha-mind-agents`**
 
 ```typescript
 /**
@@ -346,12 +346,12 @@ export function subscribeToSpeakingQuizProgress(
 }
 ```
 
-- [ ] **Step 2: Kiểm tra biên dịch TypeScript**
+- [x] **Step 2: Kiểm tra biên dịch TypeScript**
 
 Run: `npx tsc --noEmit`  
 Expected: Exit code 0, không có lỗi type.
 
-- [ ] **Step 3: Commit task**
+- [x] **Step 3: Commit task**
 
 ```bash
 git add src/lib/services/speaking-quiz-client.ts
@@ -365,7 +365,7 @@ git commit -m "feat(vocab): create speaking quiz client SDK"
 **Files:**
 - Create: `src/hooks/useSpeakingQuizJob.ts`
 
-- [ ] **Step 1: Viết Hook quản lý máy trạng thái, xử lý Cache Hit và SSE**
+- [x] **Step 1: Viết Hook quản lý máy trạng thái, xử lý Cache Hit và SSE**
 
 ```typescript
 "use client";
@@ -551,12 +551,12 @@ export function useSpeakingQuizJob() {
 }
 ```
 
-- [ ] **Step 2: Kiểm tra biên dịch TypeScript**
+- [x] **Step 2: Kiểm tra biên dịch TypeScript**
 
 Run: `npx tsc --noEmit`  
 Expected: Exit code 0, không có lỗi type.
 
-- [ ] **Step 3: Commit task**
+- [x] **Step 3: Commit task**
 
 ```bash
 git add src/hooks/useSpeakingQuizJob.ts
@@ -570,7 +570,7 @@ git commit -m "feat(vocab): add useSpeakingQuizJob hook for SSE lifecycle manage
 **Files:**
 - Create: `src/components/vocab/speaking/SpeakingQuizProgress.tsx`
 
-- [ ] **Step 1: Tạo Component hiển thị 4 nấc tiến trình với hiệu ứng động**
+- [x] **Step 1: Tạo Component hiển thị 4 nấc tiến trình với hiệu ứng động**
 
 ```tsx
 "use client";
@@ -722,12 +722,12 @@ export function SpeakingQuizProgress({
 }
 ```
 
-- [ ] **Step 2: Kiểm tra biên dịch TypeScript**
+- [x] **Step 2: Kiểm tra biên dịch TypeScript**
 
 Run: `npx tsc --noEmit`  
 Expected: Exit code 0, không có lỗi type.
 
-- [ ] **Step 3: Commit task**
+- [x] **Step 3: Commit task**
 
 ```bash
 git add src/components/vocab/speaking/SpeakingQuizProgress.tsx
@@ -741,7 +741,7 @@ git commit -m "feat(vocab): add SpeakingQuizProgress visual stage component"
 **Files:**
 - Create: `src/components/vocab/speaking/SpeakingQuizGenerator.tsx`
 
-- [ ] **Step 1: Viết Component form cho phép tạo theo Storybook hoặc Custom Topic**
+- [x] **Step 1: Viết Component form cho phép tạo theo Storybook hoặc Custom Topic**
 
 ```tsx
 "use client";
@@ -963,12 +963,12 @@ export function SpeakingQuizGenerator({
 }
 ```
 
-- [ ] **Step 2: Kiểm tra biên dịch TypeScript**
+- [x] **Step 2: Kiểm tra biên dịch TypeScript**
 
 Run: `npx tsc --noEmit`  
 Expected: Exit code 0, không có lỗi type.
 
-- [ ] **Step 3: Commit task**
+- [x] **Step 3: Commit task**
 
 ```bash
 git add src/components/vocab/speaking/SpeakingQuizGenerator.tsx
@@ -983,7 +983,7 @@ git commit -m "feat(vocab): add SpeakingQuizGenerator component with tabs and op
 - Modify: `src/components/vocab/speaking/SpeakYourMindPlayer.tsx`
 - Modify: `src/app/vocab/speak-your-mind/page.tsx`
 
-- [ ] **Step 1: Cập nhật `SpeakYourMindPlayer.tsx` bổ sung nút kích hoạt Generator Modal/Accordion**
+- [x] **Step 1: Cập nhật `SpeakYourMindPlayer.tsx` bổ sung nút kích hoạt Generator Modal/Accordion**
 
 Trong `SpeakYourMindPlayer.tsx`, thêm nút "Đổi đề / Tạo mới bằng AI" (Sparkles icon) bên cạnh Level badge để người học có thể tạo bài mới ngay tại giao diện luyện tập mà không cần rời trang:
 
@@ -1004,7 +1004,7 @@ Trong `SpeakYourMindPlayer.tsx`, thêm nút "Đổi đề / Tạo mới bằng A
 </div>
 ```
 
-- [ ] **Step 2: Cập nhật `src/app/vocab/speak-your-mind/page.tsx` hỗ trợ cả Server Component & Client Interactive State**
+- [x] **Step 2: Cập nhật `src/app/vocab/speak-your-mind/page.tsx` hỗ trợ cả Server Component & Client Interactive State**
 
 Cho phép trang tiếp nhận `id` hoặc `storybookId` qua searchParams, hoặc hiển thị Generator mặc định nếu chưa chọn bài tập nào:
 
@@ -1032,17 +1032,17 @@ export default async function SpeakYourMindPage({
 }
 ```
 
-- [ ] **Step 3: Kiểm tra biên dịch TypeScript**
+- [x] **Step 3: Kiểm tra biên dịch TypeScript**
 
 Run: `npx tsc --noEmit`  
 Expected: Exit code 0, không có lỗi type.
 
-- [ ] **Step 4: Kiểm tra build Next.js**
+- [x] **Step 4: Kiểm tra build Next.js**
 
 Run: `npm run build`  
 Expected: Build thành công, tạo static/dynamic routes hợp lệ.
 
-- [ ] **Step 5: Commit task**
+- [x] **Step 5: Commit task**
 
 ```bash
 git add src/components/vocab/speaking/SpeakYourMindPlayer.tsx src/app/vocab/speak-your-mind/page.tsx

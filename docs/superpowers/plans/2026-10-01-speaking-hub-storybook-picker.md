@@ -32,7 +32,7 @@
 - Create: `src/components/vocab/speaking/StorybookSelectorModal.tsx`
 - Modify: `src/components/vocab/speaking/SpeakingQuizGenerator.tsx`
 
-- [ ] **Step 1: Create `StorybookSelectorModal.tsx`**
+- [x] **Step 1: Create `StorybookSelectorModal.tsx`**
 
 Write the modal component with search filtering, level tabs, and card layout:
 
@@ -240,7 +240,7 @@ export function StorybookSelectorModal({
 }
 ```
 
-- [ ] **Step 2: Update `SpeakingQuizGenerator.tsx` to use `StorybookSelectorModal`**
+- [x] **Step 2: Update `SpeakingQuizGenerator.tsx` to use `StorybookSelectorModal`**
 
 Replace manual input:
 ```tsx
@@ -259,12 +259,12 @@ In the form, when `mode === "storybook"`:
 - If `selectedStory`: render rich preview card with thumbnail, title, level, "Đổi bài khác" button, and "Xoá" button.
 - Pass `storybookId: selectedStory?.id` to `startJob`.
 
-- [ ] **Step 3: Run TypeScript check to ensure clean compilation**
+- [x] **Step 3: Run TypeScript check to ensure clean compilation**
 
 Run: `npx tsc --noEmit`
 Expected: 0 errors.
 
-- [ ] **Step 4: Commit Task 1**
+- [x] **Step 4: Commit Task 1**
 
 ```bash
 git add src/components/vocab/speaking/StorybookSelectorModal.tsx src/components/vocab/speaking/SpeakingQuizGenerator.tsx
@@ -278,7 +278,7 @@ git commit -m "feat(vocab): add visual storybook selector modal to speaking quiz
 **Files:**
 - Create: `src/components/vocab/speaking/SpeakYourMindHub.tsx`
 
-- [ ] **Step 1: Implement `SpeakYourMindHub.tsx`**
+- [x] **Step 1: Implement `SpeakYourMindHub.tsx`**
 
 Build the Hub component with:
 1. Hero banner explaining PREP:
@@ -295,12 +295,12 @@ Build the Hub component with:
    - CEFR level filter chips (`Tất cả`, `B1`, `B2`, `C1`).
    - Cards grid with Topic, Dilemma title, Level badge, Target Vocabulary pills, and "Vào phòng luyện" action.
 
-- [ ] **Step 2: Run TypeScript check**
+- [x] **Step 2: Run TypeScript check**
 
 Run: `npx tsc --noEmit`
 Expected: 0 errors.
 
-- [ ] **Step 3: Commit Task 2**
+- [x] **Step 3: Commit Task 2**
 
 ```bash
 git add src/components/vocab/speaking/SpeakYourMindHub.tsx
@@ -317,7 +317,7 @@ git commit -m "feat(vocab): create speak your mind hub with daily challenge and 
 - Modify: `src/components/vocab/speaking/SpeakYourMindPlayer.tsx`
 - Modify: `src/components/mobile-shell/mobile-tab-bar.tsx`
 
-- [ ] **Step 1: Refactor `src/app/vocab/speak-your-mind/page.tsx` into Hub**
+- [x] **Step 1: Refactor `src/app/vocab/speak-your-mind/page.tsx` into Hub**
 
 ```tsx
 import React from "react";
@@ -338,7 +338,7 @@ export default async function SpeakYourMindPage() {
 }
 ```
 
-- [ ] **Step 2: Create `src/app/vocab/speak-your-mind/[id]/page.tsx` for Player**
+- [x] **Step 2: Create `src/app/vocab/speak-your-mind/[id]/page.tsx` for Player**
 
 ```tsx
 import React from "react";
@@ -364,7 +364,7 @@ export default async function SpeakYourMindPlayerPage({
 }
 ```
 
-- [ ] **Step 3: Enhance `SpeakYourMindPlayer.tsx` with Back Navigation**
+- [x] **Step 3: Enhance `SpeakYourMindPlayer.tsx` with Back Navigation**
 
 Add a top navigation row:
 ```tsx
@@ -377,16 +377,16 @@ Add a top navigation row:
 </Link>
 ```
 
-- [ ] **Step 4: Check `mobile-tab-bar.tsx` for proper active state and route isolation**
+- [x] **Step 4: Check `mobile-tab-bar.tsx` for proper active state and route isolation**
 
 Ensure tab Speak continues to highlight when on `/vocab/speak-your-mind` or `/vocab/speak-your-mind/*`.
 
-- [ ] **Step 5: Run TypeScript check**
+- [x] **Step 5: Run TypeScript check**
 
 Run: `npx tsc --noEmit`
 Expected: 0 errors.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```bash
 git add src/app/vocab/speak-your-mind/page.tsx src/app/vocab/speak-your-mind/[id]/page.tsx src/components/vocab/speaking/SpeakYourMindPlayer.tsx src/components/mobile-shell/mobile-tab-bar.tsx
@@ -400,17 +400,17 @@ git commit -m "refactor(vocab): split speak-your-mind into hub and dynamic [id] 
 **Files:**
 - Verified: All project routes and components
 
-- [ ] **Step 1: Execute Next.js production build**
+- [x] **Step 1: Execute Next.js production build**
 
 Run: `npm run build`
 Expected: Clean build with 29/29 routes generated successfully.
 
-- [ ] **Step 2: Sync OpenLore architectural decisions**
+- [x] **Step 2: Sync OpenLore architectural decisions**
 
 Run: `npx openlore decisions --consolidate`
 Verify: Decision `6d25d3ee` is verified and consolidated.
 
-- [ ] **Step 3: Final Git status and commit**
+- [x] **Step 3: Final Git status and commit**
 
 Run: `git status -s`
 Ensure clean working tree on `feature-speaking-quiz-agent`.

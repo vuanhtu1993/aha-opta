@@ -8,7 +8,7 @@ export const revalidate = 0;
 export default async function SpeakYourMindPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; storybookId?: string }>;
 }) {
   const { id } = await searchParams;
   const question = await getSpeakingQuestionById(id);

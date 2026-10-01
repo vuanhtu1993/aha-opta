@@ -7,6 +7,7 @@
  */
 
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
+import { fetchSpeakingQuestionById } from "@/lib/services/speaking-quiz-client";
 
 export const MOCK_SPEAKING_QUESTIONS: ISpeakingQuestion[] = [
   {
@@ -99,6 +100,13 @@ export async function getSpeakingQuestionById(id?: string): Promise<ISpeakingQue
   if (id) {
     const found = MOCK_SPEAKING_QUESTIONS.find((q) => q.id === id);
     if (found) return found;
+
+    try {
+      const agentQuestion = await fetchSpeakingQuestionById(id);
+      if (agentQuestion) return agentQuestion;
+    } catch {
+      // Fallback về câu hỏi mẫu mặc định nếu không kết nối được agent service
+    }
   }
   return MOCK_SPEAKING_QUESTIONS[0];
 }

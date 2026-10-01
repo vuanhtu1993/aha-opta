@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, GraduationCap, Settings } from "lucide-react";
+import { Home, BookOpen, Mic, GraduationCap, Settings } from "lucide-react";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,12 @@ const TABS: TabItem[] = [
     label: "Story",
     href: "/apps/story-shadowing",
     icon: BookOpen,
+    exactMatch: false,
+  },
+  {
+    label: "Speak",
+    href: "/vocab/speak-your-mind",
+    icon: Mic,
     exactMatch: false,
   },
   {
@@ -64,13 +70,27 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Bottom Navigation"
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 pt-2 pb-[max(0.5rem,calc(env(safe-area-inset-bottom,0px)+0.25rem))] shadow-lg"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 pt-2 pb-[max(0.5rem,calc(env(safe-area-inset-bottom,0px)+0.25rem))] shadow-lg"
     >
       <div className="flex items-center justify-around">
         {TABS.map((tab) => {
-          const isActive = tab.exactMatch
-            ? pathname === tab.href
-            : pathname.startsWith(tab.href);
+          // Logic kiểm tra active cô lập đường dẫn:
+          // 1. Tab Speak: Active khi ở /vocab/speak-your-mind
+          // 2. Tab Vocab: Active khi ở /vocab nhưng KHÔNG ở /vocab/speak-your-mind
+          // 3. Tab khác: Khớp theo exactMatch hoặc startsWith
+          let isActive = false;
+          if (tab.href === "/vocab/speak-your-mind") {
+            isActive = pathname.startsWith("/vocab/speak-your-mind");
+          } else if (tab.href === "/vocab") {
+            isActive =
+              (pathname === "/vocab" || pathname.startsWith("/vocab/")) &&
+              !pathname.startsWith("/vocab/speak-your-mind");
+          } else if (tab.exactMatch) {
+            isActive = pathname === tab.href;
+          } else {
+            isActive = pathname.startsWith(tab.href);
+          }
+
           const Icon = tab.icon;
           const isVocabTab = tab.href === "/vocab";
 
@@ -79,7 +99,7 @@ export function MobileTabBar() {
               key={tab.href}
               href={tab.href}
               className={cn(
-                "relative flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-200 gap-1",
+                "relative flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-200 gap-1 min-w-[54px]",
                 isActive
                   ? "text-amber-500 font-bold dark:text-amber-400"
                   : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
@@ -93,7 +113,7 @@ export function MobileTabBar() {
               >
                 <Icon
                   className={cn(
-                    "w-6 h-6",
+                    "w-5 h-5 sm:w-6 sm:h-6",
                     isActive ? "stroke-[2.5]" : "stroke-[1.75]"
                   )}
                 />
@@ -105,7 +125,7 @@ export function MobileTabBar() {
                   </span>
                 )}
               </div>
-              <span className="text-[11px] leading-none tracking-tight">
+              <span className="text-[10px] leading-none tracking-tight">
                 {tab.label}
               </span>
             </Link>
@@ -114,7 +134,7 @@ export function MobileTabBar() {
       </div>
 
       {/* Footer copyright */}
-      <div className="pt-1.5 text-center text-[10px] tracking-wider text-slate-400 dark:text-slate-500 font-medium select-none">
+      <div className="pt-1 text-center text-[9px] tracking-wider text-slate-400 dark:text-slate-500 font-medium select-none">
         Made by Anh Tu - Share to be share
       </div>
     </nav>

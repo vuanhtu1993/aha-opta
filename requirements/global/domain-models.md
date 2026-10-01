@@ -27,6 +27,7 @@
 ```mermaid
 erDiagram
     STORYBOOK ||--o{ VOCABCARD : "generates vocabulary"
+    STORYBOOK ||--o{ SPEAKING_QUESTION : "generates speaking challenge"
     VOCABCARD ||--o{ VOCAB_REVIEW_LOG : "has review attempts"
     TEAM ||--o{ MATCH : "homeTeamId"
     TEAM ||--o{ MATCH : "awayTeamId"
@@ -122,6 +123,17 @@ erDiagram
         boolean isCorrect
         timestamp createdAt "Indexed"
     }
+
+    SPEAKING_QUESTION {
+        ObjectId _id PK
+        ObjectId storybookId FK "Indexed"
+        string topic
+        string question
+        string level "B1 | B2 | C1"
+        object prepScaffold
+        object tokenUsage
+        timestamp createdAt "Indexed"
+    }
 ```
 
 ---
@@ -171,17 +183,20 @@ erDiagram
 * `probabilities` (`{ home: Number, draw: Number, away: Number }`): Probability distribution summing to 100%.
 * `actualOutcome` (`String`, Enum: `["home", "away", "draw", null]`): Back-tested result populated after match conclusion.
 
-### 3.5 Entity: `SpeakingQuestion` (`prep_speaking` Domain)
-* `id` (`String`, Unique): Unique question identifier.
-* `topic` (`String`, Required): Broad thematic domain (e.g., "Technology", "Habits", "Education").
-* `question` (`String`, Required): Open-ended dilemma / opinion prompt for 30–60s speech.
+### 3.5 Entity: `SpeakingQuestion` (`speaking_questions` Collection)
+* `_id` (`ObjectId`, PK): Unique document identifier.
+* `storybookId` (`ObjectId`, Optional, Ref: `Storybook`, Indexed): Foreign key linking to the source lesson.
+* `topic` (`String`, Required): Broad thematic domain (e.g., "Technology & Education", "Renewable Energy").
+* `question` (`String`, Required): Open-ended debate dilemma prompt for 30–60s speech.
 * `level` (`String`, Enum: `["B1", "B2", "C1"]`, Required): Pedagogical proficiency ceiling.
-* `targetKeywords` (`Array<{ word, ipa, meaning }>`): Mandatory vocabulary items to incorporate.
+* `targetKeywords` (`Array<{ word: string, ipa?: string, meaning: string }>`): Mandatory vocabulary items to incorporate.
 * `prepScaffold` (`Object`, Required):
-  * `point`: `{ signposts: string[], hint: string, modelAnswer: string }`
-  * `reason`: `{ signposts: string[], hint: string, modelAnswer: string }`
-  * `example`: `{ signposts: string[], hint: string, modelAnswer: string }`
-  * `conclusion`: `{ signposts: string[], hint: string, modelAnswer: string }`
+  * `point`: `{ stage: "point", title: string, signposts: string[], hint: string, modelAnswer: string }`
+  * `reason`: `{ stage: "reason", title: string, signposts: string[], hint: string, modelAnswer: string }`
+  * `example`: `{ stage: "example", title: string, signposts: string[], hint: string, modelAnswer: string }`
+  * `conclusion`: `{ stage: "conclusion", title: string, signposts: string[], hint: string, modelAnswer: string }`
+* `tokenUsage` (`Object`, Optional): `{ promptTokens: number, completionTokens: number, totalTokens: number }`.
+* `createdAt` (`Date`, Indexed): Timestamp of agent generation.
 
 ---
 
@@ -195,6 +210,7 @@ erDiagram
 | **CON-04** | In-Browser Web Audio API Mathematical Synthesis | [ADR-004](../governance/adr/004-web-audio-api-synthesis.md) |
 | **CON-05** | Document Segregation: Immutable Match Facts vs. Modifiable AI Predictions | [ADR-005](../governance/adr/005-mongodb-fact-opinion-split.md) |
 | **CON-06** | PREP Framework & Progressive Model Disclosure for Speaking Quizzes | [ADR-006](../governance/adr/006-prep-scaffolded-speaking-quiz.md) |
+| **CON-07** | Asynchronous Agent Queueing via BullMQ & SSE Protocol | [ADR-007](../governance/adr/007-async-agent-speaking-quiz-bullmq-sse.md) |
 
 ---
 

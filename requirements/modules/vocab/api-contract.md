@@ -1,8 +1,8 @@
 # Module VOCAB — API Contract & Data Schemas
 
 > **Parent Document:** [Module Spec](spec.md) | [Requirement Analysis Package](../../README.md)  
-> **Module ID:** `VOCAB` | **Scope:** Vocabulary Management, SRS Scheduling & Audio APIs  
-> **Linked Documents:** [Acceptance Criteria](acceptance-criteria.md)
+> **Module ID:** `VOCAB` | **Scope:** Vocabulary Management, SRS Scheduling, Audio APIs & Speaking Quiz Agent Integration  
+> **Linked Documents:** [Acceptance Criteria](acceptance-criteria.md) | [Speaking Quiz Agent Contract](speaking-quiz-api-contract.md)
 
 ---
 
@@ -172,6 +172,76 @@
     }
   }
   ```
+
+---
+
+### 1.7 `POST /api/agents/speaking-quiz/jobs`
+- **Mapped Requirement:** [`FR-VOCAB-07`](spec.md#2-functional-requirements)
+- **Mapped User Story:** [`US-VOCAB-04`](spec.md#us-vocab-04)
+- **Governing Business Rules:** [`BR-08`](../../global/business-rules.md#br-08), [`BR-09`](../../global/business-rules.md#br-09)
+- **Full Contract:** [`speaking-quiz-api-contract.md#21`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz)
+* **Purpose:** Triggers asynchronous generation of a debate-oriented speaking challenge with a 4-stage PREP scaffold. Employs BullMQ for background queuing and Redis idempotency check.
+* **Request Headers:** `Content-Type: application/json`
+* **Request Body:**
+  ```json
+  {
+    "storybookId": "679c1a2b3c4d5e6f7a8b9c0d",
+    "customTopic": "Work from Home vs Office Work",
+    "level": "B2",
+    "targetKeywords": ["sustainable", "transition"],
+    "forceRegenerate": false
+  }
+  ```
+  *(Rule: Either `storybookId` or `customTopic` must be provided; `level` must be `"B1" | "B2" | "C1"`)*
+* **Responses (HTTP 202 Accepted):**
+  - **Cold Job Queued:**
+    ```json
+    {
+      "jobId": "4",
+      "status": "queued",
+      "sseUrl": "/api/agents/speaking-quiz/jobs/4/progress",
+      "createdAt": "2026-10-01T09:30:00.000Z"
+    }
+    ```
+  - **Idempotent Cache Hit (`< 50ms`):**
+    ```json
+    {
+      "jobId": "existing-6abdc5cae5d0b4f316e5516c",
+      "status": "completed",
+      "existingQuestionId": "6abdc5cae5d0b4f316e5516c",
+      "createdAt": "2026-10-01T08:15:30.000Z"
+    }
+    ```
+
+---
+
+### 1.8 `GET /api/agents/speaking-quiz/jobs/:jobId/progress`
+- **Mapped Requirement:** [`FR-VOCAB-07`](spec.md#2-functional-requirements)
+- **Mapped User Story:** [`US-VOCAB-04`](spec.md#us-vocab-04)
+- **Governing Business Rules:** [`BR-09`](../../global/business-rules.md#br-09)
+- **Full Contract:** [`speaking-quiz-api-contract.md#22`](speaking-quiz-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-sse)
+* **Purpose:** Server-Sent Events (SSE) stream emitting real-time stage progress across the LangGraph multi-agent pipeline.
+* **Headers:** `Accept: text/event-stream`
+* **Response Content-Type:** `text/event-stream`
+* **Event Progression:**
+  - `context_resolved` (25%): Context resolved from Storybook or Custom Topic.
+  - `question_formulated` (50%): Debate question formulated.
+  - `prep_synthesized` (80%): 4-stage PREP scaffold & model answer synthesized.
+  - `completed` / `done` (100%): MongoDB document saved; payload contains `questionId` and token usage metrics. Client terminates SSE connection upon receiving `status === "done"`.
+
+---
+
+### 1.9 `GET /api/agents/speaking-quiz/questions/:id` & `GET /api/agents/speaking-quiz/questions`
+- **Mapped Requirement:** [`FR-VOCAB-06`](spec.md#2-functional-requirements), [`FR-VOCAB-07`](spec.md#2-functional-requirements)
+- **Full Contract:** [`speaking-quiz-api-contract.md#23`](speaking-quiz-api-contract.md#23-truy-vấn-danh-sách-câu-hỏi-flexible-filters), [`speaking-quiz-api-contract.md#24`](speaking-quiz-api-contract.md#24-lấy-chi-tiết-một-câu-hỏi-theo-id)
+* **Purpose:** Retrieves a single speaking question by ID or queries questions filtered by `storybookId` and `level`.
+* **Response (HTTP 200 OK):** Fully assembled `SpeakingQuestionDetail` with `prepScaffold` (Point, Reason, Example, Conclusion).
+
+---
+
+## 2. Client Integration Types (TypeScript)
+
+See full TypeScript definitions and client integration SDK in [`speaking-quiz-api-contract.md#3`](speaking-quiz-api-contract.md#3-typescript-interfaces-dành-cho-client-aha-tools) and [`speaking-quiz-api-contract.md#4`](speaking-quiz-api-contract.md#4-code-mẫu-tích-hợp-sdk-integration-example).
 
 ---
 

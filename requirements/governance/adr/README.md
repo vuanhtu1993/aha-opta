@@ -27,6 +27,7 @@
 | [ADR-004](004-web-audio-api-synthesis.md) | In-Browser Web Audio API Mathematical Synthesis for White Noise | `Accepted` | 2026-09-30 | Eliminating bandwidth cost and loop stutters via client-side synthesis |
 | [ADR-005](005-mongodb-fact-opinion-split.md) | Separation of Objective Facts (Match) and Subjective Opinions (Prediction) | `Accepted` | 2026-09-30 | Isolating immutable sports results from AI predictions to enable back-testing |
 | [ADR-006](006-prep-scaffolded-speaking-quiz.md) | PREP Framework & Progressive Model Disclosure for Speaking Quizzes | `Accepted` | 2026-09-30 | Scaffold-first speaking practice with zero-token local audio feedback |
+| [ADR-007](007-async-agent-speaking-quiz-bullmq-sse.md) | Asynchronous Speaking Quiz Generation via aha-mind-agents (BullMQ + SSE) | `Accepted` | 2026-10-01 | Preventing HTTP timeouts, enabling real-time stage progress, and caching results in <50ms |
 
 ---
 

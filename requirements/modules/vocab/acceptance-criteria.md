@@ -147,4 +147,85 @@ Scenario: Play model answer audio using native browser Web Speech API
 
 ---
 
+### AC-VOCAB-08: Asynchronous Speaking Quiz Job Creation & Idempotency Cache Hit
+- **Target User Story:** [`US-VOCAB-04`](spec.md#us-vocab-04)
+- **Target API:** [`POST /api/agents/speaking-quiz/jobs`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz)
+- **Governing Business Rule:** [`BR-09`](../../global/business-rules.md#br-09)
+
+```gherkin
+Scenario: Enqueue new background job when no question exists for storybookId
+  Given a valid "storybookId" that has no existing record in "speaking_questions"
+  When the client sends "POST /api/agents/speaking-quiz/jobs" with "forceRegenerate: false"
+  Then the response status is 202 Accepted
+    And the response body contains "status" equal to "queued"
+    And the response body contains a valid "jobId"
+    And the response body contains a valid "sseUrl" string matching "/api/agents/speaking-quiz/jobs/:jobId/progress"
+```
+
+```gherkin
+Scenario: Instant cache hit when question exists in database and forceRegenerate is false
+  Given an existing question in "speaking_questions" with id "6abdc5cae5d0b4f316e5516c" for "storybookId"
+  When the client sends "POST /api/agents/speaking-quiz/jobs" with this "storybookId" and "forceRegenerate: false"
+  Then the response status is 202 Accepted
+    And the response body contains "status" equal to "completed"
+    And the response body contains "existingQuestionId" equal to "6abdc5cae5d0b4f316e5516c"
+    And the response time is under 50 milliseconds
+    And zero LLM tokens are consumed
+```
+
+```gherkin
+Scenario: Force re-generation ignores existing database question
+  Given an existing question in "speaking_questions" for "storybookId"
+  When the client sends "POST /api/agents/speaking-quiz/jobs" with "forceRegenerate: true"
+  Then the response status is 202 Accepted
+    And the response body contains "status" equal to "queued"
+    And a new job is dispatched to BullMQ
+```
+
+---
+
+### AC-VOCAB-09: Real-Time SSE Pipeline Progress Streaming
+- **Target User Story:** [`US-VOCAB-04`](spec.md#us-vocab-04)
+- **Target API:** [`GET /api/agents/speaking-quiz/jobs/:jobId/progress`](speaking-quiz-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-sse)
+- **Governing Business Rule:** [`BR-09`](../../global/business-rules.md#br-09)
+
+```gherkin
+Scenario: Receive progressive pipeline stages via SSE stream
+  Given a queued speaking quiz job with ID "job-101"
+  When the client opens an EventSource connection to "/api/agents/speaking-quiz/jobs/job-101/progress"
+  Then the stream sequentially emits:
+    | stepName             | progress | status    |
+    | context_resolved     | 25       | completed |
+    | question_formulated  | 50       | completed |
+    | prep_synthesized     | 80       | completed |
+    | completed            | 100      | completed |
+  And the final event contains "status: done" and "payload.questionId"
+  And the client closes the SSE connection immediately upon receiving "status: done"
+```
+
+---
+
+### AC-VOCAB-10: Speaking Quiz Validation & Error Resilience
+- **Target User Story:** [`US-VOCAB-04`](spec.md#us-vocab-04)
+- **Target API:** [`POST /api/agents/speaking-quiz/jobs`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz)
+- **Governing Business Rule:** [`BR-09`](../../global/business-rules.md#br-09)
+
+```gherkin
+Scenario: Reject job request when neither storybookId nor customTopic is provided
+  Given a payload without "storybookId" and without "customTopic"
+  When the client sends "POST /api/agents/speaking-quiz/jobs"
+  Then the response status is 400 Bad Request
+    And no job is enqueued in Redis BullMQ
+```
+
+```gherkin
+Scenario: Handle worker failure gracefully over SSE
+  Given an enqueued speaking quiz job that fails inside the LangGraph pipeline
+  When the worker encounters an unrecoverable exception
+  Then the SSE stream emits an event with "status: failed" and an informative "message"
+  And the client closes the SSE connection and renders a friendly retry UI
+```
+
+---
+
 *Made by Anh Tu - Share to be share*

@@ -22,6 +22,7 @@ Accelerate long-term vocabulary acquisition and prevent forgetting through the m
 | **FR-VOCAB-04** | Batch Generate AI Cloze Example Sentences | Curator | Cards lack example sentences | Gemini AI generates contextual sentences with blanks; card updated | [`POST /api/vocab/generate-cloze-batch`](api-contract.md#14-post-apivocabgenerate-cloze-batch) | [`AC-VOCAB-04`](acceptance-criteria.md#ac-vocab-04) |
 | **FR-VOCAB-05** | Stream Word Pronunciation Audio | Learner | Audio icon clicked in card or quiz | Returns binary audio/mpeg from Google TTS or local cache | [`GET /api/vocab/audio`](api-contract.md#15-get-apivocabaudio) | [`AC-VOCAB-05`](acceptance-criteria.md#ac-vocab-05) |
 | **FR-VOCAB-06** | Practice Short Speaking via PREP Framework ("Speak Your Mind") | Learner | Speaking question loaded | Renders 4 scaffolded PREP stages with signposts, timer (30-60s), and on-demand model answer reveal | [`GET /api/vocab/speak-your-mind`](api-contract.md#16-get-apivocabspeak-your-mind) | [`AC-VOCAB-06`](acceptance-criteria.md#ac-vocab-06), [`AC-VOCAB-07`](acceptance-criteria.md#ac-vocab-07) |
+| **FR-VOCAB-07** | Generate & Stream Dynamic Speaking Quizzes via Agent (`aha-mind-agents`) | Learner / Curator | Storybook or topic selected | Asynchronous job creation, BullMQ queuing, SSE progress stream, and MongoDB question persistence | [`POST /api/agents/speaking-quiz/jobs`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz), [`GET /api/agents/speaking-quiz/jobs/:jobId/progress`](speaking-quiz-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-sse) | [`AC-VOCAB-08`](acceptance-criteria.md#ac-vocab-08), [`AC-VOCAB-09`](acceptance-criteria.md#ac-vocab-09), [`AC-VOCAB-10`](acceptance-criteria.md#ac-vocab-10) |
 
 ---
 
@@ -145,6 +146,72 @@ sequenceDiagram
     Learner->>UI: Click Speaker Icon next to model sentence
     UI->>Speaker: vocabSpeaker.speak(modelSentence)
     Speaker-->>Learner: Native pronunciation playback via browser audio
+```
+
+---
+
+### US-VOCAB-04: Generate Dynamic Speaking Quiz with AI Agent & SSE Progress
+- **ID:** `US-VOCAB-04`
+- **Actor:** Learner / Content Curator
+- **Priority:** Must-have
+- **Mapped FR:** [`FR-VOCAB-07`](#2-functional-requirements)
+- **Mapped API:** [`POST /api/agents/speaking-quiz/jobs`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz), [`GET /api/agents/speaking-quiz/jobs/:jobId/progress`](speaking-quiz-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-sse), [`GET /api/agents/speaking-quiz/questions/:id`](speaking-quiz-api-contract.md#24-lấy-chi-tiết-một-câu-hỏi-theo-id)
+- **Mapped Acceptance Criteria:** [`AC-VOCAB-08`](acceptance-criteria.md#ac-vocab-08), [`AC-VOCAB-09`](acceptance-criteria.md#ac-vocab-09), [`AC-VOCAB-10`](acceptance-criteria.md#ac-vocab-10)
+
+**User Story Statement:**
+> As an ambitious language learner or content curator,  
+> I want to dynamically generate a debate-oriented speaking challenge with a 4-stage PREP scaffold for any Storybook lesson or custom topic using the AI agent, and view real-time pipeline generation progress via a progress bar,  
+> So that I can practice authentic critical thinking and speaking without waiting blindly or experiencing HTTP timeout errors.
+
+#### Sequence Diagram
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Learner / Curator
+    participant UI as aha-tools (SpeakingQuizGenerator / SpeakYourMindPlayer)
+    participant GW as aha-mind-agents (Gateway Controller)
+    participant Redis as Redis Queue (BullMQ) & PubSub
+    participant Worker as SpeakingQuiz Worker (LangGraph)
+    participant DB as MongoDB (speaking_questions)
+
+    User->>UI: Submit "Generate Speaking Quiz" (storybookId / customTopic, level, keywords)
+    UI->>GW: POST /api/agents/speaking-quiz/jobs { storybookId, customTopic, level, targetKeywords, forceRegenerate }
+    
+    alt Idempotent Cache Hit (BR-09: Pre-existing question for storybookId & forceRegenerate=false)
+        GW->>DB: Check existing question by storybookId
+        DB-->>GW: Existing question record found
+        GW-->>UI: 202 Accepted { jobId: "existing-...", status: "completed", existingQuestionId }
+        UI->>GW: GET /api/agents/speaking-quiz/questions/:existingQuestionId
+        GW-->>UI: 200 OK (Full question details & PREP scaffold < 50ms)
+        UI-->>User: Render SpeakYourMindPlayer immediately
+    else Cold Generation / Force Regenerate
+        GW->>Redis: Enqueue job into 'speaking-quiz-queue'
+        GW-->>UI: 202 Accepted { jobId, status: "queued", sseUrl }
+        
+        UI->>GW: GET /api/agents/speaking-quiz/jobs/:jobId/progress (Accept: text/event-stream)
+        Worker->>Redis: Dequeue Job & execute LangGraph StateGraph
+        
+        Worker->>Redis: Publish stepName="context_resolved" (25%)
+        Redis-->>GW-->>UI: SSE Data: { progress: 25, stepName: "context_resolved" }
+        UI-->>User: Update Progress Bar: "Context resolved successfully (25%)"
+        
+        Worker->>Redis: Publish stepName="question_formulated" (50%)
+        Redis-->>GW-->>UI: SSE Data: { progress: 50, stepName: "question_formulated" }
+        UI-->>User: Update Progress Bar: "Debate question formulated (50%)"
+        
+        Worker->>Redis: Publish stepName="prep_synthesized" (80%)
+        Redis-->>GW-->>UI: SSE Data: { progress: 80, stepName: "prep_synthesized" }
+        UI-->>User: Update Progress Bar: "PREP scaffold synthesized (80%)"
+        
+        Worker->>DB: Insert SpeakingQuestion record into MongoDB
+        Worker->>Redis: Publish status="done", progress=100 with payload.questionId
+        Redis-->>GW-->>UI: SSE Data: { status: "done", progress: 100, payload: { questionId, ... } }
+        UI->>UI: Close SSE connection (eventSource.close())
+        
+        UI->>GW: GET /api/agents/speaking-quiz/questions/:questionId
+        GW-->>UI: 200 OK (Full SpeakingQuestionDetail)
+        UI-->>User: Transition from Generator progress to active SpeakYourMindPlayer
+    end
 ```
 
 ---

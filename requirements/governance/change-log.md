@@ -12,6 +12,7 @@
 |---|---|---|---|
 | **1.0** | 2026-09-30 | Anh Tú (IT Lecturer / Architect) | Initial baseline specification package scaffolding under Option C (Enterprise Granular Architecture). Established tri-partite micro-specs across 5 domains (`vocab`, `story-shadowing`, `opta`, `white-noise`, `dashboard`), mapped 5 ADRs, 10 NFRs, and verified bi-directional RTM grid. |
 | **1.1** | 2026-09-30 | Anh Tú (IT Lecturer / Architect) | **CR-01 (Speak Your Mind / PREP Speaking Quiz):** Added specification for 3rd quiz mode `prep_speaking` in `vocab` module. Defined `BR-08`, `ISpeakingQuestion` domain model, `ADR-006` (PREP Scaffolding & Progressive Model Reveal), `FR-VOCAB-06`, `US-VOCAB-03`, `AC-VOCAB-06`, `AC-VOCAB-07`, and updated RTM grid. |
+| **1.2** | 2026-10-01 | Anh Tú (IT Lecturer / Architect) | **CR-02 (Integration with aha-mind-agents Speaking Quiz Agent):** Integrated microservice API contract for Speaking Quiz agent. Added `FR-VOCAB-07`, `US-VOCAB-04`, `AC-VOCAB-08`, `AC-VOCAB-09`, `AC-VOCAB-10`, `BR-09` (BullMQ + SSE Progress + Idempotency Cache Hit), updated `SpeakingQuestion` domain schema, mapped `ADR-007` (Asynchronous BullMQ/SSE agent generation), updated `api-contract.md` with client TypeScript interfaces, and synchronized RTM grid. |
 
 ---
 

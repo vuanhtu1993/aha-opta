@@ -30,6 +30,7 @@
 | **BR-06** | **Storybook Sentence Alignment & IPA:** Each sentence in a Storybook must have a sequential 1-based `id`. For YouTube content, `0 <= startMs < endMs` must strictly hold. Word tokens must contain valid IPA transcriptions. | `Storybook` | LangGraph `sentenceSplitterNode` | ✅ Enforced |
 | **BR-07** | **Zero-Network Audio Synthesis:** Procedural ambient sound (white/brown noise) must be computed in real-time using browser `AudioBuffer` and `BiquadFilterNode`. No streaming MP3 or network bandwidth may be consumed. | `WhiteNoise` Hook | Web Audio API Native Synthesis | ✅ Enforced |
 | **BR-08** | **PREP Speaking Scaffold & Progressive Disclosure:** Every `prep_speaking` ("Speak Your Mind") quiz must provide 4 structured stages (Point, Reason, Example, Conclusion) with predefined signpost discourse markers. Model answers must remain strictly concealed during the speaking practice phase and may only be revealed upon explicit user request. | `SpeakingQuestion`, Quiz UI | Client-side State & Progressive Reveal | ✅ Enforced |
+| **BR-09** | **Asynchronous Agent Queueing & Idempotency Invariant for Speaking Quizzes:** Speaking Quiz generation via LLM must be decoupled from synchronous HTTP requests using BullMQ background queuing and SSE stage streaming. When generating for an existing `storybookId` with `forceRegenerate = false`, the system must return pre-existing questions in `< 50ms` (Idempotent Cache Hit) with 0 token consumption. | `SpeakingQuestion`, BullMQ, Gateway | Redis BullMQ + MongoDB Idempotency Check | ✅ Enforced |
 
 ---
 
@@ -76,6 +77,26 @@ stateDiagram-v2
     }
 ```
 
+### 3.3 Speaking Quiz Generation & Queue Lifecycle (`BR-09`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Submitted : POST /api/agents/speaking-quiz/jobs
+    
+    Submitted --> IdempotentHit : storybookId in DB & forceRegenerate=false
+    IdempotentHit --> [*] : Return 202 completed (existingQuestionId < 50ms)
+    
+    Submitted --> Queued : New topic or forceRegenerate=true
+    Queued --> context_resolved : Worker extracts lesson / topic (25%)
+    context_resolved --> question_formulated : Formulate debate dilemma (50%)
+    question_formulated --> prep_synthesized : Synthesize 4-stage PREP scaffold (80%)
+    prep_synthesized --> completed : Persist to MongoDB & emit done (100%)
+    completed --> [*]
+    
+    Queued --> failed : LLM rate limit or schema failure
+    failed --> [*] : Emit SSE failed & cleanup
+```
+
 ---
 
 ## 4. State Coupling & Consistency Matrix
@@ -86,6 +107,7 @@ stateDiagram-v2
 | **Generate Cloze Batch** | `VocabCard` without sentences | Enriched `VocabCard` | Card must exist; Gemini API returns valid JSON sentences | Retain original card state without sentence mutation |
 | **Execute Opta Prediction** | `Match.status = scheduled` | `Prediction` created | `homeTeamId` & `awayTeamId` must resolve in DB | Return `404 Team Not Found` |
 | **Scrape YouTube Story** | YouTube URL / Video ID | `Storybook` record | Video has accessible captions/transcript | Return `422 Unprocessable Entity` with error message |
+| **Generate Speaking Quiz** | Cold / Requested | `SpeakingQuestion` created or fetched | Must provide `storybookId` OR `customTopic`; level $\in \{B1, B2, C1\}$ | Return `400 Bad Request` |
 
 ---
 

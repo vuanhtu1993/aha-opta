@@ -11,7 +11,7 @@
  */
 
 import React, { useState } from "react";
-import { Volume2, ArrowLeft, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Volume2, Mic, Eye, EyeOff, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 import { SpeakingPrepCard } from "./SpeakingPrepCard";
@@ -32,16 +32,22 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
   };
 
   return (
-    <div className="space-y-4 max-w-xl mx-auto pb-16">
+    <div className="space-y-4 max-w-xl mx-auto pb-28">
       {/* 1. Top Bar */}
       <div className="flex items-center justify-between gap-2">
-        <Link
-          href="/vocab"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Vocab</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <Mic className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-sm font-black text-slate-900 dark:text-white leading-none">
+              Speak Your Mind
+            </h1>
+            <span className="text-[10px] font-medium text-slate-400">
+              PREP Argumentation
+            </span>
+          </div>
+        </div>
         <div className="flex items-center gap-1.5">
           <button
             type="button"

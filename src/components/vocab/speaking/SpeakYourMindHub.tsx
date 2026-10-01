@@ -1,31 +1,32 @@
-"use client";
+import React from "react";
+import Link from "next/link";
+import { Plus, ArrowRight } from "lucide-react";
+import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 
 /**
  * @file SpeakYourMindHub.tsx
- * @description Speaking Hub Dashboard for Speak Your Mind (PREP Argumentation).
- * Clean, minimalist English-only UI synchronized with Story and Vocab headers.
+ * @description React Server Component (RSC) for Speak Your Mind Hub Dashboard.
+ * 100% Server-rendered, Zero Client JS Bundle.
+ * Filter levels are driven by URL search params (?level=...).
  *
  * Mapped Spec: FR-VOCAB-06 | FR-VOCAB-07 | US-VOCAB-03 | US-VOCAB-04 | AC-VOCAB-11
  * Made by Anh Tu - Share to be share
  */
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { Plus, ArrowRight } from "lucide-react";
-import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
-
 interface SpeakYourMindHubProps {
   questions: ISpeakingQuestion[];
+  currentLevel?: string;
 }
 
-export function SpeakYourMindHub({ questions }: SpeakYourMindHubProps) {
-  const [levelFilter, setLevelFilter] = useState<string>("all");
-
+export function SpeakYourMindHub({
+  questions = [],
+  currentLevel = "all",
+}: SpeakYourMindHubProps) {
   const dailyChallenge = questions.length > 0 ? questions[0] : null;
 
   const filteredQuestions = questions.filter((q) => {
-    if (levelFilter === "all") return true;
-    return q.level === levelFilter;
+    if (!currentLevel || currentLevel === "all") return true;
+    return q.level === currentLevel;
   });
 
   return (
@@ -49,7 +50,7 @@ export function SpeakYourMindHub({ questions }: SpeakYourMindHubProps) {
         </Link>
       </div>
 
-      {/* 2. Hero Methodology Guide (PREP Framework) - Clean Typography, No Icon Clutter */}
+      {/* 2. Hero Methodology Guide (PREP Framework) - Pure Server HTML, Zero JS */}
       <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
@@ -99,7 +100,7 @@ export function SpeakYourMindHub({ questions }: SpeakYourMindHubProps) {
         </div>
       </div>
 
-      {/* 3. Daily Featured Challenge Card - Minimalist Clean Card */}
+      {/* 3. Daily Featured Challenge Card - Server-rendered */}
       {dailyChallenge && (
         <div className="bg-white dark:bg-slate-900 border-2 border-amber-500/80 dark:border-amber-500/60 rounded-2xl p-4.5 space-y-3 shadow-xs">
           <div className="flex items-center justify-between">
@@ -152,22 +153,30 @@ export function SpeakYourMindHub({ questions }: SpeakYourMindHubProps) {
             Practice Topics ({filteredQuestions.length})
           </span>
 
-          {/* Filter Chips */}
+          {/* Filter Chips: Pure Links driven by URL search params */}
           <div className="flex items-center gap-1 text-[11px] font-bold">
-            {["all", "B1", "B2", "C1"].map((lvl) => (
-              <button
-                key={lvl}
-                type="button"
-                onClick={() => setLevelFilter(lvl)}
-                className={`px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer capitalize ${
-                  levelFilter === lvl
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                {lvl === "all" ? "All" : lvl}
-              </button>
-            ))}
+            {["all", "B1", "B2", "C1"].map((lvl) => {
+              const isActive = (currentLevel || "all") === lvl;
+              const href =
+                lvl === "all"
+                  ? "/vocab/speak-your-mind"
+                  : `/vocab/speak-your-mind?level=${lvl}`;
+
+              return (
+                <Link
+                  key={lvl}
+                  href={href}
+                  scroll={false}
+                  className={`px-2.5 py-0.5 rounded-lg transition-colors capitalize ${
+                    isActive
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  {lvl === "all" ? "All" : lvl}
+                </Link>
+              );
+            })}
           </div>
         </div>
 

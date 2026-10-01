@@ -72,7 +72,7 @@ export function useSpeakingQuizJob() {
         status: "submitting",
         progress: 5,
         stageName: "init",
-        stageMessage: "Đang gửi yêu cầu khởi tạo thử thách...",
+        stageMessage: "Submitting challenge creation request...",
         resultQuestion: null,
         error: null,
       });
@@ -86,7 +86,7 @@ export function useSpeakingQuizJob() {
             ...prev,
             progress: 100,
             stageName: "completed",
-            stageMessage: "Tìm thấy bài học có sẵn trong hệ thống!",
+            stageMessage: "Found existing challenge in cache!",
           }));
 
           const question = await fetchSpeakingQuestionById(
@@ -96,7 +96,7 @@ export function useSpeakingQuizJob() {
             status: "completed",
             progress: 100,
             stageName: "completed",
-            stageMessage: "Đã sẵn sàng luyện tập!",
+            stageMessage: "Challenge ready for practice!",
             resultQuestion: question,
             error: null,
           });
@@ -109,7 +109,7 @@ export function useSpeakingQuizJob() {
             status: "queued",
             progress: 10,
             stageName: "queued",
-            stageMessage: "Đã xếp hàng đợi xử lý qua Agent...",
+            stageMessage: "Queued for AI Agent processing...",
             resultQuestion: null,
             error: null,
           });
@@ -132,7 +132,7 @@ export function useSpeakingQuizJob() {
                     status: "completed",
                     progress: 100,
                     stageName: "completed",
-                    stageMessage: "Tạo bài học Speaking hoàn tất!",
+                    stageMessage: "Speaking challenge generated successfully!",
                     resultQuestion: question,
                     error: null,
                   });
@@ -151,10 +151,10 @@ export function useSpeakingQuizJob() {
           });
         }
 
-        throw new Error("Phản hồi không hợp lệ từ Gateway Agent");
+        throw new Error("Invalid response from Agent Gateway");
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Đã xảy ra lỗi không xác định";
+          err instanceof Error ? err.message : "An unexpected error occurred";
         setState({
           status: "error",
           progress: 0,

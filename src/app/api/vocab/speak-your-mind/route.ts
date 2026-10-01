@@ -20,11 +20,22 @@ export async function GET(request: NextRequest) {
 
     if (listAll) {
       const questions = await getSpeakingQuestions();
-      return NextResponse.json({ questions, total: questions.length });
+      return NextResponse.json(
+        { questions, total: questions.length },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        }
+      );
     }
 
     const question = await getSpeakingQuestionById(id || undefined);
-    return NextResponse.json(question);
+    return NextResponse.json(question, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      },
+    });
   } catch (error) {
     console.error("[API/speak-your-mind GET] Error:", error);
     return NextResponse.json(

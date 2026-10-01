@@ -95,6 +95,8 @@ export interface SpeakingQuestionsListResponse {
  * Sự kiện tiến trình thời gian thực qua Server-Sent Events (SSE)
  */
 export interface SpeakingQuizProgressEvent {
+  type?: "JOB_STARTED" | "JOB_COMPLETED" | "JOB_FAILED" | string;
+  data?: any;
   jobId?: string;
   stepId?: string;
   stepName?:

@@ -7,7 +7,10 @@
  */
 
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
-import { fetchSpeakingQuestionById } from "@/lib/services/speaking-quiz-client";
+import {
+  fetchSpeakingQuestionById,
+  fetchSpeakingQuestionsList,
+} from "@/lib/services/speaking-quiz-client";
 
 export const MOCK_SPEAKING_QUESTIONS: ISpeakingQuestion[] = [
   {
@@ -93,6 +96,17 @@ export const MOCK_SPEAKING_QUESTIONS: ISpeakingQuestion[] = [
 ];
 
 export async function getSpeakingQuestions(): Promise<ISpeakingQuestion[]> {
+  try {
+    const res = await fetchSpeakingQuestionsList();
+    if (res && Array.isArray(res.questions) && res.questions.length > 0) {
+      // Ưu tiên câu hỏi mới nhất từ Database / Agent Backend, sau đó mới đến Mock questions
+      const agentIds = new Set(res.questions.map((q) => q.id));
+      const fallbackMocks = MOCK_SPEAKING_QUESTIONS.filter((m) => !agentIds.has(m.id));
+      return [...res.questions, ...fallbackMocks];
+    }
+  } catch (error) {
+    console.warn("[getSpeakingQuestions] Fallback to mock questions due to error:", error);
+  }
   return MOCK_SPEAKING_QUESTIONS;
 }
 

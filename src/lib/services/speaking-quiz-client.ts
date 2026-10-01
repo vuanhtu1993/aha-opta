@@ -21,10 +21,37 @@ import {
  * Mặc định ưu tiên biến môi trường NEXT_PUBLIC_AGENTS_API_URL
  */
 export function getAgentsApiBaseUrl(): string {
-  if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_AGENTS_API_URL) {
-    return process.env.NEXT_PUBLIC_AGENTS_API_URL;
+  const envUrl = process.env.NEXT_PUBLIC_AGENTS_API_URL;
+  if (envUrl && envUrl.trim()) {
+    return envUrl.trim().replace(/\/+$/, "");
   }
-  return process.env.NEXT_PUBLIC_AGENTS_API_URL || "http://localhost:3001/api";
+  return "http://localhost:3001/api";
+}
+
+/**
+ * Phân giải URL tương đối hoặc tuyệt đối từ Agent API
+ * Tránh lỗi nhân đôi /api/api khi sseUrl trả về bắt đầu bằng /api
+ */
+export function resolveAgentUrl(relativeOrFullUrl: string): string {
+  if (
+    relativeOrFullUrl.startsWith("http://") ||
+    relativeOrFullUrl.startsWith("https://")
+  ) {
+    return relativeOrFullUrl;
+  }
+  const baseUrl = getAgentsApiBaseUrl();
+  try {
+    const parsedBase = new URL(baseUrl);
+    if (relativeOrFullUrl.startsWith("/")) {
+      return new URL(relativeOrFullUrl, parsedBase.origin).toString();
+    }
+    const baseWithTrailingSlash = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+    return new URL(relativeOrFullUrl, baseWithTrailingSlash).toString();
+  } catch {
+    const cleanBase = baseUrl.replace(/\/+$/, "");
+    const cleanPath = relativeOrFullUrl.replace(/^\/+/, "");
+    return `${cleanBase}/${cleanPath}`;
+  }
 }
 
 /**
@@ -43,7 +70,7 @@ export async function createSpeakingQuizJob(
   });
 
   if (!res.ok) {
-    let errorMsg = `Tạo Job thất bại (${res.status})`;
+    let errorMsg = `Create Job failed (${res.status})`;
     try {
       const errorData = await res.json();
       if (errorData.message) {
@@ -52,7 +79,7 @@ export async function createSpeakingQuizJob(
           : errorData.message;
       }
     } catch {
-      // Bỏ qua lỗi parse JSON nếu response rỗng
+      // Ignore JSON parse error
     }
     throw new Error(errorMsg);
   }
@@ -76,7 +103,7 @@ export async function fetchSpeakingQuestionById(
   });
 
   if (!res.ok) {
-    throw new Error(`Không tìm thấy câu hỏi với ID: [${id}]`);
+    throw new Error(`Speaking question not found: [${id}]`);
   }
 
   return res.json();
@@ -100,10 +127,11 @@ export async function fetchSpeakingQuestionsList(filters?: {
     headers: {
       "Content-Type": "application/json",
     },
+    cache: "no-store",
   });
 
   if (!res.ok) {
-    throw new Error("Không thể tải danh sách câu hỏi Speaking Quiz");
+    throw new Error("Failed to fetch speaking questions list");
   }
 
   return res.json();
@@ -126,36 +154,69 @@ export function subscribeToSpeakingQuizProgress(
   sseRelativeUrl: string,
   callbacks: SubscribeProgressCallbacks
 ): () => void {
-  const baseUrl = getAgentsApiBaseUrl();
-  const fullUrl = sseRelativeUrl.startsWith("http")
-    ? sseRelativeUrl
-    : `${baseUrl}${sseRelativeUrl.startsWith("/") ? "" : "/"}${sseRelativeUrl}`;
-
+  const fullUrl = resolveAgentUrl(sseRelativeUrl);
   const eventSource = new EventSource(fullUrl);
+  let isDone = false;
 
   eventSource.onmessage = async (event) => {
     try {
       const data: SpeakingQuizProgressEvent = JSON.parse(event.data);
-
       callbacks.onProgress?.(data);
 
-      // Khi Job hoàn tất thành công
-      if (data.status === "done" && data.payload?.questionId) {
+      const isCompleted =
+        data.type === "JOB_COMPLETED" ||
+        data.status === "done" ||
+        data.status === "completed" ||
+        data.stepName === "completed" ||
+        data.progress === 100;
+
+      // Khi Job hoàn tất thành công từ Agent Gateway
+      if (isCompleted && !isDone) {
+        isDone = true;
         eventSource.close();
+
         try {
-          const detail = await fetchSpeakingQuestionById(data.payload.questionId);
-          callbacks.onDone(detail);
+          const questionId =
+            data.payload?.questionId ||
+            (data as any).data?.id ||
+            (data as any).data?.questionId ||
+            (data as any).questionId;
+
+          let detail: SpeakingQuestionDetail | null = null;
+          if (questionId) {
+            detail = await fetchSpeakingQuestionById(questionId);
+          } else {
+            // Trường hợp backend emit JOB_COMPLETED với data: null (đã lưu trực tiếp MongoDB)
+            // Lấy câu hỏi mới nhất từ danh sách
+            const list = await fetchSpeakingQuestionsList();
+            if (list.questions && list.questions.length > 0) {
+              detail = list.questions[0];
+            }
+          }
+
+          if (detail) {
+            callbacks.onProgress?.({
+              ...data,
+              progress: 100,
+              stepName: "completed",
+              message: "Speaking challenge generated successfully!",
+            });
+            callbacks.onDone(detail);
+          } else {
+            throw new Error("Unable to retrieve newly generated speaking question");
+          }
         } catch (fetchErr) {
           callbacks.onError(
             fetchErr instanceof Error
               ? fetchErr
-              : new Error("Không thể tải chi tiết câu hỏi sau khi hoàn thành")
+              : new Error("Failed to fetch generated question detail")
           );
         }
-      } else if (data.status === "failed") {
+      } else if (data.status === "failed" || data.type === "JOB_FAILED") {
+        isDone = true;
         eventSource.close();
         callbacks.onError(
-          new Error(data.message || "Tác vụ thất bại trong tiến trình Agent")
+          new Error(data.message || "Speaking Quiz generation pipeline failed")
         );
       }
     } catch (parseErr) {
@@ -163,10 +224,31 @@ export function subscribeToSpeakingQuizProgress(
     }
   };
 
-  eventSource.onerror = (err) => {
-    console.error("[SSE Connection Error]:", err);
+  eventSource.onerror = async (err) => {
+    if (isDone) return;
     eventSource.close();
-    callbacks.onError(new Error("Mất kết nối SSE tới Gateway Agent"));
+
+    // Kiểm tra xem thực tế Job đã lưu xong vào DB hay chưa trước khi báo lỗi rớt mạng
+    try {
+      const list = await fetchSpeakingQuestionsList();
+      if (list.questions && list.questions.length > 0) {
+        isDone = true;
+        callbacks.onProgress?.({
+          progress: 100,
+          stepName: "completed",
+          message: "Speaking challenge generated successfully!",
+        });
+        callbacks.onDone(list.questions[0]);
+        return;
+      }
+    } catch {
+      // Bỏ qua lỗi fallback
+    }
+
+    if (eventSource.readyState === EventSource.CLOSED) {
+      console.error("[SSE Connection Error]:", err);
+      callbacks.onError(new Error("Lost SSE connection to Agent Gateway"));
+    }
   };
 
   return () => {

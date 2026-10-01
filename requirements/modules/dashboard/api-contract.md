@@ -23,11 +23,12 @@ The Dashboard module acts as an aggregator consuming endpoints from the `VOCAB` 
 ### 2.1 Component Contract: `MobileTabBar`
 - **File Reference:** `src/components/mobile-shell/mobile-tab-bar.tsx`
 - **Behavioral Contract:**
-  * Displays 4 primary tabs:
-    1. **Home (`/`):** Exact route match.
-    2. **Story (`/apps/story-shadowing`):** Prefix match.
-    3. **Vocab (`/vocab`):** Prefix match + Dynamic due count badge indicator.
-    4. **Profile (`/profile`):** Prefix match.
+  * Displays 5 primary tabs:
+    1. **Home (`/`):** Exact route match (`icon: Home`).
+    2. **Story (`/apps/story-shadowing`):** Prefix match (`icon: BookOpen`).
+    3. **Speak (`/vocab/speak-your-mind`):** Prefix match (`icon: Mic`).
+    4. **Vocab (`/vocab`):** Prefix match excluding `/vocab/speak-your-mind` + Dynamic due count badge indicator (`icon: GraduationCap`).
+    5. **Profile (`/profile`):** Prefix match (`icon: Settings`).
   * **Fullscreen Suppression:** Automatically returns `null` (unmounts) when the current route begins with:
     - `/apps/story-shadowing/player/`
     - `/apps/story-shadowing/create/`

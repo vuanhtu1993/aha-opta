@@ -19,7 +19,7 @@ Provide a unified, frictionless entry point for all AhaTools micro-applications.
 | **FR-DASH-01** | Render Dynamic Time-of-Day Greeting | Learner | App opened | Displays personalized greeting based on current local hour | Client-side Component Contract | [`AC-DASH-01`](acceptance-criteria.md#ac-dash-01) |
 | **FR-DASH-02** | Display Overdue SRS Review Alert Banner | Learner | `dueCount > 0` | Renders high-priority action card linking directly to `/vocab/review` | [`GET /api/vocab/due-count`](api-contract.md#11-consumed-api-endpoints) | [`AC-DASH-02`](acceptance-criteria.md#ac-dash-02) |
 | **FR-DASH-03** | Display "Continue Learning" Resume Card | Learner | Recent storybook exists | Shows most recent story with title, level, and one-tap resume button | [`GET /api/story-shadowing`](api-contract.md#11-consumed-api-endpoints) | [`AC-DASH-03`](acceptance-criteria.md#ac-dash-03) |
-| **FR-DASH-04** | Bottom Mobile Tab Bar with Notification Badges | Learner | App shell rendered | Renders fixed bottom bar with Home, Story, Vocab, Profile & due count badge | [`MobileTabBar`](api-contract.md#12-shell-contracts) | [`AC-DASH-04`](acceptance-criteria.md#ac-dash-04) |
+| **FR-DASH-04** | Bottom Mobile Tab Bar with Notification Badges | Learner | App shell rendered | Renders fixed bottom bar with Home, Story, Speak, Vocab, Profile & due count badge | [`MobileTabBar`](api-contract.md#12-shell-contracts) | [`AC-DASH-04`](acceptance-criteria.md#ac-dash-04) |
 | **FR-DASH-05** | Register Offline PWA Service Worker | Learner | Browser supports ServiceWorker | Registers `/sw.js` for standalone installation and asset caching | [`PWARegister`](api-contract.md#12-shell-contracts) | [`AC-DASH-05`](acceptance-criteria.md#ac-dash-05) |
 
 ---
@@ -85,8 +85,8 @@ sequenceDiagram
 
 **User Story Statement:**
 > As a mobile user,  
-> I want a persistent bottom navigation bar displaying an overdue counter badge,  
-> So that I can switch instantly between Home, Shadowing, Vocab, and Profile, while hiding the bar inside full-screen player modes.
+> I want a persistent bottom navigation bar displaying an overdue counter badge and dedicated tabs for speaking and vocabulary,  
+> So that I can switch instantly between Home, Shadowing, Speak Your Mind, Vocab, and Profile, while hiding the bar inside full-screen player modes.
 
 #### Sequence Diagram
 ```mermaid
@@ -100,8 +100,8 @@ sequenceDiagram
     Shell->>Shell: Check current pathname
     alt On Fullscreen Route (/player/[id] or /vocab/review)
         Shell->>Shell: Return null (Hide tab bar for full immersion)
-    else Standard Route (/, /apps/story-shadowing, /vocab, /profile)
-        Shell->>Shell: Render 4 Tab items + Vocab badge indicator (dueCount > 0)
+    else Standard Route (/, /apps/story-shadowing, /vocab/speak-your-mind, /vocab, /profile)
+        Shell->>Shell: Render 5 Tab items (Home, Story, Speak, Vocab, Profile) + Vocab badge indicator (dueCount > 0)
     end
     
     Learner->>Shell: Tap "Story" Tab

@@ -77,6 +77,17 @@ Scenario: Display overdue number badge on the Vocab navigation tab
   When the bottom navigation bar is rendered
   Then a red pill badge with text "14" is displayed on top of the Vocab icon
     And navigating between non-player tabs keeps the badge synchronized
+
+Scenario: Render 5 tabs with isolated active states between Speak and Vocab
+  Given the bottom navigation bar is rendered on "/vocab/speak-your-mind"
+  Then exactly 5 tab items are visible: "Home", "Story", "Speak", "Vocab", "Profile"
+    And the "Speak" tab is rendered with active styling (amber text and background pill)
+    And the "Vocab" tab is rendered with inactive styling (slate text)
+
+Scenario: Highlight Vocab tab on general vocabulary routes
+  Given the bottom navigation bar is rendered on "/vocab"
+  Then the "Vocab" tab is rendered with active styling
+    And the "Speak" tab is rendered with inactive styling
 ```
 
 ---

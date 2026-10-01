@@ -2,7 +2,7 @@
 
 /**
  * @file SpeakingQuizProgress.tsx
- * @description Component hiển thị tiến trình thời gian thực 4 chặng:
+ * @description Real-time 4-stage pipeline progress indicator:
  * context_resolved (25%) -> question_formulated (50%) -> prep_synthesized (80%) -> completed (100%)
  *
  * Mapped Spec: FR-VOCAB-07 | US-VOCAB-04 | AC-VOCAB-09
@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import { BookOpen, HelpCircle, Brain, CheckCircle2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface SpeakingQuizProgressProps {
   progress: number;
@@ -23,30 +23,26 @@ interface SpeakingQuizProgressProps {
 const STAGES = [
   {
     key: "context_resolved",
-    label: "Phân tích Ngữ cảnh",
+    label: "Context Analysis",
     sub: "Storybook / Topic Context",
-    icon: BookOpen,
     threshold: 25,
   },
   {
     key: "question_formulated",
-    label: "Xây dựng Câu hỏi",
+    label: "Question Design",
     sub: "Debate Dilemma Prompt",
-    icon: HelpCircle,
     threshold: 50,
   },
   {
     key: "prep_synthesized",
-    label: "Tổng hợp Giàn giáo",
+    label: "PREP Synthesis",
     sub: "4-Stage PREP Scaffold",
-    icon: Brain,
     threshold: 80,
   },
   {
     key: "completed",
-    label: "Sẵn sàng Luyện nói",
-    sub: "Production Model Ready",
-    icon: CheckCircle2,
+    label: "Challenge Ready",
+    sub: "Model Answer Verified",
     threshold: 100,
   },
 ];
@@ -62,7 +58,7 @@ export function SpeakingQuizProgress({
       <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>Lỗi trong quá trình tạo bài học</span>
+          <span>Error Generating Challenge</span>
         </div>
         <p className="text-xs text-rose-700 dark:text-rose-300 leading-relaxed">
           {error}
@@ -73,7 +69,7 @@ export function SpeakingQuizProgress({
             onClick={onRetry}
             className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
           >
-            Thử lại
+            Retry
           </button>
         )}
       </div>
@@ -81,15 +77,15 @@ export function SpeakingQuizProgress({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-5 shadow-xs">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-xs">
       {/* Header & Percentage */}
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-            Agentic Pipeline Progress
+            Agentic Pipeline
           </span>
           <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-            {stageMessage || "Đang kết nối hệ thống AI..."}
+            {stageMessage || "Connecting to AI Agent..."}
           </p>
         </div>
         <span className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
@@ -105,14 +101,13 @@ export function SpeakingQuizProgress({
         />
       </div>
 
-      {/* Stage Grid */}
+      {/* Stage Grid (Clean typography, no icon clutter) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
         {STAGES.map((s, idx) => {
           const isDone = progress >= s.threshold;
           const isCurrent =
             progress < s.threshold &&
             (idx === 0 || progress >= STAGES[idx - 1].threshold);
-          const Icon = s.icon;
 
           return (
             <div
@@ -125,15 +120,8 @@ export function SpeakingQuizProgress({
                   : "bg-slate-50/50 dark:bg-slate-800/20 border-slate-200/60 dark:border-slate-800 text-slate-400 dark:text-slate-600"
               }`}
             >
-              <div className="flex items-center gap-1.5 mb-1">
-                <Icon
-                  className={`w-3.5 h-3.5 ${
-                    isDone || isCurrent
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-slate-400 dark:text-slate-600"
-                  }`}
-                />
-                <span className="text-[11px] font-bold truncate">{s.label}</span>
+              <div className="text-[11px] font-bold truncate mb-0.5">
+                {s.label}
               </div>
               <span className="text-[9px] block text-slate-400 dark:text-slate-500 truncate">
                 {s.sub}

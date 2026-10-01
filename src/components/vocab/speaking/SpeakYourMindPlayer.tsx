@@ -4,14 +4,13 @@
  * @file SpeakYourMindPlayer.tsx
  * @description Main Container Component for Speak Your Mind (PREP Speaking).
  * Minimalist, English-only, zero-clutter UI focused on topic, question, target keywords, and PREP scaffold.
- * Tích hợp AI Speaking Quiz Generator để tạo câu hỏi tranh biện theo ngữ cảnh.
  *
  * Mapped Spec: FR-VOCAB-06 | FR-VOCAB-07 | US-VOCAB-03 | US-VOCAB-04 | BR-08 | BR-09
  * Made by Anh Tu - Share to be share
  */
 
 import React, { useState } from "react";
-import { Volume2, Mic, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
+import { Volume2, ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 import { SpeakingPrepCard } from "./SpeakingPrepCard";
@@ -40,42 +39,37 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors py-1 cursor-pointer group"
         >
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-          <span>Quay lại thư viện chủ đề</span>
+          <span>Back to Topics</span>
         </Link>
       </div>
 
-      {/* 1. Top Bar */}
+      {/* 1. Header (Clean, minimal, no icon clutter) */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 flex items-center justify-center text-amber-600 dark:text-amber-400">
-            <Mic className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-sm font-black text-slate-900 dark:text-white leading-none">
-              Speak Your Mind
-            </h1>
-            <span className="text-[10px] font-medium text-slate-400">
-              PREP Argumentation
-            </span>
-          </div>
+        <div>
+          <h1 className="text-base font-black text-slate-900 dark:text-white leading-none">
+            Speak Your Mind
+          </h1>
+          <span className="text-[11px] font-medium text-slate-400">
+            PREP Argumentation Practice
+          </span>
         </div>
+
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setShowGenerator(!showGenerator)}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
-            title="Tạo thử thách nói mới qua AI Agent"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 hover:text-slate-950 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
           >
-            <Sparkles className="w-3 h-3" />
-            <span>{showGenerator ? "Đóng form" : "Tạo bài mới (AI)"}</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>{showGenerator ? "Close" : "New"}</span>
           </button>
-          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] tracking-wider uppercase border border-slate-200 dark:border-slate-700">
+          <span className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase">
             {currentQuestion.level}
           </span>
         </div>
       </div>
 
-      {/* 2. Hiển thị Generator hoặc Player */}
+      {/* 2. Generator Modal / Inline Form */}
       {showGenerator ? (
         <SpeakingQuizGenerator
           initialStorybookId={currentQuestion.storybookId}
@@ -94,9 +88,9 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
               <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
                 {currentQuestion.topic}
               </span>
-              <h1 className="text-lg font-black text-slate-900 dark:text-white leading-snug">
+              <h2 className="text-base font-black text-slate-900 dark:text-white leading-snug">
                 {currentQuestion.question}
-              </h1>
+              </h2>
             </div>
 
             {/* Target Keywords */}
@@ -138,19 +132,9 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
             <button
               type="button"
               onClick={() => setRevealAll(!revealAll)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+              className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
             >
-              {revealAll ? (
-                <>
-                  <EyeOff className="w-3.5 h-3.5" />
-                  <span>Hide all</span>
-                </>
-              ) : (
-                <>
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Show all</span>
-                </>
-              )}
+              {revealAll ? "Hide all models" : "Show all models"}
             </button>
           </div>
 

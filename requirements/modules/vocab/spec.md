@@ -115,36 +115,47 @@ sequenceDiagram
 - **Actor:** Learner
 - **Priority:** Must-have
 - **Mapped FR:** [`FR-VOCAB-06`](#2-functional-requirements)
+- **Mapped Route:** `/vocab/speak-your-mind` (Hub), `/vocab/speak-your-mind/[id]` (Player)
 - **Mapped API:** [`GET /api/vocab/speak-your-mind`](api-contract.md#16-get-apivocabspeak-your-mind)
-- **Mapped Acceptance Criteria:** [`AC-VOCAB-06`](acceptance-criteria.md#ac-vocab-06), [`AC-VOCAB-07`](acceptance-criteria.md#ac-vocab-07)
+- **Mapped Acceptance Criteria:** [`AC-VOCAB-06`](acceptance-criteria.md#ac-vocab-06), [`AC-VOCAB-07`](acceptance-criteria.md#ac-vocab-07), [`AC-VOCAB-11`](acceptance-criteria.md#ac-vocab-11)
 
 **User Story Statement:**
 > As an intermediate learner seeking spoken fluency,  
-> I want to practice expressing my opinion on a topic in 30–60 seconds guided by the PREP framework,  
-> So that I can overcome hesitation, speak with clear logical structure, and compare my thoughts against a native model answer.
+> I want to access a dedicated Speaking Hub to explore discussion topics, see daily featured challenges, and practice expressing my opinion on a topic in 30–60 seconds guided by the PREP framework in a focused player screen,  
+> So that I can overcome hesitation, speak with clear logical structure, and compare my thoughts against a native model answer without navigation disorientation.
 
 #### Sequence Diagram
 ```mermaid
 sequenceDiagram
     autonumber
     actor Learner as Language Learner
-    participant UI as SpeakYourMind Player
-    participant API as Next.js API (/api/vocab/speak-your-mind)
+    participant Hub as SpeakYourMind Hub (/vocab/speak-your-mind)
+    participant Player as SpeakYourMind Player (/vocab/speak-your-mind/[id])
+    participant API as Next.js API / SRS Service
     participant Speaker as VocabSpeaker (Web Speech API)
 
-    Learner->>UI: Open "Speak Your Mind" Quiz
-    UI->>API: GET /api/vocab/speak-your-mind
-    API-->>UI: Return ISpeakingQuestion (Topic, Dilemma, Target Vocab, PREP Hints)
-    UI-->>Learner: Display Challenge Question, Target Words, and 4 PREP Scaffold Boxes (Model Answers hidden)
+    Learner->>Hub: Tap "Speak" tab on Bottom Bar
+    Hub->>API: Load available challenges & daily featured dilemma
+    API-->>Hub: Return list of ISpeakingQuestion (sq-01, sq-02, ...)
+    Hub-->>Learner: Display Hero Banner (PREP Overview), Daily Challenge, Filter Chips & Challenge Library
 
-    Learner->>UI: Tap "Start Timer (45s)" and speaks out loud using signpost hints
-    UI->>UI: Countdown timer elapses / Learner taps "Finish Speaking"
+    alt Select Challenge from Library or Daily Card
+        Learner->>Hub: Tap "Luyện ngay" / Click Challenge Card
+        Hub->>Player: Navigate to /vocab/speak-your-mind/[id]
+        Player-->>Learner: Render Challenge Question, Target Words, and 4 PREP Scaffold Boxes (Model Answers hidden)
+    else Back to Hub
+        Learner->>Player: Tap "← Quay lại danh sách chủ đề"
+        Player->>Hub: Navigate to /vocab/speak-your-mind
+    end
+
+    Learner->>Player: Tap "Start Timer (45s)" and speaks out loud using signpost hints
+    Player->>Player: Countdown timer elapses / Learner taps "Finish Speaking"
     
-    Learner->>UI: Tap "Reveal Model Answer" (Accordion)
-    UI-->>Learner: Display 4 model sentences (Point, Reason, Example, Conclusion)
+    Learner->>Player: Tap "Reveal Model Answer" (Accordion / Show all)
+    Player-->>Learner: Display 4 model sentences (Point, Reason, Example, Conclusion)
     
-    Learner->>UI: Click Speaker Icon next to model sentence
-    UI->>Speaker: vocabSpeaker.speak(modelSentence)
+    Learner->>Player: Click Speaker Icon next to model sentence
+    Player->>Speaker: vocabSpeaker.speak(modelSentence)
     Speaker-->>Learner: Native pronunciation playback via browser audio
 ```
 
@@ -155,13 +166,13 @@ sequenceDiagram
 - **Actor:** Learner / Content Curator
 - **Priority:** Must-have
 - **Mapped FR:** [`FR-VOCAB-07`](#2-functional-requirements)
-- **Mapped API:** [`POST /api/agents/speaking-quiz/jobs`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz), [`GET /api/agents/speaking-quiz/jobs/:jobId/progress`](speaking-quiz-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-sse), [`GET /api/agents/speaking-quiz/questions/:id`](speaking-quiz-api-contract.md#24-lấy-chi-tiết-một-câu-hỏi-theo-id)
-- **Mapped Acceptance Criteria:** [`AC-VOCAB-08`](acceptance-criteria.md#ac-vocab-08), [`AC-VOCAB-09`](acceptance-criteria.md#ac-vocab-09), [`AC-VOCAB-10`](acceptance-criteria.md#ac-vocab-10)
+- **Mapped API:** [`POST /api/agents/speaking-quiz/jobs`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz), [`GET /api/agents/speaking-quiz/jobs/:jobId/progress`](speaking-quiz-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-sse), [`GET /api/agents/speaking-quiz/questions/:id`](speaking-quiz-api-contract.md#24-lấy-chi-tiết-một-câu-hỏi-theo-id), [`GET /api/story-shadowing`](../story-shadowing/api-contract.md)
+- **Mapped Acceptance Criteria:** [`AC-VOCAB-08`](acceptance-criteria.md#ac-vocab-08), [`AC-VOCAB-09`](acceptance-criteria.md#ac-vocab-09), [`AC-VOCAB-10`](acceptance-criteria.md#ac-vocab-10), [`AC-VOCAB-12`](acceptance-criteria.md#ac-vocab-12)
 
 **User Story Statement:**
 > As an ambitious language learner or content curator,  
-> I want to dynamically generate a debate-oriented speaking challenge with a 4-stage PREP scaffold for any Storybook lesson or custom topic using the AI agent, and view real-time pipeline generation progress via a progress bar,  
-> So that I can practice authentic critical thinking and speaking without waiting blindly or experiencing HTTP timeout errors.
+> I want to dynamically generate a debate-oriented speaking challenge with a 4-stage PREP scaffold for any Storybook lesson (selected via an intuitive visual search modal rather than raw database IDs) or custom topic using the AI agent, and view real-time pipeline generation progress via a progress bar,  
+> So that I can practice authentic critical thinking and speaking without technical friction, waiting blindly, or experiencing HTTP timeout errors.
 
 #### Sequence Diagram
 ```mermaid

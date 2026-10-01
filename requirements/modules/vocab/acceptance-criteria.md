@@ -228,4 +228,59 @@ Scenario: Handle worker failure gracefully over SSE
 
 ---
 
+### AC-VOCAB-11: Speaking Hub Discovery & Dynamic Deep-Linking
+- **Target User Story:** [`US-VOCAB-03`](spec.md#us-vocab-03)
+- **Target Route:** `/vocab/speak-your-mind` (Hub), `/vocab/speak-your-mind/[id]` (Player)
+- **Governing Business Rule:** [`BR-08`](../../global/business-rules.md#br-08)
+
+```gherkin
+Scenario: Navigate to Speaking Hub from bottom navigation bar
+  Given the learner is anywhere in the mobile application
+  When the learner taps the "Speak" tab in the bottom bar
+  Then the browser navigates to "/vocab/speak-your-mind"
+    And the page displays the "Speak Your Mind" header with PREP methodology explanation
+    And the page displays the Daily Featured Challenge card
+    And the page displays the AI Debate Generator action button
+    And the page displays a filterable list of available challenge cards (B1, B2, C1)
+
+Scenario: Open speaking challenge detail from Hub
+  Given the learner is on "/vocab/speak-your-mind"
+  When the learner taps "Luyện ngay" or clicks a challenge card with ID "sq-01"
+  Then the browser navigates to "/vocab/speak-your-mind/sq-01"
+    And the SpeakYourMindPlayer renders the dilemma, target keywords, and 4 PREP cards
+    And a top bar with "← Quay lại danh sách" is visible
+
+Scenario: Navigate back to Hub from Player
+  Given the learner is inside "/vocab/speak-your-mind/sq-01"
+  When the learner taps "← Quay lại danh sách"
+  Then the browser navigates back to "/vocab/speak-your-mind" without state corruption
+```
+
+---
+
+### AC-VOCAB-12: Visual Storybook Selection without Technical ID Exposure
+- **Target User Story:** [`US-VOCAB-04`](spec.md#us-vocab-04)
+- **Target Component:** `SpeakingQuizGenerator` & `StorybookSelectorModal`
+- **Target API:** `GET /api/story-shadowing`
+
+```gherkin
+Scenario: Select Storybook visually from modal without typing ID
+  Given the learner opens the AI Debate Generator and selects "Theo Storybook" tab
+  When the learner taps "Chọn bài học từ Storybook"
+  Then a modal dialog opens displaying recent storybooks fetched from "GET /api/story-shadowing"
+    And each story card displays its title, thumbnail (or placeholder icon), and level badge
+    And a search bar allows filtering storybooks by keyword
+
+Scenario: Confirm storybook selection and bind internal ID
+  Given the storybook selector modal is open
+  When the learner clicks on a story titled "Atomic Habits Summary" with _id "679c1a2b3c4d5e6f7a8b9c0d"
+  Then the modal closes
+    And the form displays a selected story preview card showing title and level
+    And the internal form payload binds "storybookId" to "679c1a2b3c4d5e6f7a8b9c0d"
+    And the raw ID string is completely concealed from learner view
+    And buttons to "Đổi bài khác" and "Xoá lựa chọn" are available
+```
+
+---
+
 *Made by Anh Tu - Share to be share*

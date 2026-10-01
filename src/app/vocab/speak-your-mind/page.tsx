@@ -1,21 +1,16 @@
 import React from "react";
-import { getSpeakingQuestionById } from "@/lib/srs/speaking-quiz.service";
-import { SpeakYourMindPlayer } from "@/components/vocab/speaking/SpeakYourMindPlayer";
+import { getSpeakingQuestions } from "@/lib/srs/speaking-quiz.service";
+import { SpeakYourMindHub } from "@/components/vocab/speaking/SpeakYourMindHub";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function SpeakYourMindPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ id?: string; storybookId?: string }>;
-}) {
-  const { id } = await searchParams;
-  const question = await getSpeakingQuestionById(id);
+export default async function SpeakYourMindPage() {
+  const questions = await getSpeakingQuestions();
 
   return (
     <div className="p-4 pt-2">
-      <SpeakYourMindPlayer question={question} />
+      <SpeakYourMindHub questions={questions} />
     </div>
   );
 }

@@ -11,7 +11,7 @@
  */
 
 import React, { useState } from "react";
-import { Volume2, Mic, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Volume2, Mic, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 import { SpeakingPrepCard } from "./SpeakingPrepCard";
@@ -33,6 +33,17 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
 
   return (
     <div className="space-y-4 max-w-xl mx-auto pb-28">
+      {/* 0. Back Navigation to Hub */}
+      <div>
+        <Link
+          href="/vocab/speak-your-mind"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors py-1 cursor-pointer group"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          <span>Quay lại thư viện chủ đề</span>
+        </Link>
+      </div>
+
       {/* 1. Top Bar */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">

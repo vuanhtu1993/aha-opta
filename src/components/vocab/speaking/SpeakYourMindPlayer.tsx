@@ -14,7 +14,6 @@ import { Volume2, ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 import { SpeakingPrepCard } from "./SpeakingPrepCard";
-import { SpeakingQuizGenerator } from "./SpeakingQuizGenerator";
 import { vocabSpeaker } from "@/lib/services/vocab-speaker";
 
 interface SpeakYourMindPlayerProps {
@@ -22,8 +21,7 @@ interface SpeakYourMindPlayerProps {
 }
 
 export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
-  const [currentQuestion, setCurrentQuestion] = useState<ISpeakingQuestion>(question);
-  const [showGenerator, setShowGenerator] = useState(false);
+  const [currentQuestion] = useState<ISpeakingQuestion>(question);
   const [revealAll, setRevealAll] = useState(false);
 
   const handleSpeakWord = (word: string) => {
@@ -55,34 +53,20 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setShowGenerator(!showGenerator)}
+          <Link
+            href="/vocab/speak-your-mind/create"
             className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 hover:text-slate-950 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>{showGenerator ? "Close" : "New"}</span>
-          </button>
+            <span>New</span>
+          </Link>
           <span className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase">
             {currentQuestion.level}
           </span>
         </div>
       </div>
 
-      {/* 2. Generator Modal / Inline Form */}
-      {showGenerator ? (
-        <SpeakingQuizGenerator
-          initialStorybookId={currentQuestion.storybookId}
-          onQuizReady={(newQuestion) => {
-            setCurrentQuestion(newQuestion);
-            setShowGenerator(false);
-            setRevealAll(false);
-          }}
-          onCancel={() => setShowGenerator(false)}
-        />
-      ) : (
-        <>
-          {/* Topic & Question Card */}
+      {/* Topic & Question Card */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 space-y-3.5 shadow-2xs">
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
@@ -161,8 +145,6 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
               isForceRevealed={revealAll}
             />
           </div>
-        </>
-      )}
     </div>
   );
 }

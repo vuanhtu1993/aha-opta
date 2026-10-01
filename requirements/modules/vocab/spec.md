@@ -166,6 +166,7 @@ sequenceDiagram
 - **Actor:** Learner / Content Curator
 - **Priority:** Must-have
 - **Mapped FR:** [`FR-VOCAB-07`](#2-functional-requirements)
+- **Mapped Route:** `/vocab/speak-your-mind/create`
 - **Mapped API:** [`POST /api/agents/speaking-quiz/jobs`](speaking-quiz-api-contract.md#21-kích-hoạt-job-sinh-câu-hỏi-speaking-quiz), [`GET /api/agents/speaking-quiz/jobs/:jobId/progress`](speaking-quiz-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-sse), [`GET /api/agents/speaking-quiz/questions/:id`](speaking-quiz-api-contract.md#24-lấy-chi-tiết-một-câu-hỏi-theo-id), [`GET /api/story-shadowing`](../story-shadowing/api-contract.md)
 - **Mapped Acceptance Criteria:** [`AC-VOCAB-08`](acceptance-criteria.md#ac-vocab-08), [`AC-VOCAB-09`](acceptance-criteria.md#ac-vocab-09), [`AC-VOCAB-10`](acceptance-criteria.md#ac-vocab-10), [`AC-VOCAB-12`](acceptance-criteria.md#ac-vocab-12)
 

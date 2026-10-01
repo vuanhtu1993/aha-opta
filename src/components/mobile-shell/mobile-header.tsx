@@ -10,7 +10,7 @@ export function MobileHeader() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isRootPage = pathname === "/" || pathname === "/apps/story-shadowing" || pathname === "/vocab" || pathname === "/profile";
+  const isRootPage = pathname === "/" || pathname === "/apps/story-shadowing" || pathname === "/vocab" || pathname === "/profile" || pathname === "/vocab/speak-your-mind";
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 h-14 flex items-center justify-between">

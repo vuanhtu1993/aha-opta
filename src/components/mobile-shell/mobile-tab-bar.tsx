@@ -64,7 +64,8 @@ export function MobileTabBar() {
   const isHidden =
     pathname.startsWith("/apps/story-shadowing/player") ||
     pathname.startsWith("/apps/story-shadowing/create") ||
-    pathname.startsWith("/vocab/review");
+    pathname.startsWith("/vocab/review") ||
+    pathname.startsWith("/vocab/speak-your-mind/create");
   if (isHidden) return null;
 
   return (

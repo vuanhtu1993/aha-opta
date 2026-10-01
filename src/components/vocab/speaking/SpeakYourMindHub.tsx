@@ -11,18 +11,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Plus, ArrowRight } from "lucide-react";
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
-import { SpeakingQuizGenerator } from "./SpeakingQuizGenerator";
 
 interface SpeakYourMindHubProps {
   questions: ISpeakingQuestion[];
 }
 
 export function SpeakYourMindHub({ questions }: SpeakYourMindHubProps) {
-  const router = useRouter();
-  const [showGeneratorModal, setShowGeneratorModal] = useState(false);
   const [levelFilter, setLevelFilter] = useState<string>("all");
 
   const dailyChallenge = questions.length > 0 ? questions[0] : null;
@@ -45,13 +41,12 @@ export function SpeakYourMindHub({ questions }: SpeakYourMindHubProps) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowGeneratorModal(true)}
+        <Link
+          href="/vocab/speak-your-mind/create"
           className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#FFBA49] hover:bg-[#e6a640] text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-colors active:scale-98 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Create
-        </button>
+        </Link>
       </div>
 
       {/* 2. Hero Methodology Guide (PREP Framework) - Clean Typography, No Icon Clutter */}
@@ -221,21 +216,6 @@ export function SpeakYourMindHub({ questions }: SpeakYourMindHubProps) {
           ))}
         </div>
       </div>
-
-      {/* 5. Generator Modal Dialog */}
-      {showGeneratorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-xl">
-            <SpeakingQuizGenerator
-              onQuizReady={(newQuestion) => {
-                setShowGeneratorModal(false);
-                router.push(`/vocab/speak-your-mind/${newQuestion.id}`);
-              }}
-              onCancel={() => setShowGeneratorModal(false)}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

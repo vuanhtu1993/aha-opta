@@ -1,6 +1,6 @@
 # Speak Your Mind (PREP Speaking Quiz) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Triển khai tính năng **Speak Your Mind (`prep_speaking`)** theo đặc tả [`US-VOCAB-03`](file:///Users/anhtus/Documents/Development/NextJS/aha-tools/requirements/modules/vocab/spec.md#us-vocab-03-practice-short-opinion-speaking-speak-your-mind) — chế độ Quiz luyện nói ngắn 30–60s theo khung tư duy PREP (Point, Reason, Example, Point), áp dụng cơ chế giàn giáo (Scaffold-First: ẩn bài mẫu, cung cấp từ nối signposts và từ vựng mục tiêu, mở bài mẫu đối chiếu theo nhu cầu và phát âm audio qua Web Speech API).
 
@@ -20,7 +20,7 @@
 **Files:**
 - Create: `src/lib/types/speaking-quiz.ts`
 
-- [ ] **Step 1: Tạo file `src/lib/types/speaking-quiz.ts`**
+- [x] **Step 1: Tạo file `src/lib/types/speaking-quiz.ts`**
 
 ```typescript
 /**
@@ -62,7 +62,7 @@ export interface ISpeakingQuestion {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/lib/types/speaking-quiz.ts
@@ -76,7 +76,7 @@ git commit -m "feat(vocab): add TypeScript interfaces for Speak Your Mind PREP q
 **Files:**
 - Create: `src/lib/srs/speaking-quiz.service.ts`
 
-- [ ] **Step 1: Tạo file `src/lib/srs/speaking-quiz.service.ts`**
+- [x] **Step 1: Tạo file `src/lib/srs/speaking-quiz.service.ts`**
 
 ```typescript
 /**
@@ -187,7 +187,7 @@ export async function getSpeakingQuestionById(id?: string): Promise<ISpeakingQue
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/lib/srs/speaking-quiz.service.ts
@@ -201,7 +201,7 @@ git commit -m "feat(vocab): add speaking quiz service with seed PREP questions"
 **Files:**
 - Create: `src/app/api/vocab/speak-your-mind/route.ts`
 
-- [ ] **Step 1: Tạo file `src/app/api/vocab/speak-your-mind/route.ts`**
+- [x] **Step 1: Tạo file `src/app/api/vocab/speak-your-mind/route.ts`**
 
 ```typescript
 /**
@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Kiểm thử route bằng `curl`**
+- [x] **Step 2: Kiểm thử route bằng `curl`**
 
 Chạy command:
 ```bash
@@ -249,7 +249,7 @@ curl -s http://localhost:3000/api/vocab/speak-your-mind | grep "Should AI be all
 ```
 Expected: Tìm thấy chuỗi `"Should AI be allowed to replace human teachers?"`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/app/api/vocab/speak-your-mind/route.ts
@@ -264,7 +264,7 @@ git commit -m "feat(api): add GET /api/vocab/speak-your-mind route handler"
 - Create: `src/components/vocab/speaking/SpeakingPrepCard.tsx`
 - Create: `src/components/vocab/speaking/SpeakingTimer.tsx`
 
-- [ ] **Step 1: Tạo component `src/components/vocab/speaking/SpeakingPrepCard.tsx`**
+- [x] **Step 1: Tạo component `src/components/vocab/speaking/SpeakingPrepCard.tsx`**
 
 ```tsx
 "use client";
@@ -410,7 +410,7 @@ export function SpeakingPrepCard({
 }
 ```
 
-- [ ] **Step 2: Tạo component `src/components/vocab/speaking/SpeakingTimer.tsx`**
+- [x] **Step 2: Tạo component `src/components/vocab/speaking/SpeakingTimer.tsx`**
 
 ```tsx
 "use client";
@@ -510,7 +510,7 @@ export function SpeakingTimer({
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/vocab/speaking/SpeakingPrepCard.tsx src/components/vocab/speaking/SpeakingTimer.tsx
@@ -524,7 +524,7 @@ git commit -m "feat(ui): create SpeakingPrepCard and SpeakingTimer components"
 **Files:**
 - Create: `src/components/vocab/speaking/SpeakYourMindPlayer.tsx`
 
-- [ ] **Step 1: Tạo file `src/components/vocab/speaking/SpeakYourMindPlayer.tsx`**
+- [x] **Step 1: Tạo file `src/components/vocab/speaking/SpeakYourMindPlayer.tsx`**
 
 ```tsx
 "use client";
@@ -664,7 +664,7 @@ export function SpeakYourMindPlayer({ question }: SpeakYourMindPlayerProps) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/components/vocab/speaking/SpeakYourMindPlayer.tsx
@@ -679,7 +679,7 @@ git commit -m "feat(ui): implement SpeakYourMindPlayer container component"
 - Create: `src/app/vocab/speak-your-mind/page.tsx`
 - Modify: `src/app/vocab/page.tsx`
 
-- [ ] **Step 1: Tạo file `src/app/vocab/speak-your-mind/page.tsx`**
+- [x] **Step 1: Tạo file `src/app/vocab/speak-your-mind/page.tsx`**
 
 ```tsx
 import React from "react";
@@ -704,7 +704,7 @@ export default async function SpeakYourMindPage({
 }
 ```
 
-- [ ] **Step 2: Gắn thẻ truy cập Speak Your Mind vào `src/app/vocab/page.tsx`**
+- [x] **Step 2: Gắn thẻ truy cập Speak Your Mind vào `src/app/vocab/page.tsx`**
 
 Chèn banner điều hướng vào giữa `VocabClozeBatchBanner` và danh sách từ vựng:
 
@@ -740,7 +740,7 @@ Chèn banner điều hướng vào giữa `VocabClozeBatchBanner` và danh sách
       </div>
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/app/vocab/speak-your-mind/page.tsx src/app/vocab/page.tsx
@@ -755,19 +755,19 @@ git commit -m "feat(vocab): add Speak Your Mind trial page and banner entry in /
 - Execute: Build & Lint commands
 - Verify: Interactive Browser Flow
 
-- [ ] **Step 1: Chạy Next.js build để kiểm tra kiểu dữ liệu và cú pháp**
+- [x] **Step 1: Chạy Next.js build để kiểm tra kiểu dữ liệu và cú pháp**
 
 Run: `npm run build`
 Expected: Compile thành công không có lỗi TypeScript hoặc lint.
 
-- [ ] **Step 2: Kiểm thử thủ công trên trình duyệt tại `/vocab/speak-your-mind`**
+- [x] **Step 2: Kiểm thử thủ công trên trình duyệt tại `/vocab/speak-your-mind`**
   - Mở URL `http://localhost:3000/vocab/speak-your-mind`.
   - Kiểm tra 4 thẻ PREP hiển thị đầy đủ hint và signposts; bài mẫu bị ẩn mặc định ([`AC-VOCAB-06`](file:///Users/anhtus/Documents/Development/NextJS/aha-tools/requirements/modules/vocab/acceptance-criteria.md#ac-vocab-06-scaffolded-prep-display--concealed-model-answer)).
   - Bấm nút "Bấm giờ tự nói" xem đồng hồ đếm ngược có chạy mượt mà không.
   - Bấm nút "Xem câu mẫu" trên từng thẻ và "Mở toàn bộ bài mẫu" để kiểm tra tính năng mở đáp án.
   - Bấm vào biểu tượng loa để nghe thử giọng đọc Web Speech API ([`AC-VOCAB-07`](file:///Users/anhtus/Documents/Development/NextJS/aha-tools/requirements/modules/vocab/acceptance-criteria.md#ac-vocab-07-offline-speech-synthesis-playback-for-model-sentences)).
 
-- [ ] **Step 3: Commit hoàn tất Phase 1**
+- [x] **Step 3: Commit hoàn tất Phase 1**
 
 ```bash
 git commit --allow-empty -m "docs: complete verification for US-VOCAB-03 Speak Your Mind MVP"

@@ -4,26 +4,20 @@ import { SpeakYourMindHub } from "@/components/vocab/speaking/SpeakYourMindHub";
 
 /**
  * @file page.tsx
- * @description Server-rendered Page for Speak Your Mind Hub.
- * Supports URL searchParams (?level=...) for level filtering without client state.
+ * @description Static Pre-rendered Page with On-Demand Revalidation for Speak Your Mind Hub.
+ * Uses On-Demand ISR: fully cached and instantly served from CDN/Server cache,
+ * regenerated only when new questions are added via revalidateSpeakingHub().
  *
  * Mapped Spec: FR-VOCAB-06 | FR-VOCAB-07 | US-VOCAB-03
  * Made by Anh Tu - Share to be share
  */
 
-export const dynamic = "force-dynamic";
-
-export default async function SpeakYourMindPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ level?: string }>;
-}) {
-  const { level = "all" } = await searchParams;
+export default async function SpeakYourMindPage() {
   const questions = await getSpeakingQuestions();
 
   return (
     <div className="p-4 pt-2">
-      <SpeakYourMindHub questions={questions} currentLevel={level} />
+      <SpeakYourMindHub questions={questions} />
     </div>
   );
 }

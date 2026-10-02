@@ -3,52 +3,37 @@
  * @description Định nghĩa Type & Interface cho module Story Shadowing (Text & YouTube Pipelines)
  * 
  * Target Application: aha-tools (Next.js Frontend / PWA & Server Services)
- * Synchronized with: aha-mind-agents (NestJS Agent Gateway)
+ * Synchronized with: aha-mind-agents (NestJS Agent Gateway v2)
  * 
  * Made by Anh Tu - Share to be share
  */
 
-/**
- * 1 từ kèm phiên âm chuẩn IPA (International Phonetic Alphabet)
- */
 export interface IWordItem {
   word: string;
   ipa: string;
 }
 
-/**
- * 1 câu hoàn chỉnh trong bài học luyện Shadowing
- */
 export interface IStorybookSentence {
   id: number;
   text: string;
-  audioBase64?: string; // Dữ liệu âm thanh nén base64 (chỉ có trong Text Pipeline)
+  audioBase64?: string; // Tệp âm thanh nén base64 (chỉ có trong Text Pipeline)
   words?: IWordItem[];  // Danh sách từ vựng kèm phiên âm IPA từng từ
   startMs?: number;     // Mốc bắt đầu tính theo mili-giây (cho YouTube Video)
   endMs?: number;       // Mốc kết thúc tính theo mili-giây (cho YouTube Video)
 }
 
-/**
- * Mục từ cùng họ từ loại (Word Family)
- */
 export interface IWordFamilyItem {
   word: string;
-  partOfSpeech?: string; // e.g. noun, verb, adjective, adverb
+  partOfSpeech?: string;
   ipa?: string;
   explanation: string;
 }
 
-/**
- * Cụm từ cố định tự nhiên (Collocation)
- */
 export interface ICollocationItem {
   collocation: string;
   explanation: string;
 }
 
-/**
- * Từ vựng trọng tâm được bóc tách và giải nghĩa chuyên sâu
- */
 export interface IStorybookKeyword {
   word: string;
   ipa?: string;
@@ -59,9 +44,6 @@ export interface IStorybookKeyword {
   collocations?: ICollocationItem[];
 }
 
-/**
- * Thực thể bài học Storybook lưu trữ trong MongoDB (Collection: storybooks)
- */
 export interface IStorybook {
   _id: string;
   title: string;
@@ -82,50 +64,35 @@ export interface IStorybook {
   updatedAt?: string;
 }
 
-/**
- * Payload gửi lên để kích hoạt Text Shadowing Pipeline
- */
-export interface CreateTextShadowingRequest {
-  text: string;
-  voice?: string; // Default: "FEMALE" (en-US-Journey-F)
+export interface CreateStoryShadowingJobRequest {
+  pipeline: "text" | "youtube";
+  text?: string;
+  voice?: string;
+  youtubeUrl?: string;
+  forceRegenerate?: boolean;
 }
 
-/**
- * Payload gửi lên để kích hoạt YouTube Shadowing Pipeline
- */
-export interface CreateYoutubeShadowingRequest {
-  youtubeUrl: string;
+export interface CreateStoryShadowingJobResponse {
+  jobId: string;
+  status: "queued" | "completed";
+  sseUrl?: string;
+  existingStoryId?: string;
+  createdAt: string;
 }
 
-/**
- * Dữ liệu trả về trong Payload của sự kiện hoàn tất (status: "done")
- */
-export interface StoryShadowingDonePayload {
-  storyId: string;
-  id: string;
-  title?: string;
-  youtubeTitle?: string;
-  youtubeVideoId?: string;
-  level: "easy" | "medium" | "hard";
-  speakingRate: number;
-  sentences: IStorybookSentence[];
-  keywords: IStorybookKeyword[];
-  rawText?: string;
-  tokenUsage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-}
-
-/**
- * Sự kiện tiến trình thời gian thực nhận từ Server-Sent Events (SSE)
- */
 export interface StoryShadowingProgressEvent {
+  jobId?: string;
   status?: "init" | "running" | "completed" | "done" | "failed";
-  stepId?: "sentenceSplitter" | "ttsGenerator" | "keywordIdentifier" | "keywordEnricher" | "youtubeFetcher" | "youtubeConsolidator" | string;
-  progress?: number; // 0 -> 100%
+  stepId?: string;
+  progress?: number;
   message?: string;
-  payload?: StoryShadowingDonePayload;
-  error?: string;
+  payload?: {
+    storyId?: string;
+    id?: string;
+    title?: string;
+    level?: string;
+    sentenceCount?: number;
+    sentences?: IStorybookSentence[];
+    keywords?: IStorybookKeyword[];
+  };
 }

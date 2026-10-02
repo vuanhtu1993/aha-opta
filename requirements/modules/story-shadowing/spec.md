@@ -1,26 +1,28 @@
 # Module STORY-SHADOWING — Business Specification
 
-> **Parent Document:** [Requirement Analysis Package](../../README.md)
-> **Module ID:** `SHADOW` | **Domain:** AI-Assisted Speech Shadowing & YouTube Series Processing
-> **Linked Documents:** [API Contract](api-contract.md) | [Acceptance Criteria](acceptance-criteria.md)
+> **Parent Document:** [Requirement Analysis Package](../../README.md)  
+> **Module ID:** `SHADOW` | **Domain:** AI-Assisted Speech Shadowing & YouTube Multi-Agent Processing  
+> **Linked Documents:** [API Contract](api-contract.md) | [Agent API Contract v2.0](aha-mind-agents-api-contract.md) | [Acceptance Criteria](acceptance-criteria.md)  
+> **Specification Version:** 2.0.0 (Asynchronous BullMQ + Redis Pub/Sub + GET SSE Architecture)
 
 ---
 
 ## 1. Business Objective
 
-Empower language learners to achieve spoken fluency and natural rhythm through **Speech Shadowing** (speaking simultaneously with native audio). Decompose native content (YouTube videos or custom essays) into structured, timed sentences with **word-by-word IPA phonetics**, **Google Cloud TTS narration**, and **automated vocabulary keyword extraction** orchestrated by LangGraph multi-agent pipelines.
+Empower language learners to achieve spoken fluency and natural rhythm through **Speech Shadowing** (speaking simultaneously with native audio). Decompose native content (YouTube videos or custom texts) into structured, timed sentences with **word-by-word IPA phonetics**, **Google Cloud TTS narration**, and **automated vocabulary keyword extraction** orchestrated by LangGraph multi-agent pipelines running asynchronously on `aha-mind-agents`.
 
 ---
 
 ## 2. Functional Requirements
 
-| FR ID                  | Feature Description                           | Actor   | Pre-condition              | Post-condition                                                             | Mapped API Endpoint                                                                                                        | Target AC                                              |
-| ---------------------- | --------------------------------------------- | ------- | -------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| **FR-SHADOW-01** | Browse & Filter Storybook Library             | Learner | App shell rendered         | Returns list of available storybooks with metadata and sentence counts     | [`GET /api/story-shadowing`](api-contract.md#11-get-apistory-shadowing)                                                   | [`AC-SHADOW-01`](acceptance-criteria.md#ac-shadow-01) |
-| **FR-SHADOW-02** | Fetch Full Storybook Player Payload           | Learner | Storybook selected by ID   | Returns sentences with audio timestamps, IPA words, and extracted keywords | [`GET /api/story-shadowing/:id`](api-contract.md#12-get-apistory-shadowingid)                                             | [`AC-SHADOW-02`](acceptance-criteria.md#ac-shadow-02) |
-| **FR-SHADOW-03** | Suggest Series Segments from YouTube Video    | Curator | Valid YouTube URL provided | LangChain extracts transcript and returns logical chunk suggestions        | [`POST /api/story-shadowing/youtube/suggest-segments`](api-contract.md#13-post-apistory-shadowingyoutubesuggest-segments) | [`AC-SHADOW-03`](acceptance-criteria.md#ac-shadow-03) |
-| **FR-SHADOW-04** | Stream Multi-Node LangGraph Series Generation | Curator | Segments confirmed by user | Executes parallel LangGraph graph, streams SSE progress, saves series      | [`POST /api/story-shadowing/youtube/create-series`](api-contract.md#14-post-apistory-shadowingyoutubecreate-series)       | [`AC-SHADOW-04`](acceptance-criteria.md#ac-shadow-04) |
-| **FR-SHADOW-05** | Delete Storybook Entry                        | Curator | Target storybook exists    | Removes Storybook document from MongoDB                                    | [`DELETE /api/story-shadowing/:id`](api-contract.md#15-delete-apistory-shadowingid)                                       | [`AC-SHADOW-05`](acceptance-criteria.md#ac-shadow-05) |
+| FR ID | Feature Description | Actor | Pre-condition | Post-condition | Mapped API Endpoint | Target AC |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **FR-SHADOW-01** | Browse & Filter Storybook Library | Learner | App shell rendered | Returns list of available storybooks with metadata, CEFR level, and sentence counts | [`GET /api/agents/story-shadowing/stories`](aha-mind-agents-api-contract.md#24-truy-vấn-danh-sách-bài-học-flexible-filters) | [`AC-SHADOW-01`](acceptance-criteria.md#ac-shadow-01) |
+| **FR-SHADOW-02** | Fetch Full Storybook Player Payload | Learner | Storybook selected by ID | Returns sentences with audio timestamps, word-by-word IPA, and enriched keywords | [`GET /api/agents/story-shadowing/stories/:id`](aha-mind-agents-api-contract.md#23-lấy-dữ-liệu-chi-tiết-bài-học-storybook-theo-id) | [`AC-SHADOW-02`](acceptance-criteria.md#ac-shadow-02) |
+| **FR-SHADOW-03** | Asynchronous Job Enqueue (Text & YouTube) | Curator / Learner | Valid text (10-10k chars) or valid YouTube URL | Returns `202 Accepted` with `jobId` & `sseUrl`, or returns existing story immediately if idempotent hit | [`POST /api/agents/story-shadowing/jobs`](aha-mind-agents-api-contract.md#21-kích-hoạt-job-tạo-bài-học-shadowing-asynchronous-job-enqueue) | [`AC-SHADOW-03`](acceptance-criteria.md#ac-shadow-03) |
+| **FR-SHADOW-04** | Real-time GET SSE Progress Stream | Client | Job enqueued with active `jobId` | Streams pipeline progress events (`sentenceSplitter`, `ttsGenerator`, `keywordIdentifier`, `keywordEnricher`) via native `EventSource` | [`GET /api/agents/story-shadowing/jobs/:jobId/progress`](aha-mind-agents-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-server-sent-events-get-sse) | [`AC-SHADOW-04`](acceptance-criteria.md#ac-shadow-04) |
+| **FR-SHADOW-05** | Delete Storybook Entry | Curator | Target storybook exists | Removes Storybook document from MongoDB and purges static cache | [`DELETE /api/story-shadowing/:id`](api-contract.md#15-delete-apistory-shadowingid) | [`AC-SHADOW-05`](acceptance-criteria.md#ac-shadow-05) |
+| **FR-SHADOW-06** | Idempotent Fast-Path Retrieval (<50ms) | Curator / Learner | YouTube URL already processed in DB & `forceRegenerate === false` | Returns `status: "completed"` with `existingStoryId` in <50ms without enqueuing BullMQ job | [`POST /api/agents/story-shadowing/jobs`](aha-mind-agents-api-contract.md#21-kích-hoạt-job-tạo-bài-học-shadowing-asynchronous-job-enqueue) | [`AC-SHADOW-06`](acceptance-criteria.md#ac-shadow-06) |
 
 ---
 
@@ -32,13 +34,13 @@ Empower language learners to achieve spoken fluency and natural rhythm through *
 - **Actor:** Learner
 - **Priority:** Must-have
 - **Mapped FR:** [`FR-SHADOW-01`](#2-functional-requirements), [`FR-SHADOW-02`](#2-functional-requirements)
-- **Mapped API:** [`GET /api/story-shadowing/:id`](api-contract.md#12-get-apistory-shadowingid)
+- **Mapped API:** [`GET /api/agents/story-shadowing/stories/:id`](aha-mind-agents-api-contract.md#23-lấy-dữ-liệu-chi-tiết-bài-học-storybook-theo-id)
 - **Mapped Acceptance Criteria:** [`AC-SHADOW-01`](acceptance-criteria.md#ac-shadow-01), [`AC-SHADOW-02`](acceptance-criteria.md#ac-shadow-02)
 
 **User Story Statement:**
 
-> As an intermediate English learner,
-> I want to play each sentence repeatedly with synchronized highlighting, IPA phonetic transcriptions, and adjustable playback speed,
+> As an intermediate English learner,  
+> I want to play each sentence repeatedly with synchronized highlighting, IPA phonetic transcriptions, and adjustable playback speed,  
 > So that I can master native pronunciation, intonation, and connected speech.
 
 #### Sequence Diagram
@@ -48,15 +50,15 @@ sequenceDiagram
     autonumber
     actor Learner as Language Learner
     participant UI as ShadowingPlayer (/player/[id])
-    participant API as Next.js API (/api/story-shadowing/[id])
+    participant GW as Agent Gateway (/api/agents/story-shadowing)
     participant DB as MongoDB (storybooks)
     participant Audio as Browser Audio / YouTube Player
 
     Learner->>UI: Select Storybook from Dashboard
-    UI->>API: GET /api/story-shadowing/[id]
-    API->>DB: Query Storybook by ObjectId
-    DB-->>API: Storybook Document (Sentences, IPA, Audio/Timestamps)
-    API-->>UI: 200 OK (Storybook Payload)
+    UI->>GW: GET /api/agents/story-shadowing/stories/:id
+    GW->>DB: Query Storybook by ObjectId
+    DB-->>GW: Storybook Document (Sentences, IPA, Audio/Timestamps)
+    GW-->>UI: 200 OK (Storybook Payload)
     UI-->>Learner: Render Sentence List & Active Segment Card
 
     Learner->>UI: Click "Play Sentence"
@@ -69,56 +71,79 @@ sequenceDiagram
 
 ---
 
-### US-SHADOW-02: Import YouTube Video & Auto-Generate Multi-Part Series
+### US-SHADOW-02: Import YouTube Video & Auto-Generate Shadowing Lesson via Agent Gateway
 
 - **ID:** `US-SHADOW-02`
 - **Actor:** Curator / Learner
 - **Priority:** Must-have
 - **Mapped FR:** [`FR-SHADOW-03`](#2-functional-requirements), [`FR-SHADOW-04`](#2-functional-requirements)
-- **Mapped API:** [`POST /api/story-shadowing/youtube/create-series`](api-contract.md#14-post-apistory-shadowingyoutubecreate-series)
+- **Mapped API:** [`POST /api/agents/story-shadowing/jobs`](aha-mind-agents-api-contract.md#21-kích-hoạt-job-tạo-bài-học-shadowing-asynchronous-job-enqueue), [`GET /api/agents/story-shadowing/jobs/:jobId/progress`](aha-mind-agents-api-contract.md#22-lắng-nghe-tiến-trình-thời-gian-thực-qua-server-sent-events-get-sse)
 - **Mapped Acceptance Criteria:** [`AC-SHADOW-03`](acceptance-criteria.md#ac-shadow-03), [`AC-SHADOW-04`](acceptance-criteria.md#ac-shadow-04)
 
 **User Story Statement:**
 
-> As a content curator,
-> I want to paste a YouTube video URL and have the LangGraph agent split the transcript, generate IPA, identify B1/B2 keywords, and synthesize audio in parallel,
-> So that I can transform a 15-minute video into study-ready shadowing lessons in under 60 seconds.
+> As a content curator or learner,  
+> I want to submit a YouTube video URL or English text and track real-time generation progress through an asynchronous BullMQ queue with SSE streaming,  
+> So that long-running operations never trigger HTTP 504 timeouts and I can observe exactly which node (IPA, TTS, Keywords) is currently executing.
 
 #### Sequence Diagram
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Curator as Content Curator
-    participant UI as CreateSeriesPage (/create)
-    participant API as Next.js Route (/youtube/create-series)
-    participant LG as LangGraph StateGraph (4 Nodes)
-    participant YT as YouTube Transcript API
-    participant TTS as Google Cloud TTS
+    actor Curator as Content Curator / Learner
+    participant UI as CreateStoryPage (/create)
+    participant GW as Agent Gateway (/api/agents/story-shadowing)
+    participant Redis as BullMQ Queue & Redis Pub/Sub
+    participant Worker as StoryShadowingWorker (LangGraph)
     participant DB as MongoDB (storybooks)
 
-    Curator->>UI: Submit YouTube URL & Title
-    UI->>API: POST /api/story-shadowing/youtube/create-series (SSE Stream)
-    API->>YT: Fetch video transcript items
-    YT-->>API: Raw Transcript with Timestamps
-    API->>LG: Invoke Storybook Agent StateGraph
-  
-    par Branch A: Sentence & Speech
-        LG->>LG: sentenceSplitterNode (Tokenize + Generate IPA)
-        LG->>TTS: ttsGeneratorNode (Generate high-quality audio)
-    and Branch B: Vocabulary Intelligence
-        LG->>LG: keywordIdentifierNode (Identify B1-C1 terms)
-        LG->>LG: keywordEnricherNode (Fetch collocations & definitions)
+    Curator->>UI: Submit YouTube URL or Text
+    UI->>GW: POST /api/agents/story-shadowing/jobs { pipeline, text | youtubeUrl }
+    
+    alt Idempotent Hit (Video already exists & forceRegenerate = false)
+        GW-->>UI: 202 Accepted { jobId: "existing-...", status: "completed", existingStoryId }
+        UI->>GW: GET /api/agents/story-shadowing/stories/:existingStoryId
+        GW-->>UI: 200 OK (Storybook)
+        UI-->>Curator: Immediate redirect to /player/[id] (<50ms)
+    else New Job Enqueued
+        GW->>Redis: Enqueue Job to 'story-shadowing-queue'
+        GW-->>UI: 202 Accepted { jobId: "12", status: "queued", sseUrl }
+        
+        UI->>GW: GET /api/agents/story-shadowing/jobs/:jobId/progress (Accept: text/event-stream)
+        Worker->>Redis: Dequeue Job & execute LangGraph StateGraph
+        
+        loop Stream Progress
+            Worker->>Redis: Publish progress event (stepId, progress %, message)
+            Redis-->>GW: Forward Redis event
+            GW-->>UI: SSE Chunk (data: { stepId, progress, message })
+            UI-->>Curator: Update live animated progress stepper
+        end
+
+        Worker->>DB: Persist finalized Storybook document
+        Worker->>Redis: Publish status: "done" (progress: 100, storyId)
+        Redis-->>GW-->>UI: SSE Chunk { status: "done", payload: { storyId } }
+        UI->>UI: Close EventSource & trigger revalidateStoryShadowing()
+        UI-->>Curator: Redirect to /player/[storyId]
     end
-
-    LG-->>API: Stream Node Execution Updates via SSE
-    API-->>UI: SSE Event { stepId, status: "completed", message }
-    UI-->>Curator: Update live progress checklist
-
-    API->>DB: Persist new Storybook document (BR-06)
-    API-->>UI: SSE Event { status: "done", storybookId }
-    UI-->>Curator: Redirect to /player/[id]
 ```
+
+---
+
+### US-SHADOW-03: Instant Idempotency Access for Re-imported Videos
+
+- **ID:** `US-SHADOW-03`
+- **Actor:** Learner / Curator
+- **Priority:** High
+- **Mapped FR:** [`FR-SHADOW-06`](#2-functional-requirements)
+- **Mapped API:** [`POST /api/agents/story-shadowing/jobs`](aha-mind-agents-api-contract.md#21-kích-hoạt-job-tạo-bài-học-shadowing-asynchronous-job-enqueue)
+- **Mapped Acceptance Criteria:** [`AC-SHADOW-06`](acceptance-criteria.md#ac-shadow-06)
+
+**User Story Statement:**
+
+> As a learner importing a popular YouTube video that another user has already processed,  
+> I want the system to immediately recognize the video and open the practice player in less than 50ms,  
+> So that I don't waste time waiting for redundant AI processing or re-synthesizing audio.
 
 ---
 

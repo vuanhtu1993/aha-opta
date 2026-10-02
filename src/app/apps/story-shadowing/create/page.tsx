@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
+import { useStoryShadowingJob } from "@/hooks/useStoryShadowingJob";
+import { StoryShadowingProgress } from "@/components/story-shadowing/StoryShadowingProgress";
+import { revalidateStoryShadowing } from "@/lib/actions/story-shadowing.actions";
 import { SegmentPreviewDialog } from "@/components/story-shadowing/segment-preview-dialog";
 import type { SuggestedSegment } from "@/lib/agents/story-shadowing-agent/nodes/youtube-segment-suggester.node";
 import {
@@ -106,6 +109,19 @@ export default function CreatePlayerPage() {
   const router = useRouter();
   const { fetchSSE } = useAgentFetch();
 
+  const [activePipeline, setActivePipeline] = useState<"text" | "youtube">("youtube");
+  const {
+    status: jobStatus,
+    progress: jobProgress,
+    stageName: jobStageName,
+    stageMessage: jobStageMessage,
+    error: jobError,
+    startJob,
+    reset: resetJob,
+  } = useStoryShadowingJob();
+
+  const isJobBusy = loading || (jobStatus !== "idle" && jobStatus !== "completed" && jobStatus !== "error");
+
   // Fetch YouTube preview info when URL changes
   useEffect(() => {
     if (!youtubeUrl) {
@@ -180,6 +196,7 @@ export default function CreatePlayerPage() {
     if (!youtubeUrl) return;
     setLoading(true);
     setError(null);
+    setActivePipeline("youtube");
 
     try {
       // 1. Phân tích xem video có cần chia nhỏ không
@@ -201,16 +218,22 @@ export default function CreatePlayerPage() {
         setShowSegmentDialog(true);
         setLoading(false);
       } else {
-        // Video ngắn -> Chạy flow 1 bài đơn lẻ
-        const result = await fetchSSE<{ id: string }>("/api/story-shadowing/youtube", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ youtubeUrl }),
+        // Video chuẩn -> Sử dụng aha-mind-agents pipeline (hỗ trợ Idempotency <50ms & BullMQ + GET SSE)
+        setLoading(false);
+        const story = await startJob({
+          pipeline: "youtube",
+          youtubeUrl: youtubeUrl.trim(),
+          forceRegenerate: false,
         });
-        router.push(`/apps/story-shadowing/player/${result.id}`);
+
+        await revalidateStoryShadowing();
+
+        if (story && story._id) {
+          router.push(`/apps/story-shadowing/player/${story._id}`);
+        }
       }
-    } catch (err) {
-      setError((err as Error).message);
+    } catch (err: any) {
+      setError(err?.message || "Lỗi khi xử lý video YouTube");
       setLoading(false);
     }
   };
@@ -237,6 +260,8 @@ export default function CreatePlayerPage() {
         }
       );
 
+      await revalidateStoryShadowing();
+
       if (result.firstStoryId) {
         router.push(`/apps/story-shadowing/player/${result.firstStoryId}`);
       } else {
@@ -251,21 +276,27 @@ export default function CreatePlayerPage() {
 
   const handleManualSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setLoading(true);
+    if (!text || text.trim().length < 10) {
+      setError("Văn bản phải có tối thiểu 10 ký tự.");
+      return;
+    }
     setError(null);
+    setActivePipeline("text");
 
     try {
-      const data = await fetchSSE<{ id: string }>("/api/story-shadowing/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, title, thumbnail, voice }),
+      const story = await startJob({
+        pipeline: "text",
+        text: text.trim(),
+        voice,
       });
 
-      router.push(`/apps/story-shadowing/player/${data.id}`);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      await revalidateStoryShadowing();
+
+      if (story && story._id) {
+        router.push(`/apps/story-shadowing/player/${story._id}`);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Lỗi khi tạo bài học văn bản");
     }
   };
 
@@ -445,11 +476,11 @@ export default function CreatePlayerPage() {
           {/* Primary Submit Button */}
           <button
             type="button"
-            disabled={loading || !youtubeUrl}
+            disabled={isJobBusy || !youtubeUrl}
             onClick={() => handleYoutubeSubmit()}
             className="w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-md shadow-rose-600/20 active:scale-98 transition-all flex items-center justify-center gap-2"
           >
-            {loading ? (
+            {isJobBusy ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" /> Đang phân tích Video...
               </>
@@ -639,11 +670,11 @@ export default function CreatePlayerPage() {
           {/* Primary Create Button */}
           <button
             type="button"
-            disabled={loading || text.length < 10}
+            disabled={isJobBusy || text.length < 10}
             onClick={() => handleManualSubmit()}
             className="w-full py-3.5 px-4 bg-[#FFBA49] hover:bg-[#e6a640] disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-sm rounded-xl shadow-md shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
           >
-            {loading ? (
+            {isJobBusy ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" /> Đang tạo bài học...
               </>
@@ -663,6 +694,27 @@ export default function CreatePlayerPage() {
         segments={suggestedSegments}
         onConfirm={handleConfirmSeries}
         onCancel={() => setShowSegmentDialog(false)}
+      />
+
+      {/* Real-time Stepper Progress Modal for Story Shadowing Agent */}
+      <StoryShadowingProgress
+        status={jobStatus}
+        progress={jobProgress}
+        stageName={jobStageName}
+        stageMessage={jobStageMessage}
+        pipeline={activePipeline}
+        error={jobError}
+        onRetry={() => {
+          resetJob();
+          if (activePipeline === "youtube") {
+            handleYoutubeSubmit();
+          } else {
+            handleManualSubmit();
+          }
+        }}
+        onCancel={() => {
+          resetJob();
+        }}
       />
     </div>
   );

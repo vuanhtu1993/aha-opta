@@ -1,13 +1,14 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import { Plus, ArrowRight } from "lucide-react";
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 
 /**
  * @file SpeakYourMindHub.tsx
- * @description React Server Component (RSC) for Speak Your Mind Hub Dashboard.
- * 100% Server-rendered, Zero Client JS Bundle.
- * Filter levels are driven by URL search params (?level=...).
+ * @description Interactive Client Component for Speak Your Mind Hub Dashboard.
+ * Supports instant (0ms) client-side level filtering without server round-trips.
  *
  * Mapped Spec: FR-VOCAB-06 | FR-VOCAB-07 | US-VOCAB-03 | US-VOCAB-04 | AC-VOCAB-11
  * Made by Anh Tu - Share to be share
@@ -15,18 +16,24 @@ import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 
 interface SpeakYourMindHubProps {
   questions: ISpeakingQuestion[];
+  initialLevel?: string;
   currentLevel?: string;
 }
 
 export function SpeakYourMindHub({
   questions = [],
-  currentLevel = "all",
+  initialLevel,
+  currentLevel,
 }: SpeakYourMindHubProps) {
+  const [selectedLevel, setSelectedLevel] = useState<string>(
+    initialLevel || currentLevel || "all"
+  );
+
   const dailyChallenge = questions.length > 0 ? questions[0] : null;
 
   const filteredQuestions = questions.filter((q) => {
-    if (!currentLevel || currentLevel === "all") return true;
-    return q.level === currentLevel;
+    if (!selectedLevel || selectedLevel === "all") return true;
+    return q.level === selectedLevel;
   });
 
   return (
@@ -50,7 +57,7 @@ export function SpeakYourMindHub({
         </Link>
       </div>
 
-      {/* 2. Hero Methodology Guide (PREP Framework) - Pure Server HTML, Zero JS */}
+      {/* 2. Hero Methodology Guide (PREP Framework) */}
       <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
@@ -100,7 +107,7 @@ export function SpeakYourMindHub({
         </div>
       </div>
 
-      {/* 3. Daily Featured Challenge Card - Server-rendered */}
+      {/* 3. Daily Featured Challenge Card */}
       {dailyChallenge && (
         <div className="bg-white dark:bg-slate-900 border-2 border-amber-500/80 dark:border-amber-500/60 rounded-2xl p-4.5 space-y-3 shadow-xs">
           <div className="flex items-center justify-between">
@@ -121,60 +128,60 @@ export function SpeakYourMindHub({
             </h2>
           </div>
 
-          {/* Keywords preview */}
           {dailyChallenge.targetKeywords && dailyChallenge.targetKeywords.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {dailyChallenge.targetKeywords.map((kw, i) => (
+              {dailyChallenge.targetKeywords.map((kw, idx) => (
                 <span
-                  key={i}
-                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold"
+                  key={idx}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700"
                 >
-                  {kw.word}
+                  <strong className="text-amber-700 dark:text-amber-400">{kw.word}</strong>
+                  {kw.ipa && (
+                    <span className="text-slate-500 dark:text-slate-400 text-[10px] ml-1">
+                      {kw.ipa}
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
           )}
 
-          {/* CTA Link */}
-          <Link
-            href={`/vocab/speak-your-mind/${dailyChallenge.id}`}
-            className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <span>Start Practice</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="pt-2">
+            <Link
+              href={`/vocab/speak-your-mind/${dailyChallenge.id}`}
+              className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-xs hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              Start PREP Practice <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       )}
 
-      {/* 4. Challenge Library */}
+      {/* 4. Filter & Questions List */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
             Practice Topics ({filteredQuestions.length})
           </span>
 
-          {/* Filter Chips: Pure Links driven by URL search params */}
+          {/* Filter Chips: Instant Client-side Buttons */}
           <div className="flex items-center gap-1 text-[11px] font-bold">
             {["all", "B1", "B2", "C1"].map((lvl) => {
-              const isActive = (currentLevel || "all") === lvl;
-              const href =
-                lvl === "all"
-                  ? "/vocab/speak-your-mind"
-                  : `/vocab/speak-your-mind?level=${lvl}`;
+              const isActive = selectedLevel === lvl;
 
               return (
-                <Link
+                <button
                   key={lvl}
-                  href={href}
-                  scroll={false}
-                  className={`px-2.5 py-0.5 rounded-lg transition-colors capitalize ${
+                  type="button"
+                  onClick={() => setSelectedLevel(lvl)}
+                  className={`px-2.5 py-0.5 rounded-lg transition-colors capitalize cursor-pointer ${
                     isActive
                       ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   {lvl === "all" ? "All" : lvl}
-                </Link>
+                </button>
               );
             })}
           </div>
@@ -201,13 +208,12 @@ export function SpeakYourMindHub({
                 {q.question}
               </h3>
 
-              {/* Keywords */}
               {q.targetKeywords && q.targetKeywords.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  {q.targetKeywords.map((kw, i) => (
+                <div className="flex flex-wrap gap-1 mt-2.5">
+                  {q.targetKeywords.map((kw, kidx) => (
                     <span
-                      key={i}
-                      className="px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 text-[10px] font-medium"
+                      key={kidx}
+                      className="px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-[10px] border border-slate-200/60 dark:border-slate-700/60"
                     >
                       {kw.word}
                     </span>
@@ -223,6 +229,12 @@ export function SpeakYourMindHub({
               </div>
             </Link>
           ))}
+
+          {filteredQuestions.length === 0 && (
+            <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 text-xs">
+              No questions found for level <span className="font-bold">{selectedLevel}</span>.
+            </div>
+          )}
         </div>
       </div>
     </div>

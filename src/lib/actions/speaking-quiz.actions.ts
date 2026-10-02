@@ -9,16 +9,17 @@
  * Made by Anh Tu - Share to be share
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 /**
- * Revalidates the Speak Your Mind Hub route on the server.
+ * Revalidates the Speak Your Mind Hub route and data cache on the server.
  * Purges static / server cache and ensures the new question appears immediately.
  */
 export async function revalidateSpeakingHub(): Promise<void> {
   try {
     revalidatePath("/vocab/speak-your-mind");
+    updateTag("speaking-quiz-questions");
   } catch (error) {
-    console.error("[revalidateSpeakingHub] Error revalidating path:", error);
+    console.error("[revalidateSpeakingHub] Error revalidating path/tag:", error);
   }
 }

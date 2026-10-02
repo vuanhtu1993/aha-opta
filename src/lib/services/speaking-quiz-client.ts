@@ -127,7 +127,9 @@ export async function fetchSpeakingQuestionsList(filters?: {
     headers: {
       "Content-Type": "application/json",
     },
-    cache: "no-store",
+    next: {
+      tags: ["speaking-quiz-questions"],
+    },
   });
 
   if (!res.ok) {

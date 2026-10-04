@@ -75,28 +75,52 @@
 ---
 
 ### 1.3 `POST /api/story-shadowing/youtube/suggest-segments`
-- **Mapped Requirement:** [`FR-SHADOW-03`](spec.md#2-functional-requirements)
-* **Purpose:** Inspects YouTube transcript and recommends natural chapter/part breaks.
+- **Mapped Requirement:** [`FR-SHADOW-07`](spec.md#2-functional-requirements)
+- **Mapped Acceptance Criteria:** [`AC-SHADOW-08`](acceptance-criteria.md#ac-shadow-08)
+* **Purpose:** Inspects YouTube transcript via Supadata residential proxy, checks if video exceeds 200 subtitle blocks (~15 mins), and uses Gemini to recommend learning segments.
 * **Request Body:**
   ```json
   {
-    "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    "targetPartDurationMinutes": 3
+    "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
   }
   ```
-* **Response (HTTP 200 OK):**
+* **Response: Short Video (HTTP 200 OK):**
   ```json
   {
+    "needsSplitting": false,
     "videoId": "dQw4w9WgXcQ",
-    "videoTitle": "Atomic Habits Summary",
-    "suggestedParts": [
+    "title": "Rick Astley - Never Gonna Give You Up"
+  }
+  ```
+* **Response: Long Video (HTTP 200 OK):**
+  ```json
+  {
+    "needsSplitting": true,
+    "videoId": "dQw4w9WgXcQ",
+    "title": "Atomic Habits Full Masterclass",
+    "totalBlocks": 320,
+    "segments": [
       {
-        "partIndex": 1,
         "title": "Part 1: The Power of Tiny Gains",
-        "startSeconds": 0,
-        "endSeconds": 185
+        "startMs": 0,
+        "endMs": 650000,
+        "blockStart": 0,
+        "blockEnd": 110
+      }
+    ],
+    "rawTranscript": [
+      {
+        "text": "Habits are the compound interest...",
+        "start": 12500,
+        "duration": 3700
       }
     ]
+  }
+  ```
+* **Error Response: Missing Captions (HTTP 400 Bad Request):**
+  ```json
+  {
+    "error": "Video này không có phụ đề (Closed Captions). Vui lòng chọn video khác có phụ đề tiếng Anh!"
   }
   ```
 

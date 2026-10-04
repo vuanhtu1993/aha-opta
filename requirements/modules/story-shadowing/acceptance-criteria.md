@@ -124,4 +124,26 @@ Scenario: Invalidate static cache after new storybook creation
 
 ---
 
+### AC-SHADOW-08: Supadata Transcript Retrieval & Segment Suggestion
+- **Target Requirement:** [`FR-SHADOW-07`](spec.md#2-functional-requirements)
+- **Target API:** [`POST /api/story-shadowing/youtube/suggest-segments`](api-contract.md#13-post-apistory-shadowingyoutubesuggest-segments)
+
+```gherkin
+Scenario: Retrieve English transcript via Supadata residential proxy
+  Given a valid YouTube URL and an active SUPADATA_API_KEY
+  When the client calls POST /api/story-shadowing/youtube/suggest-segments
+  Then the API returns HTTP 200 OK
+    And if totalBlocks <= 200, needsSplitting is false
+    And if totalBlocks > 200, needsSplitting is true with non-empty segments array
+
+Scenario: Handle video with missing captions gracefully
+  Given a YouTube video without any closed captions or subtitle tracks
+  When the client calls POST /api/story-shadowing/youtube/suggest-segments
+  Then the API returns HTTP 400 Bad Request
+    And the error message clearly states "Video này không có phụ đề (Closed Captions)"
+```
+
+---
+
 *Made by Anh Tu - Share to be share*
+

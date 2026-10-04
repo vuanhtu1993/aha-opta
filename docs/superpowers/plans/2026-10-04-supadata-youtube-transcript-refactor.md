@@ -38,7 +38,7 @@ package.json                             # [MODIFY] Gỡ bỏ package youtube-tr
 - Create: `src/lib/services/supadata.service.ts`
 - Test: `scripts/test-supadata-service.ts`
 
-- [ ] **Step 1: Định nghĩa Interface và hàm helper trích xuất videoId & oEmbed**
+- [x] **Step 1: Định nghĩa Interface và hàm helper trích xuất videoId & oEmbed**
 
 Tạo `src/lib/services/supadata.service.ts` với đầy đủ định nghĩa TypeScript:
 
@@ -170,7 +170,7 @@ export class SupadataService {
 }
 ```
 
-- [ ] **Step 2: Viết script kiểm thử đơn vị cho `SupadataService`**
+- [x] **Step 2: Viết script kiểm thử đơn vị cho `SupadataService`**
 
 Tạo `scripts/test-supadata-service.ts`:
 ```typescript
@@ -203,12 +203,12 @@ runTest().catch((e) => {
 });
 ```
 
-- [ ] **Step 3: Chạy script kiểm thử**
+- [x] **Step 3: Chạy script kiểm thử**
 
 Run: `npx -y tsx scripts/test-supadata-service.ts`  
 Expected: `✅ SupadataService test PASSED!`
 
-- [ ] **Step 4: Dọn dẹp script test và commit Task 1**
+- [x] **Step 4: Dọn dẹp script test và commit Task 1**
 
 ```bash
 rm scripts/test-supadata-service.ts
@@ -224,7 +224,7 @@ git commit -m "feat(story-shadowing): implement dedicated SupadataService"
 - Modify: `src/lib/agents/story-shadowing-agent/nodes/youtube-transcript-fetcher.node.ts`
 - Modify: `package.json`
 
-- [ ] **Step 1: Tinh giản `youtubeTranscriptFetcherNode` sử dụng `SupadataService`**
+- [x] **Step 1: Tinh giản `youtubeTranscriptFetcherNode` sử dụng `SupadataService`**
 
 Viết lại toàn bộ [youtube-transcript-fetcher.node.ts](file:///Users/anhtus/Documents/Development/NextJS/aha-tools/src/lib/agents/story-shadowing-agent/nodes/youtube-transcript-fetcher.node.ts) không còn bất kỳ import nào của `youtube-transcript`:
 
@@ -286,17 +286,17 @@ export async function youtubeTranscriptFetcherNode(
 }
 ```
 
-- [ ] **Step 2: Gỡ bỏ thư viện `youtube-transcript` khỏi dự án**
+- [x] **Step 2: Gỡ bỏ thư viện `youtube-transcript` khỏi dự án**
 
 Run: `npm uninstall youtube-transcript`  
 Expected: `removed 1 package` (hoặc thành công cập nhật `package.json`).
 
-- [ ] **Step 3: Kiểm tra Type check & build sau khi gỡ lib**
+- [x] **Step 3: Kiểm tra Type check & build sau khi gỡ lib**
 
 Run: `npx tsc --noEmit`  
 Expected: 0 errors.
 
-- [ ] **Step 4: Commit Task 2**
+- [x] **Step 4: Commit Task 2**
 
 ```bash
 git add src/lib/agents/story-shadowing-agent/nodes/youtube-transcript-fetcher.node.ts package.json package-lock.json
@@ -310,7 +310,7 @@ git commit -m "refactor(story-shadowing): delegate transcript fetcher to Supadat
 **Files:**
 - Create: `src/hooks/useYoutubeSegments.ts`
 
-- [ ] **Step 1: Viết Custom Hook `useYoutubeSegments`**
+- [x] **Step 1: Viết Custom Hook `useYoutubeSegments`**
 
 Tạo file `src/hooks/useYoutubeSegments.ts`:
 
@@ -465,12 +465,12 @@ export function useYoutubeSegments() {
 }
 ```
 
-- [ ] **Step 2: Kiểm tra biên dịch TypeScript**
+- [x] **Step 2: Kiểm tra biên dịch TypeScript**
 
 Run: `npx tsc --noEmit`  
 Expected: 0 errors.
 
-- [ ] **Step 3: Commit Task 3**
+- [x] **Step 3: Commit Task 3**
 
 ```bash
 git add src/hooks/useYoutubeSegments.ts
@@ -484,7 +484,7 @@ git commit -m "feat(story-shadowing): create useYoutubeSegments custom hook"
 **Files:**
 - Modify: `src/app/apps/story-shadowing/create/page.tsx`
 
-- [ ] **Step 1: Tích hợp hook vào `CreatePlayerPage`**
+- [x] **Step 1: Tích hợp hook vào `CreatePlayerPage`**
 
 Thay thế các `useState` rời rạc (`youtubeUrl`, `youtubePreview`, `showSegmentDialog`, `videoTitle`, `suggestedSegments`, v.v.) bằng hook `useYoutubeSegments()`.
 
@@ -531,13 +531,13 @@ Cập nhật `handleYoutubeSubmit`:
   };
 ```
 
-- [ ] **Step 2: Kiểm tra biên dịch và build**
+- [x] **Step 2: Kiểm tra biên dịch và build**
 
 Run: `npx tsc --noEmit`  
 Run: `npm run build`  
 Expected: Build thành công (100% pass).
 
-- [ ] **Step 3: Commit Task 4**
+- [x] **Step 3: Commit Task 4**
 
 ```bash
 git add src/app/apps/story-shadowing/create/page.tsx
@@ -551,14 +551,14 @@ git commit -m "refactor(story-shadowing): integrate useYoutubeSegments hook in c
 **Files:**
 - Verify: Toàn bộ luồng YouTube Pipeline & Text Pipeline
 
-- [ ] **Step 1: Chạy toàn bộ build production**
+- [x] **Step 1: Chạy toàn bộ build production**
 
 Run: `npm run build`  
 Expected: Tất cả static & dynamic routes build thành công.
 
-- [ ] **Step 2: Đồng bộ hóa quyết định kiến trúc OpenLore**
+- [x] **Step 2: Đồng bộ hóa quyết định kiến trúc OpenLore**
 
 Run: `npx openlore decisions --consolidate`  
 Run: `npx openlore decisions --sync`
 
-- [ ] **Step 3: Tổng kết tài liệu bàn giao**
+- [x] **Step 3: Tổng kết tài liệu bàn giao**

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAgentFetch } from "@/lib/hooks/useAgentFetch";
 import { useStoryShadowingJob } from "@/hooks/useStoryShadowingJob";
+import { useYoutubeSegments } from "@/hooks/useYoutubeSegments";
 import { StoryShadowingProgress } from "@/components/story-shadowing/StoryShadowingProgress";
 import { revalidateStoryShadowing } from "@/lib/actions/story-shadowing.actions";
 import { SegmentPreviewDialog } from "@/components/story-shadowing/segment-preview-dialog";
@@ -85,7 +86,6 @@ const VOICE_OPTIONS: VoiceOption[] = [
 export default function CreatePlayerPage() {
   const [inputType, setInputType] = useState<"youtube" | "url" | "manual">("youtube");
   const [urlInput, setUrlInput] = useState("");
-  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [scraping, setScraping] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -95,16 +95,23 @@ export default function CreatePlayerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Segment Dialog States for YouTube series splitting
-  const [showSegmentDialog, setShowSegmentDialog] = useState(false);
-  const [videoTitle, setVideoTitle] = useState("");
-  const [videoId, setVideoId] = useState("");
-  const [suggestedSegments, setSuggestedSegments] = useState<SuggestedSegment[]>([]);
-  const [rawTranscript, setRawTranscript] = useState<any[]>([]);
-
-  // YouTube Preview State
-  const [youtubePreview, setYoutubePreview] = useState<{ title: string; thumbnail: string } | null>(null);
-  const [fetchingPreview, setFetchingPreview] = useState(false);
+  // YouTube source state & operations managed via useYoutubeSegments hook
+  const {
+    youtubeUrl,
+    setYoutubeUrl,
+    preview: youtubePreview,
+    isFetchingPreview: fetchingPreview,
+    isAnalyzing: analyzingVideo,
+    error: youtubeError,
+    setError: setYoutubeError,
+    showSegmentDialog,
+    setShowSegmentDialog,
+    videoTitle,
+    videoId,
+    suggestedSegments,
+    rawTranscript,
+    analyzeVideo,
+  } = useYoutubeSegments();
 
   const router = useRouter();
   const { fetchSSE } = useAgentFetch();
@@ -120,42 +127,8 @@ export default function CreatePlayerPage() {
     reset: resetJob,
   } = useStoryShadowingJob();
 
-  const isJobBusy = loading || (jobStatus !== "idle" && jobStatus !== "completed" && jobStatus !== "error");
-
-  // Fetch YouTube preview info when URL changes
-  useEffect(() => {
-    if (!youtubeUrl) {
-      setYoutubePreview(null);
-      return;
-    }
-
-    const isYoutube = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))/.test(youtubeUrl);
-    if (!isYoutube) {
-      setYoutubePreview(null);
-      return;
-    }
-
-    const fetchPreview = async () => {
-      setFetchingPreview(true);
-      try {
-        const res = await fetch(`https://noembed.com/embed?dataType=json&url=${encodeURIComponent(youtubeUrl)}`);
-        const data = await res.json();
-        if (data.title && data.thumbnail_url) {
-          setYoutubePreview({
-            title: data.title,
-            thumbnail: data.thumbnail_url,
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch youtube preview", err);
-      } finally {
-        setFetchingPreview(false);
-      }
-    };
-
-    const timeout = setTimeout(fetchPreview, 400);
-    return () => clearTimeout(timeout);
-  }, [youtubeUrl]);
+  const isJobBusy = loading || analyzingVideo || (jobStatus !== "idle" && jobStatus !== "completed" && jobStatus !== "error");
+  const activeError = error || youtubeError;
 
   // Quick Paste Helper
   const handlePasteClipboard = async (setter: (val: string) => void) => {
@@ -194,46 +167,47 @@ export default function CreatePlayerPage() {
   const handleYoutubeSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!youtubeUrl) return;
-    setLoading(true);
+
     setError(null);
+    setYoutubeError(null);
     setActivePipeline("youtube");
 
-    try {
-      // 1. Phân tích xem video có cần chia nhỏ không
-      const res = await fetch("/api/story-shadowing/youtube/suggest-segments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ youtubeUrl }),
+    await analyzeVideo(async (cleanUrl) => {
+      const story = await startJob({
+        pipeline: "youtube",
+        youtubeUrl: cleanUrl,
+        forceRegenerate: false,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Lỗi khi phân tích video YouTube");
+      await revalidateStoryShadowing();
 
-      if (data.needsSplitting) {
-        // Video dài >= 15 phút -> Mở Bottom Sheet gợi ý phân đoạn
-        setVideoTitle(data.title);
-        setVideoId(data.videoId);
-        setSuggestedSegments(data.segments);
-        setRawTranscript(data.rawTranscript);
-        setShowSegmentDialog(true);
-        setLoading(false);
-      } else {
-        // Video chuẩn -> Sử dụng aha-mind-agents pipeline (hỗ trợ Idempotency <50ms & BullMQ + GET SSE)
-        setLoading(false);
-        const story = await startJob({
-          pipeline: "youtube",
-          youtubeUrl: youtubeUrl.trim(),
-          forceRegenerate: false,
-        });
+      if (story && story._id) {
+        router.push(`/apps/story-shadowing/player/${story._id}`);
+      }
+    });
+  };
 
-        await revalidateStoryShadowing();
+  const handleDirectAgentSubmit = async () => {
+    if (!youtubeUrl) return;
+    setError(null);
+    setYoutubeError(null);
+    setLoading(true);
+    setActivePipeline("youtube");
+    try {
+      const story = await startJob({
+        pipeline: "youtube",
+        youtubeUrl: youtubeUrl.trim(),
+        forceRegenerate: false,
+      });
 
-        if (story && story._id) {
-          router.push(`/apps/story-shadowing/player/${story._id}`);
-        }
+      await revalidateStoryShadowing();
+
+      if (story && story._id) {
+        router.push(`/apps/story-shadowing/player/${story._id}`);
       }
     } catch (err: any) {
-      setError(err?.message || "Lỗi khi xử lý video YouTube");
+      setError(err?.message || "Lỗi khi xử lý video YouTube qua Agent");
+    } finally {
       setLoading(false);
     }
   };
@@ -383,7 +357,7 @@ export default function CreatePlayerPage() {
 
       {/* Error Alert Message */}
       <AnimatePresence>
-        {error && (
+        {activeError && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -391,7 +365,22 @@ export default function CreatePlayerPage() {
             className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-start gap-2.5 text-xs text-rose-700 dark:text-rose-300"
           >
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-            <div className="flex-1">{error}</div>
+            <div className="flex-1 space-y-2">
+              <div>{activeError}</div>
+              {inputType === "youtube" && youtubeUrl && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleDirectAgentSubmit}
+                    disabled={isJobBusy}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/60 dark:hover:bg-rose-900 text-rose-800 dark:text-rose-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    Thử tạo trực tiếp qua Agent Queue (Bỏ qua phân đoạn)
+                  </button>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -480,9 +469,13 @@ export default function CreatePlayerPage() {
             onClick={() => handleYoutubeSubmit()}
             className="w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-md shadow-rose-600/20 active:scale-98 transition-all flex items-center justify-center gap-2"
           >
-            {isJobBusy ? (
+            {analyzingVideo ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Đang phân tích Video...
+                <Loader2 className="w-4 h-4 animate-spin" /> Đang phân tích phụ đề & độ dài video...
+              </>
+            ) : isJobBusy ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Đang xử lý...
               </>
             ) : (
               <>

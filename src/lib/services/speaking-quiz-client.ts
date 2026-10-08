@@ -127,9 +127,8 @@ export async function fetchSpeakingQuestionsList(filters?: {
     headers: {
       "Content-Type": "application/json",
     },
-    next: {
-      tags: ["speaking-quiz-questions"],
-    },
+    // Không lưu Data Cache để Server Component luôn nhận danh sách đề bài mới nhất từ backend
+    cache: "no-store",
   });
 
   if (!res.ok) {

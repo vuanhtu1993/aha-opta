@@ -14,7 +14,6 @@ import { useRouter } from "next/navigation";
 import { X, RefreshCw, CheckCircle2 } from "lucide-react";
 import { CefrLevel, SpeakingQuestionDetail } from "@/lib/types/speaking-quiz";
 import { useSpeakingQuizJob } from "@/hooks/useSpeakingQuizJob";
-import { revalidateSpeakingHub } from "@/lib/actions/speaking-quiz.actions";
 import { SpeakingQuizProgress } from "./SpeakingQuizProgress";
 import { StorybookSelectorModal } from "./StorybookSelectorModal";
 
@@ -84,11 +83,7 @@ export function SpeakingQuizGenerator({
       if (onQuizReady) {
         await onQuizReady(question);
       } else {
-        try {
-          await revalidateSpeakingHub();
-        } catch (err) {
-          console.error("[SpeakingQuizGenerator] Failed to revalidate hub:", err);
-        }
+        // Trang Hub là Dynamic SSR nên chỉ cần điều hướng trực tiếp
         router.push("/vocab/speak-your-mind");
         router.refresh();
       }

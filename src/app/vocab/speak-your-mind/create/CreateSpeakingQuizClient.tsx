@@ -12,7 +12,6 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { SpeakingQuizGenerator } from "@/components/vocab/speaking/SpeakingQuizGenerator";
-import { revalidateSpeakingHub } from "@/lib/actions/speaking-quiz.actions";
 import { ISpeakingQuestion } from "@/lib/types/speaking-quiz";
 
 interface CreateSpeakingQuizClientProps {
@@ -24,15 +23,8 @@ export function CreateSpeakingQuizClient({
 }: CreateSpeakingQuizClientProps) {
   const router = useRouter();
 
-  const handleQuizReady = async (_newQuestion: ISpeakingQuestion) => {
-    try {
-      // 1. Kích hoạt Server Action để xóa cache server của Hub page (/vocab/speak-your-mind)
-      await revalidateSpeakingHub();
-    } catch (err) {
-      console.error("[CreateSpeakingQuizClient] Failed to revalidate hub:", err);
-    }
-
-    // 2. Điều hướng người dùng quay về trang chính Hub để thấy đề bài mới tạo ở vị trí đầu tiên
+  const handleQuizReady = () => {
+    // Điều hướng người dùng quay lại trang Hub; Dynamic SSR tự động truy vấn danh sách câu hỏi mới nhất từ database
     router.push("/vocab/speak-your-mind");
     router.refresh();
   };

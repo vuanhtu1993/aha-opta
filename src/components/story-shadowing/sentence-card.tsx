@@ -42,17 +42,20 @@ export function SentenceCard({ sentence, isActive, isDone, id, shadowingProgress
 
       {showIPA ? (
         // === Chế độ IPA: Ruby annotation — từng từ có phiên âm nhỏ bên dưới ===
-        <span className="inline-flex flex-wrap gap-x-2 gap-y-1 items-end leading-none">
-          {sentence.words!.map((w, i) => (
-            <ruby key={i} className="relative group inline-flex flex-col items-center">
-              {/* Từ gốc */}
-              <span className="text-xl font-bold">{w.word}</span>
-              {/* IPA bên dưới — nhỏ, mờ hơn một chút */}
-              <rt className="text-[11px] font-normal text-slate-700/70 not-italic tracking-wide">
-                {w.ipa}
-              </rt>
-            </ruby>
-          ))}
+        <span className="inline-flex flex-wrap gap-x-2 gap-y-1 items-start leading-none">
+          {sentence.words!.map((w, i) => {
+            const hasIpa = Boolean(w.ipa && w.ipa.trim());
+            return (
+              <ruby key={i} className="relative group inline-flex flex-col items-center">
+                {/* Từ gốc: luôn căn đỉnh (items-start) để giữ thẳng hàng với các từ khác dù có hay không có IPA */}
+                <span className="text-xl font-bold">{w.word}</span>
+                {/* IPA bên dưới — luôn có min-h cố định để đồng bộ chiều cao khối từ, tránh xô lệch nhịp điệu dòng */}
+                <rt className="block text-[11px] font-normal text-slate-700/70 not-italic tracking-wide min-h-[16px] select-none">
+                  {hasIpa ? w.ipa : ""}
+                </rt>
+              </ruby>
+            );
+          })}
         </span>
       ) : (
         // === Chế độ thông thường: hiển thị text thuần ===

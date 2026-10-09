@@ -23,9 +23,13 @@ export function CreateSpeakingQuizClient({
 }: CreateSpeakingQuizClientProps) {
   const router = useRouter();
 
-  const handleQuizReady = () => {
-    // Điều hướng người dùng quay lại trang Hub; Dynamic SSR tự động truy vấn danh sách câu hỏi mới nhất từ database
-    router.push("/vocab/speak-your-mind");
+  const handleQuizReady = (question: ISpeakingQuestion) => {
+    // Điều hướng người dùng trực tiếp tới trang chi tiết bài luyện nói vừa tạo
+    if (question?.id) {
+      router.push(`/vocab/speak-your-mind/${question.id}`);
+    } else {
+      router.push("/vocab/speak-your-mind");
+    }
     router.refresh();
   };
 

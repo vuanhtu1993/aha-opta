@@ -83,8 +83,12 @@ export function SpeakingQuizGenerator({
       if (onQuizReady) {
         await onQuizReady(question);
       } else {
-        // Trang Hub là Dynamic SSR nên chỉ cần điều hướng trực tiếp
-        router.push("/vocab/speak-your-mind");
+        // Điều hướng trực tiếp tới trang chi tiết bài Speaking Quiz vừa tạo
+        if (question?.id) {
+          router.push(`/vocab/speak-your-mind/${question.id}`);
+        } else {
+          router.push("/vocab/speak-your-mind");
+        }
         router.refresh();
       }
     }
@@ -138,8 +142,8 @@ export function SpeakingQuizGenerator({
           disabled={isBusy}
           onClick={() => setMode("custom")}
           className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:cursor-not-allowed ${mode === "custom"
-              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs"
-              : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs"
+            : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
         >
           Custom Topic
@@ -149,8 +153,8 @@ export function SpeakingQuizGenerator({
           disabled={isBusy}
           onClick={() => setMode("storybook")}
           className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:cursor-not-allowed ${mode === "storybook"
-              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs"
-              : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs"
+            : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
         >
           From Storybook

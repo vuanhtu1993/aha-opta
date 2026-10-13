@@ -15,6 +15,8 @@ import {
   SpeakingQuestionsListResponse,
   SpeakingQuizProgressEvent,
   SpeakingQuizJobStatusResponse,
+  TargetKeywordItem,
+  FrameworkType,
 } from "@/lib/types/speaking-quiz";
 
 /**
@@ -307,4 +309,89 @@ export function subscribeToSpeakingQuizProgress(
       eventSource.close();
     } catch {}
   };
+}
+
+/**
+ * Helper: Trích xuất nhãn và màu sắc hiển thị cho từ vựng FSRS
+ */
+export function getSrsBadgeConfig(keyword: TargetKeywordItem): {
+  label: string;
+  badgeClass: string;
+  tooltip: string;
+} {
+  if (keyword.isInjected || keyword.srsStatus === "due") {
+    return {
+      label: "Cần Ôn Tập",
+      badgeClass: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-300/40 dark:border-rose-800",
+      tooltip: "Từ vựng đến hạn ôn tập FSRS — Đã được lồng ghép vào câu hỏi này để bạn luyện phản xạ nói!",
+    };
+  }
+  if (keyword.srsStatus === "learning") {
+    return {
+      label: "Đang Học",
+      badgeClass: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300/40 dark:border-amber-800",
+      tooltip: "Từ vựng đang trong chu kỳ củng cố trí nhớ",
+    };
+  }
+  if (keyword.srsStatus === "mastered") {
+    return {
+      label: "Thành Thạo",
+      badgeClass: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300/40 dark:border-emerald-800",
+      tooltip: "Từ vựng đã ghi nhớ vững chắc",
+    };
+  }
+  return {
+    label: "Từ Khóa",
+    badgeClass: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-300/40 dark:border-sky-800",
+    tooltip: "Từ vựng trọng tâm trong bài học",
+  };
+}
+
+export interface FrameworkConfig {
+  type: FrameworkType;
+  shortName: string;
+  fullName: string;
+  description: string;
+  badgeClass: string;
+}
+
+/**
+ * Helper: Cấu hình hiển thị theo FrameworkType (PREP, PAR, STAR, CCR)
+ */
+export function getFrameworkConfig(type?: FrameworkType): FrameworkConfig {
+  switch (type) {
+    case "PAR":
+      return {
+        type: "PAR",
+        shortName: "PAR",
+        fullName: "PAR (Problem - Advice - Result)",
+        description: "Khung giải pháp tối ưu cho câu hỏi đề xuất lời khuyên và hành động thực tiễn",
+        badgeClass: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-300/40 dark:border-rose-800",
+      };
+    case "STAR":
+      return {
+        type: "STAR",
+        shortName: "STAR",
+        fullName: "STAR (Situation - Task - Action - Result)",
+        description: "Khung chia sẻ kinh nghiệm, kể chuyện tình huống quá khứ",
+        badgeClass: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-300/40 dark:border-indigo-800",
+      };
+    case "CCR":
+      return {
+        type: "CCR",
+        shortName: "CCR",
+        fullName: "CCR (Claim - Concession - Resolution)",
+        description: "Khung cân nhắc đa chiều, thảo luận thỏa hiệp và ngoại giao",
+        badgeClass: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-300/40 dark:border-cyan-800",
+      };
+    case "PREP":
+    default:
+      return {
+        type: "PREP",
+        shortName: "PREP",
+        fullName: "PREP (Point - Reason - Example - Conclusion)",
+        description: "Khung quan điểm, tranh biện logic chặt chẽ",
+        badgeClass: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300/40 dark:border-amber-800",
+      };
+  }
 }

@@ -1,78 +1,106 @@
 # Speaking Quiz Agent — API Integration Contract (aha-tools ⟷ aha-mind-agents)
 
-> **Document Version:** 1.1.0  
+> **Document Version:** 1.3.0  
+> **Release Date:** 2026-10-13  
 > **Status:** Active / Production Ready  
-> **Target Audience:** Frontend/Backend Engineers tại `aha-tools` và `aha-mind-agents`  
+> **Target Audience:** Frontend/Backend Engineers tại `aha-tools` (Next.js) và `aha-mind-agents` (NestJS)  
 > **Base URL (Local):** `http://localhost:3001/api`  
 > **Base URL (Staging):** `https://agents-staging.aha.vn/api`  
 > **Swagger UI:** `http://localhost:3001/api/docs`  
+> **Author:** Anh Tú — Giảng viên CNTT & Technical Writer
 
 ---
 
-## 1. Khái niệm & Kiến trúc Tổng quan (Architecture & Concept Anatomy)
+## 1. Khái Niệm & Kiến Trúc Tổng Quan (Architecture & Concept Anatomy)
 
-### 1.1. Khái niệm cốt lõi (Definition Anatomy)
+### 1.1. Giải Phẫu Khái Niệm Cốt Lõi (Definition Anatomy)
 
-> **API Contract (Hợp đồng API)** là một thỏa thuận giao thức kỹ thuật chuẩn hóa, bất biến giữa bên cung cấp dịch vụ (**Service Provider** - `aha-mind-agents`) và bên tiêu thụ (**Consumer** - `aha-tools`). Hợp đồng này quy định rõ cấu trúc dữ liệu gửi lên (Payload), các mã phản hồi HTTP (Status Codes), định dạng dữ liệu trả về (Response Schemas) và cơ chế truyền thông (HTTP REST & Server-Sent Events).
+> **API Contract (Hợp đồng Tích hợp Giao diện & Tác nhân)** là thỏa thuận giao thức kỹ thuật chuẩn hóa, bất biến giữa bên cung cấp dịch vụ (**Service Provider** — `aha-mind-agents`) và bên tiêu thụ (**Consumer** — `aha-tools`). Hợp đồng này quy định rõ cấu trúc dữ liệu gửi lên (Payload), các mã phản hồi HTTP (Status Codes), định dạng dữ liệu trả về (Response Schemas) và cơ chế truyền thông thời gian thực (HTTP REST & Server-Sent Events).
 
-- **Asynchronous Queue Model (Mô hình hàng đợi bất đồng bộ):** Do tác vụ sinh câu hỏi kết hợp phản biện và tổng hợp giàn giáo PREP qua mô hình ngôn ngữ lớn (LLM - Gemini 2.5) mất từ **10 – 25 giây**, hệ thống không giữ kết nối HTTP thông thường (tránh HTTP Timeout 504) mà sử dụng **BullMQ + Redis Pub/Sub** để xử lý nền và cập nhật trạng thái liên tục.
-- **Idempotency (Tính bất biến theo ngữ cảnh):** Khi `aha-tools` gửi yêu cầu cho cùng một bài học `storybookId`, hệ thống kiểm tra và tái sử dụng ngay kết quả đã lưu trong CSDL MongoDB (`speaking_questions`), giúp phản hồi lập tức trong **< 50ms** và tiết kiệm 100% token LLM.
-- **PREP Framework:** Phương pháp tư duy phản biện quốc tế:
-  - **P (Point):** Luận điểm chính.
-  - **R (Reason):** Luận cứ & giải thích lý do sâu xa.
-  - **E (Example):** Dẫn chứng, số liệu hoặc câu chuyện minh họa.
-  - **P (Point/Conclusion):** Kết luận, khẳng định lại lập trường và gợi mở hành động.
+* **Asynchronous Queue Model (Mô hình Hàng đợi Bất đồng bộ):** Do tác vụ sinh câu hỏi kết hợp phản biện và tổng hợp giàn giáo qua mô hình ngôn ngữ lớn (LLM — Gemini 2.5) mất từ **10 – 25 giây**, hệ thống không giữ kết nối HTTP thông thường (tránh HTTP 504 Gateway Timeout) mà sử dụng **BullMQ + Redis Pub/Sub** để xử lý nền và phát sóng tiến độ theo từng chặng.
+* **Idempotency (Tính Bất biến theo Ngữ cảnh):** Khi `aha-tools` gửi yêu cầu cho cùng một bài học `storybookId`, hệ thống kiểm tra và tái sử dụng ngay kết quả đã lưu trong CSDL MongoDB (`speaking_questions`), phản hồi ngay trong **$< 50\text{ms}$** và tiết kiệm 100% token LLM.
+* **Adaptive Speaking Frameworks (Hệ thống Giàn giáo Thích ứng Đa Khung Giao tiếp):**
+  Thay vì gò bó mọi câu hỏi vào một khuôn mẫu PREP duy nhất (dẫn đến câu trả lời khiên cưỡng với các câu hỏi giải pháp hay kể chuyện), hệ thống tự động nhận diện ý định giao tiếp (*Speech Act Intent*) của câu hỏi để lựa chọn 1 trong 4 khung tối ưu:
+  * **PREP (Point - Reason - Example - Conclusion):** Tối ưu cho câu hỏi quan điểm, tranh biện (*Opinion / Stance / Debate*).
+  * **PAR (Problem - Advice/Action - Result/Alternative):** Tối ưu cho câu hỏi lời khuyên, giải pháp thực tiễn (*Suggestion / Recommendation / Problem-Solving*).
+  * **STAR (Situation - Task/Action - Result):** Tối ưu cho câu hỏi chia sẻ trải nghiệm, tình huống quá khứ (*Storytelling / Behavioral / Personal Experience*).
+  * **CCR (Claim - Concession/Counter-argument - Resolution):** Tối ưu cho thảo luận thỏa hiệp, cân nhắc lợi hại ngoại giao (*Diplomacy / Negotiation / Trade-offs*).
+* **Topic Collocations & Idioms Toolkit (Bộ Công cụ Cụm từ Bản xứ theo Chủ đề):**
+  Cung cấp trực tiếp 2–4 cụm từ bản xứ tự nhiên (*Collocations, Phrasal Verbs, Idioms*) kèm nghĩa tiếng Việt và phiên âm IPA tương thích với chủ đề nói. Các cụm từ này được dệt tự nhiên vào câu mẫu ở cả 4 giai đoạn giàn giáo.
+* **Organic Lexical Flow (Dòng chảy Từ vựng Hữu cơ):**
+  * *Tại sao loại bỏ Forced FSRS Injection:* Việc cưỡng bức chèn 3 từ vựng đến hạn bất kỳ từ `vocab_cards` vào bài nói khiến câu văn bị gượng ép, mất tự nhiên và gây lặp lại nếu học viên luyện nhiều câu trong cùng chủ đề.
+  * *Mô hình mới:* Node `context_resolved` trích xuất từ vựng tự nhiên từ chính nội dung Storybook/Chủ đề. Sau khi luyện nói, học viên có thể chủ động bấm lưu các cụm từ mới (`topicCollocations`) vào `vocab_cards` để FSRS xếp lịch ôn tập sau này.
+* **Backward Compatibility Bridge (Cầu nối Tương thích Ngược 100%):**
+  Hệ thống duy trì song song cả trường `adaptiveScaffold` (đầy đủ cấu trúc khung và collocations) lẫn trường `prepScaffold` (ánh xạ 4 giai đoạn về `point`, `reason`, `example`, `conclusion`), giúp toàn bộ mã nguồn giao diện hiện tại của `aha-tools` (`SpeakingPrepCard`, `SpeakYourMindPlayer`) hoạt động hoàn hảo mà không cần sửa đổi bắt buộc.
 
 ---
 
-### 1.2. Sơ đồ Luồng Tích hợp (Integration Sequence Diagram)
+### 1.2. Sơ Đồ Luồng Tích Hợp Đa Tác Nhân (Integration Sequence Diagram)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant UI as aha-tools (Web / App)
-    participant GW as aha-mind-agents (Gateway Controller)
-    participant Redis as Redis Queue & PubSub
-    participant Worker as SpeakingQuiz Worker (LangGraph)
+    actor Learner as Học viên / Next.js UI (aha-tools)
+    participant ClientSDK as SpeakingQuizClient (Next.js)
+    participant GW as Gateway Controller (/api/agents/speaking-quiz/*)
+    participant Redis as Redis Queue & Pub/Sub
+    participant Worker as SpeakingQuizWorker (LangGraph)
+    participant Gemini as Google Gemini 2.5
     participant DB as MongoDB (speaking_questions)
 
-    Note over UI, GW: Bước 1: Kích hoạt Job sinh câu hỏi
-    UI->>GW: POST /api/agents/speaking-quiz/jobs { storybookId, level }
+    Note over Learner, GW: BƯỚC 1: KÍCH HOẠT JOB SINH ĐỀ BÀI
+    Learner->>ClientSDK: Mở bài luyện nói (Speak Your Mind)
+    ClientSDK->>GW: POST /api/agents/speaking-quiz/jobs { storybookId, level: 'B2' }
     GW->>DB: Kiểm tra xem đã có câu hỏi cho storybookId chưa?
-    alt Đã tồn tại & forceRegenerate = false
-        GW-->>UI: 202 Accepted { jobId: "existing-...", status: "completed", existingQuestionId }
-        UI->>GW: GET /api/agents/speaking-quiz/questions/:id
-        GW-->>UI: 200 OK (Dữ liệu câu hỏi + giàn giáo PREP hoàn chỉnh)
+    
+    alt Đã tồn tại & forceRegenerate = false (Idempotency Cache)
+        DB-->>GW: Trả về câu hỏi có sẵn
+        GW-->>ClientSDK: HTTP 202 { status: 'completed', existingQuestionId: '...' }
+        ClientSDK->>GW: GET /api/agents/speaking-quiz/questions/:existingQuestionId
+        GW-->>ClientSDK: HTTP 200 OK (Chi tiết câu hỏi + giàn giáo thích ứng & PREP)
+        ClientSDK-->>Learner: Hiển thị giao diện luyện nói ngay lập tức (< 50ms)
     else Chưa tồn tại hoặc forceRegenerate = true
-        GW->>Redis: Đẩy Job vào 'speaking-quiz-queue'
-        GW-->>UI: 202 Accepted { jobId, status: "queued", sseUrl }
+        GW->>Redis: Đẩy Job vào hàng đợi 'speaking-quiz-queue'
+        GW-->>ClientSDK: HTTP 202 { jobId, status: 'queued', sseUrl }
         
-        Note over UI, Redis: Bước 2: Lắng nghe tiến trình thời gian thực (SSE)
-        UI->>GW: GET /api/agents/speaking-quiz/jobs/:jobId/progress (Accept: text/event-stream)
-        Worker->>Redis: Lấy Job ra thực thi (LangGraph StateGraph)
+        Note over ClientSDK, Redis: BƯỚC 2: THEO DÕI TIẾN TRÌNH REAL-TIME QUA SSE
+        ClientSDK->>GW: GET /api/agents/speaking-quiz/jobs/:jobId/progress (Accept: text/event-stream)
+        QueueWorker: Worker nhận Job và khởi chạy LangGraph StateGraph
         
-        Worker->>Redis: Publish Event: context_resolved (25%)
-        Redis-->>GW-->>UI: SSE Data: { progress: 25, stage: "context_resolved" }
+        %% Node 1: context_resolved
+        Worker->>DB: Đọc nội dung Storybook (hoặc nhận customTopic)
+        Worker->>Worker: Trích xuất từ vựng trọng tâm tự nhiên (Organic Lexical Flow)
+        Worker->>Redis: Publish SSE { stage: 'context_resolved', progress: 25 }
+        Redis-->>GW-->>ClientSDK: Event: progress 25% (Đã phân giải bài học & ngữ cảnh)
         
-        Worker->>Redis: Publish Event: question_formulated (50%)
-        Redis-->>GW-->>UI: SSE Data: { progress: 50, stage: "question_formulated" }
+        %% Node 2: question_formulated
+        Worker->>Gemini: question_formulator: Đặt câu hỏi kích thích tư duy (< 20 từ)
+        Gemini-->>Worker: Topic & Adaptive Question Intent
+        Worker->>Redis: Publish SSE { stage: 'question_formulated', progress: 50 }
+        Redis-->>GW-->>ClientSDK: Event: progress 50% (Đã tạo xong câu hỏi thảo luận)
         
-        Worker->>Redis: Publish Event: prep_synthesized (80%)
-        Redis-->>GW-->>UI: SSE Data: { progress: 80, stage: "prep_synthesized" }
+        %% Node 3: prep_synthesized
+        Worker->>Gemini: prep_synthesizer: Lựa chọn khung (PREP/PAR/STAR/CCR) & sinh Collocations
+        Gemini-->>Worker: Adaptive Scaffold + Topic Collocations + Mapped PREP
+        Worker->>Redis: Publish SSE { stage: 'prep_synthesized', progress: 80 }
+        Redis-->>GW-->>ClientSDK: Event: progress 80% (Đang hoàn thiện giàn giáo thích ứng)
         
-        Worker->>DB: Lưu SpeakingQuestion { question, prepScaffold, ... }
-        Worker->>Redis: Publish Event: completed (100%)
-        Redis-->>GW-->>UI: SSE Data: { status: "done", progress: 100, payload: { questionId, ... } }
+        %% Node 4: persister
+        Worker->>DB: Lưu vào collection 'speaking_questions' (gồm cả adaptiveScaffold & prepScaffold)
+        Worker->>Redis: Publish SSE { status: 'done', progress: 100, payload: { questionId } }
+        Redis-->>GW-->>ClientSDK: Event: done 100%
         
-        Note over UI, DB: Bước 3: Lấy toàn bộ dữ liệu để người học bắt đầu nói
-        UI->>GW: GET /api/agents/speaking-quiz/questions/:questionId
-        GW-->>UI: 200 OK (Chi tiết đề bài & Model Answer)
+        Note over ClientSDK, DB: BƯỚC 3: TRUY VẤN DỮ LIỆU ĐỀ BÀI HOÀN CHỈNH
+        ClientSDK->>ClientSDK: Đóng kết nối EventSource (sse.close())
+        ClientSDK->>GW: GET /api/agents/speaking-quiz/questions/:questionId
+        GW-->>ClientSDK: HTTP 200 OK (Câu hỏi, Collocations, Adaptive Scaffold & PREP)
+        ClientSDK-->>Learner: Hiển thị giao diện SpeakYourMindPlayer
     end
 ```
 
 ---
 
-## 2. Chi tiết Đặc tả Endpoint (API Endpoints Specification)
+## 2. Chi Tiết Đặc Tả Endpoints (API Endpoints Specification)
 
 ### 2.1. Kích hoạt Job sinh câu hỏi Speaking Quiz
 
@@ -82,51 +110,52 @@ sequenceDiagram
 * **Status Code:** `202 Accepted`
 
 #### Request Body
-| Trường | Kiểu dữ liệu | Bắt buộc | Mặc định | Ý nghĩa & Ví dụ |
+| Trường | Kiểu dữ liệu | Bắt buộc | Mặc định | Ý nghĩa & Mô tả |
 | :--- | :--- | :---: | :---: | :--- |
 | `storybookId` | `string` | Không | `null` | MongoDB ObjectId của bài học trong `aha-tools` (vd: `"679c1a2b3c4d5e6f7a8b9c0d"`). |
-| `customTopic` | `string` | Không | `null` | Chủ đề tự do nếu không thuộc Storybook (vd: `"Artificial Intelligence and Human Creativity"`). |
+| `customTopic` | `string` | Không | `null` | Chủ đề tự do nếu không thuộc Storybook (vd: `"Remote Work vs Office Work"`). |
 | `level` | `string` | Không | `"B2"` | Chuẩn CEFR: `"B1"`, `"B2"`, hoặc `"C1"`. |
-| `targetKeywords` | `string[]` | Không | `[]` | Mảng từ vựng trọng tâm cần ép AI đưa vào câu hỏi và giàn giáo (vd: `["productivity", "isolation"]`). |
+| `targetKeywords` | `string[]` | Không | `[]` | Mảng từ khóa bắt buộc bổ sung thêm. Nếu để trống, hệ thống sẽ tự động trích xuất từ Storybook và bơm từ vựng FSRS đến hạn. |
 | `forceRegenerate` | `boolean` | Không | `false` | Nếu `true`, ép AI sinh lại câu hỏi mới dù `storybookId` đã có sẵn bài tập trong DB. |
 
-> **Quy tắc Nghiệp vụ:** Phải cung cấp ít nhất một trong hai trường: `storybookId` HOẶC `customTopic`.
+> **Quy tắc Nghiệp vụ (Validation Rule):** Bắt buộc phải cung cấp ít nhất một trong hai trường: `storybookId` HOẶC `customTopic`.
 
 #### Request Example (Theo bài Storybook):
 ```json
 {
   "storybookId": "679c1a2b3c4d5e6f7a8b9c0d",
   "level": "B2",
-  "targetKeywords": ["sustainable", "transition"],
   "forceRegenerate": false
 }
 ```
 
-#### Request Example (Theo chủ đề tự do):
+#### Request Example (Theo chủ đề tự do kèm từ khóa tùy biến):
 ```json
 {
-  "customTopic": "Work from Home vs Office Work",
-  "level": "B1"
+  "customTopic": "Artificial Intelligence in Education",
+  "level": "C1",
+  "targetKeywords": ["pedagogical", "automation"],
+  "forceRegenerate": true
 }
 ```
 
-#### Response Example 1: Job mới được xếp hàng đợi (Queueing)
+#### Response Example 1 — Khởi tạo Job mới thành công (HTTP 202 Accepted):
 ```json
 {
   "jobId": "4",
   "status": "queued",
   "sseUrl": "/api/agents/speaking-quiz/jobs/4/progress",
-  "createdAt": "2026-10-01T09:30:00.000Z"
+  "createdAt": "2026-10-13T09:30:00.000Z"
 }
 ```
 
-#### Response Example 2: Đã có sẵn câu hỏi (Idempotent Hit — Trả kết quả ngay)
+#### Response Example 2 — Trúng Idempotency Cache (HTTP 202 Accepted — Phản hồi tức thì):
 ```json
 {
   "jobId": "existing-6abdc5cae5d0b4f316e5516c",
   "status": "completed",
   "existingQuestionId": "6abdc5cae5d0b4f316e5516c",
-  "createdAt": "2026-10-01T08:15:30.000Z"
+  "createdAt": "2026-10-13T08:15:30.000Z"
 }
 ```
 
@@ -136,16 +165,16 @@ sequenceDiagram
 
 * **Method:** `GET`
 * **Path:** `/api/agents/speaking-quiz/jobs/:jobId/progress`
-* **Headers:** `Accept: text/event-stream`
-* **Response Content-Type:** `text/event-stream`
+* **Request Headers:** `Accept: text/event-stream`
+* **Response Headers:** `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`
 
 #### Danh sách các Stage sự kiện
-| Stage | Progress (%) | Mô tả trạng thái |
+| Stage | Progress (%) | Mô tả trạng thái xử lý |
 | :--- | :---: | :--- |
-| `context_resolved` | 25% | Đã phân giải xong bài học Storybook hoặc chủ đề tự do |
-| `question_formulated`| 50% | Đã sinh xong câu hỏi tranh luận kích thích phản biện |
-| `prep_synthesized` | 80% | Đã tổng hợp đầy đủ 4 chặng PREP và câu trả lời mẫu |
-| `completed` | 100% | Đã kiểm duyệt định dạng Zod và lưu bản ghi vào CSDL |
+| `context_resolved` | 25% | Đã phân giải bài học Storybook và nạp từ vựng FSRS đến hạn |
+| `question_formulated`| 50% | Đã sinh câu hỏi tranh biện kích thích tư duy phản biện |
+| `prep_synthesized` | 80% | Đã hoàn tất giàn giáo 4 pha PREP lồng ghép từ vựng mục tiêu |
+| `completed` | 100% | Đã lưu bản ghi hợp lệ vào collection `speaking_questions` |
 
 #### Luồng dữ liệu mẫu trên kết nối SSE (Stream Payload):
 ```http
@@ -163,20 +192,135 @@ data: {"jobId":"4","stepId":"prepSynthesizer","stepName":"prep_synthesized","sta
 
 data: {"jobId":"4","stepId":"persister","stepName":"completed","status":"completed","progress":100,"message":"Speaking quiz successfully created and saved","payload":{"questionId":"6abdc5cae5d0b4f316e5516c"}}
 
-data: {"jobId":"4","status":"done","progress":100,"message":"Speaking quiz generation completed","payload":{"questionId":"6abdc5cae5d0b4f316e5516c","topic":"Artificial Intelligence and Human Creativity","question":"Should AI-generated art be considered equal to human-made art, or does true creativity require human emotion and experience?","level":"B2","tokenUsage":{"promptTokens":1250,"completionTokens":680,"totalTokens":1930}}}
+data: {"jobId":"4","status":"done","progress":100,"message":"Speaking quiz generation completed","payload":{"questionId":"6abdc5cae5d0b4f316e5516c","topic":"The Future of Clean Energy","question":"Do you believe governments should mandate the total phase-out of fossil fuels by 2035?","level":"B2","tokenUsage":{"promptTokens":1250,"completionTokens":680,"totalTokens":1930}}}
 ```
 
-> **Client Handling Note:** Khi nhận event có `status === "done"`, phía client ngắt kết nối `EventSource` (`eventSource.close()`) và sử dụng `payload.questionId` để tải bài học chi tiết.
+> **Client Handling Note:** Khi nhận event có `status === "done"`, phía client đóng kết nối `EventSource` (`eventSource.close()`) và sử dụng `payload.questionId` để tải chi tiết bài học qua REST API.
 
 ---
 
-### 2.3. Truy vấn danh sách câu hỏi (Flexible Filters)
+### 2.3. Lấy chi tiết một câu hỏi theo ID
+
+* **Method:** `GET`
+* **Path:** `/api/agents/speaking-quiz/questions/:id`
+* **Path Parameter:** `id` *(MongoDB ObjectId hợp lệ)*
+* **Status Codes:**
+  * `200 OK`: Trả về dữ liệu chi tiết câu hỏi, từ vựng và giàn giáo PREP.
+  * `404 Not Found`: Không tìm thấy câu hỏi hoặc định dạng ObjectId không hợp lệ.
+
+#### Response Example (HTTP 200 OK — Bao gồm Adaptive Scaffold & Legacy PREP Mapped):
+```json
+{
+  "id": "6abdc5cae5d0b4f316e5516c",
+  "storybookId": "679c1a2b3c4d5e6f7a8b9c0d",
+  "topic": "The Future of Clean Energy",
+  "question": "How can governments accelerate the transition to clean energy without disrupting local industries?",
+  "level": "B2",
+  "targetKeywords": [
+    {
+      "word": "sustainable",
+      "ipa": "/səˈsteɪ.nə.bəl/",
+      "meaning": "Có thể duy trì lâu dài, bền vững",
+      "srsStatus": "unsaved",
+      "isInjected": false
+    },
+    {
+      "word": "transition",
+      "ipa": "/trænˈzɪʃ.ən/",
+      "meaning": "Quá trình chuyển đổi",
+      "srsStatus": "unsaved",
+      "isInjected": false
+    }
+  ],
+  "adaptiveScaffold": {
+    "frameworkType": "PAR",
+    "frameworkName": "PAR (Problem - Advice - Result)",
+    "frameworkDescription": "Khung giải pháp tối ưu cho câu hỏi đề xuất lời khuyên và hành động thực tiễn",
+    "topicCollocations": [
+      {
+        "phrase": "renewable transition",
+        "meaning": "chuyển dịch sang năng lượng tái tạo",
+        "ipa": "/rɪˈnjuːəbəl trænˈzɪʃən/"
+      },
+      {
+        "phrase": "fossil fuel phase-out",
+        "meaning": "loại bỏ dần nhiên liệu hóa thạch",
+        "ipa": "/ˈfɑːsəl ˈfjuːəl feɪz aʊt/"
+      }
+    ],
+    "stages": {
+      "stage1": {
+        "stageKey": "problem",
+        "title": "Problem Identification",
+        "signposts": ["The core dilemma is", "Looking at the environmental crisis"],
+        "hint": "Nêu thực trạng và rủi ro nếu tiếp tục phụ thuộc nhiên liệu hóa thạch.",
+        "modelAnswer": "The core dilemma is that delaying the fossil fuel phase-out severely accelerates global warming."
+      },
+      "stage2": {
+        "stageKey": "advice",
+        "title": "Actionable Advice",
+        "signposts": ["Governments should urgently", "A practical roadmap is to"],
+        "hint": "Đưa ra giải pháp chính sách và trợ cấp công nghệ xanh.",
+        "modelAnswer": "Governments should urgently accelerate the renewable transition by subsidizing wind and solar infrastructure."
+      },
+      "stage3": {
+        "stageKey": "alternative",
+        "title": "Pragmatic Consideration",
+        "signposts": ["At the same time", "To avoid economic shock"],
+        "hint": "Cân nhắc lộ trình chuyển đổi linh hoạt cho các ngành công nghiệp nặng.",
+        "modelAnswer": "At the same time, transitional grids must be maintained to prevent energy poverty in emerging markets."
+      },
+      "stage4": {
+        "stageKey": "result",
+        "title": "Expected Outcome",
+        "signposts": ["Ultimately", "This approach ensures that"],
+        "hint": "Đúc kết kết quả dài hạn và lợi ích cho thế hệ tương lai.",
+        "modelAnswer": "Ultimately, this approach ensures long-term ecological balance and sustainable economic growth."
+      }
+    }
+  },
+  "prepScaffold": {
+    "point": {
+      "stage": "point",
+      "title": "Problem Identification",
+      "signposts": ["The core dilemma is", "Looking at the environmental crisis"],
+      "hint": "Nêu thực trạng và rủi ro nếu tiếp tục phụ thuộc nhiên liệu hóa thạch.",
+      "modelAnswer": "The core dilemma is that delaying the fossil fuel phase-out severely accelerates global warming."
+    },
+    "reason": {
+      "stage": "reason",
+      "title": "Actionable Advice",
+      "signposts": ["Governments should urgently", "A practical roadmap is to"],
+      "hint": "Đưa ra giải pháp chính sách và trợ cấp công nghệ xanh.",
+      "modelAnswer": "Governments should urgently accelerate the renewable transition by subsidizing wind and solar infrastructure."
+    },
+    "example": {
+      "stage": "example",
+      "title": "Pragmatic Consideration",
+      "signposts": ["At the same time", "To avoid economic shock"],
+      "hint": "Cân nhắc lộ trình chuyển đổi linh hoạt cho các ngành công nghiệp nặng.",
+      "modelAnswer": "At the same time, transitional grids must be maintained to prevent energy poverty in emerging markets."
+    },
+    "conclusion": {
+      "stage": "conclusion",
+      "title": "Expected Outcome",
+      "signposts": ["Ultimately", "This approach ensures that"],
+      "hint": "Đúc kết kết quả dài hạn và lợi ích cho thế hệ tương lai.",
+      "modelAnswer": "Ultimately, this approach ensures long-term ecological balance and sustainable economic growth."
+    }
+  }
+}
+```
+
+---
+
+### 2.4. Truy vấn danh sách câu hỏi (Flexible Filters)
 
 * **Method:** `GET`
 * **Path:** `/api/agents/speaking-quiz/questions`
 * **Query Parameters:**
-  - `storybookId` *(optional, string)*: Lọc theo Storybook ID.
-  - `level` *(optional, string)*: Lọc theo cấp độ CEFR (`B1`, `B2`, `C1`).
+  * `storybookId` *(Tùy chọn, string)*: Lọc theo Storybook ID.
+  * `level` *(Tùy chọn, string)*: Lọc theo chuẩn CEFR (`B1`, `B2`, `C1`).
 * **Status Code:** `200 OK`
 
 #### Response Example:
@@ -187,50 +331,24 @@ data: {"jobId":"4","status":"done","progress":100,"message":"Speaking quiz gener
     {
       "id": "6abdc5cae5d0b4f316e5516c",
       "storybookId": "679c1a2b3c4d5e6f7a8b9c0d",
-      "topic": "The Future of Renewable Energy",
-      "question": "Should governments completely phase out fossil fuel subsidies within five years?",
+      "topic": "The Future of Clean Energy",
+      "question": "How can governments accelerate the transition to clean energy without disrupting local industries?",
       "level": "B2",
       "targetKeywords": [
         {
           "word": "sustainable",
           "ipa": "/səˈsteɪ.nə.bəl/",
-          "meaning": "Bền vững, thân thiện môi trường"
-        },
-        {
-          "word": "transition",
-          "ipa": "/trænˈzɪʃ.ən/",
-          "meaning": "Quá trình chuyển đổi"
+          "meaning": "Có thể duy trì lâu dài, bền vững",
+          "srsStatus": "unsaved",
+          "isInjected": false
         }
       ],
+      "adaptiveScaffold": { "...": "..." },
       "prepScaffold": {
-        "point": {
-          "stage": "point",
-          "title": "Main Point",
-          "signposts": ["In my opinion", "I strongly believe that", "From my perspective"],
-          "hint": "Nêu rõ quan điểm của bạn đồng ý hay phản đối việc loại bỏ trợ cấp",
-          "modelAnswer": "In my opinion, governments must immediately phase out fossil fuel subsidies to accelerate the transition to green energy."
-        },
-        "reason": {
-          "stage": "reason",
-          "title": "Supporting Reason",
-          "signposts": ["The primary reason is that", "This is largely because", "Furthermore"],
-          "hint": "Giải thích tác động của việc trợ cấp đến giá năng lượng tái tạo và ngân sách quốc gia",
-          "modelAnswer": "The primary reason is that continuing these subsidies distorts the market and slows down investments in sustainable alternatives."
-        },
-        "example": {
-          "stage": "example",
-          "title": "Specific Example",
-          "signposts": ["For instance", "A clear illustration of this is", "Take the case of"],
-          "hint": "Đưa ra dẫn chứng thực tế từ một quốc gia hoặc nghiên cứu đã giảm phát thải thành công",
-          "modelAnswer": "For instance, European nations that reallocated subsidies toward wind and solar saw renewable adoption increase by over 40%."
-        },
-        "conclusion": {
-          "stage": "conclusion",
-          "title": "Conclusion / Restatement",
-          "signposts": ["In conclusion", "Therefore", "Ultimately"],
-          "hint": "Tóm lược lại luận điểm và nhấn mạnh tầm quan trọng của hành động khẩn cấp",
-          "modelAnswer": "Therefore, redirecting financial resources away from fossil fuels is a vital step toward long-term environmental sustainability."
-        }
+        "point": { "...": "..." },
+        "reason": { "...": "..." },
+        "example": { "...": "..." },
+        "conclusion": { "...": "..." }
       }
     }
   ]
@@ -239,51 +357,78 @@ data: {"jobId":"4","status":"done","progress":100,"message":"Speaking quiz gener
 
 ---
 
-### 2.4. Lấy chi tiết một câu hỏi theo ID
+## 3. TypeScript Interfaces Dành Cho Client `aha-tools`
 
-* **Method:** `GET`
-* **Path:** `/api/agents/speaking-quiz/questions/:id`
-* **Param:** `id` *(MongoDB ObjectId)*
-* **Status Codes:**
-  - `200 OK`: Trả về dữ liệu chi tiết đối tượng câu hỏi (Cấu trúc tương đồng phần tử trong mảng ở mục 2.3).
-  - `404 Not Found`: Khi không tìm thấy câu hỏi hoặc `id` không hợp lệ (`{"statusCode":404,"message":"Không tìm thấy câu hỏi với ID: ..."}`).
-
----
-
-## 3. TypeScript Interfaces dành cho Client `aha-tools`
-
-Nhóm phát triển `aha-tools` có thể sao chép trực tiếp các Type definitions này vào codebase Frontend/Backend của mình:
+Nhóm phát triển `aha-tools` có thể sao chép trực tiếp các Type definitions này vào `@/lib/types/speaking-quiz.ts`:
 
 ```typescript
 /**
- * Chuẩn cấp độ ngôn ngữ CEFR
+ * Chuẩn cấp độ năng lực ngôn ngữ CEFR
  */
 export type CefrLevel = 'B1' | 'B2' | 'C1';
 
 /**
- * Payload khởi tạo Job sinh đề bài
+ * Các loại khung giàn giáo tư duy giao tiếp thích ứng (Adaptive Frameworks)
+ * - PREP: Point - Reason - Example - Conclusion (Quan điểm, tranh biện)
+ * - PAR: Problem - Advice/Action - Result (Lời khuyên, giải pháp)
+ * - STAR: Situation - Task/Action - Result (Kể chuyện, trải nghiệm cá nhân)
+ * - CCR: Claim - Concession/Counter - Resolution (Thương lượng, cân nhắc đa chiều)
  */
-export interface CreateSpeakingQuizJobRequest {
-  storybookId?: string;
-  customTopic?: string;
-  level?: CefrLevel;
-  targetKeywords?: string[];
-  forceRegenerate?: boolean;
+export type FrameworkType = 'PREP' | 'PAR' | 'STAR' | 'CCR';
+
+/**
+ * Cụm từ vựng/idioms/collocation bản xứ chuyên đề
+ */
+export interface TopicCollocationItem {
+  phrase: string;
+  meaning: string;
+  ipa?: string;
 }
 
 /**
- * Kết quả phản hồi khi tạo Job
+ * Chi tiết một chặng trong giàn giáo thích ứng
  */
-export interface CreateSpeakingQuizJobResponse {
-  jobId: string;
-  status: 'queued' | 'completed';
-  sseUrl?: string;
-  existingQuestionId?: string;
-  createdAt: string;
+export interface AdaptiveScaffoldStageItem {
+  stageKey: string;
+  title: string;
+  signposts: string[];
+  hint: string;
+  modelAnswer: string;
 }
 
 /**
- * Cấu trúc một chặng trong giàn giáo PREP
+ * Cấu trúc 4 chặng của giàn giáo thích ứng
+ */
+export interface AdaptiveScaffoldStages {
+  stage1: AdaptiveScaffoldStageItem;
+  stage2: AdaptiveScaffoldStageItem;
+  stage3: AdaptiveScaffoldStageItem;
+  stage4: AdaptiveScaffoldStageItem;
+}
+
+/**
+ * Giàn giáo tư duy thích ứng hoàn chỉnh (Adaptive Scaffold)
+ */
+export interface SpeakingAdaptiveScaffold {
+  frameworkType: FrameworkType;
+  frameworkName: string;
+  frameworkDescription: string;
+  topicCollocations: TopicCollocationItem[];
+  stages: AdaptiveScaffoldStages;
+}
+
+/**
+ * Trạng thái Spaced Repetition của từ vựng
+ * - due: Thẻ từ vựng đã đến hạn cần ôn tập (due <= now)
+ * - learning: Thẻ đang trong chu kỳ học tập tích cực
+ * - mastered: Thẻ đã đạt độ vững chắc cao (stability >= 30 ngày)
+ * - new: Thẻ mới lưu, chưa qua lần ôn tập nào
+ * - unsaved: Từ vựng trích xuất từ bài học hoặc đề bài, người học có thể bấm lưu vào bộ từ
+ */
+export type SrsStatus = 'due' | 'learning' | 'mastered' | 'new' | 'unsaved';
+
+/**
+ * Cấu hình một chặng trong giàn giáo tư duy PREP (Legacy)
  */
 export interface SpeakingScaffoldStage {
   stage: 'point' | 'reason' | 'example' | 'conclusion';
@@ -294,7 +439,7 @@ export interface SpeakingScaffoldStage {
 }
 
 /**
- * Trọn bộ giàn giáo PREP 4 chặng
+ * Trọn bộ giàn giáo PREP 4 chặng hoàn chỉnh (Legacy Mapped)
  */
 export interface SpeakingPrepScaffold {
   point: SpeakingScaffoldStage;
@@ -304,16 +449,64 @@ export interface SpeakingPrepScaffold {
 }
 
 /**
- * Từ vựng trọng tâm kèm phát âm IPA và định nghĩa
+ * Từ vựng trọng tâm kèm phát âm IPA, định nghĩa và nhãn FSRS
  */
 export interface TargetKeywordItem {
   word: string;
   ipa?: string;
   meaning: string;
+  /** Trạng thái ôn tập giãn cách FSRS của từ */
+  srsStatus?: SrsStatus;
+  /** Đánh dấu từ vựng được tự động bơm từ FSRS engine để kích hoạt phản xạ */
+  isInjected?: boolean;
 }
 
 /**
- * Chi tiết đề bài Speaking Quiz
+ * Payload gửi lên để khởi tạo Job sinh đề bài Speaking Quiz
+ */
+export interface CreateSpeakingQuizJobRequest {
+  storybookId?: string;
+  customTopic?: string;
+  level?: CefrLevel;
+  targetKeywords?: string[];
+  forceRegenerate?: boolean;
+}
+
+/**
+ * Kết quả phản hồi khi tạo Job (HTTP 202)
+ */
+export interface CreateSpeakingQuizJobResponse {
+  jobId: string;
+  status: 'queued' | 'completed';
+  sseUrl?: string;
+  existingQuestionId?: string;
+  createdAt: string;
+}
+
+/**
+ * Trạng thái tra cứu chi tiết của Job trong BullMQ (REST Fallback)
+ */
+export interface SpeakingQuizJobStatusResponse {
+  jobId: string;
+  status: 'waiting' | 'active' | 'completed' | 'failed' | 'delayed' | 'queued';
+  progress: number;
+  result?: {
+    questionId: string;
+    topic?: string;
+    question?: string;
+    level?: CefrLevel;
+    tokenUsage?: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    };
+  } | null;
+  error?: string | null;
+  createdAt: string;
+}
+
+/**
+ * Chi tiết bản ghi đề bài Speaking Quiz hoàn chỉnh
  */
 export interface SpeakingQuestionDetail {
   id: string;
@@ -323,6 +516,13 @@ export interface SpeakingQuestionDetail {
   level: CefrLevel;
   targetKeywords: TargetKeywordItem[];
   prepScaffold: SpeakingPrepScaffold;
+  adaptiveScaffold?: SpeakingAdaptiveScaffold;
+  tokenUsage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+  createdAt?: string;
 }
 
 /**
@@ -334,12 +534,19 @@ export interface SpeakingQuestionsListResponse {
 }
 
 /**
- * Sự kiện tiến trình SSE
+ * Sự kiện tiến trình thời gian thực qua Server-Sent Events (SSE)
  */
 export interface SpeakingQuizProgressEvent {
+  type?: 'JOB_STARTED' | 'JOB_COMPLETED' | 'JOB_FAILED' | string;
+  data?: any;
   jobId?: string;
   stepId?: string;
-  stepName?: string;
+  stepName?:
+    | 'context_resolved'
+    | 'question_formulated'
+    | 'prep_synthesized'
+    | 'completed'
+    | string;
   status?: 'completed' | 'done' | 'failed' | 'init';
   progress?: number;
   message?: string;
@@ -355,26 +562,36 @@ export interface SpeakingQuizProgressEvent {
     };
   };
 }
+
+// -------------------------------------------------------------
+// Alias đảm bảo 100% tương thích ngược với code UI hiện hành
+// -------------------------------------------------------------
+export type ITargetKeyword = TargetKeywordItem;
+export type ISpeakingScaffoldStage = SpeakingScaffoldStage;
+export type ISpeakingScaffold = SpeakingPrepScaffold;
+export type ISpeakingQuestion = SpeakingQuestionDetail;
 ```
 
 ---
 
-## 4. Code Mẫu Tích Hợp (SDK Integration Example)
+## 4. Code Mẫu Tích Hợp Client SDK (Next.js Implementation Example)
 
-Đoạn mã mẫu viết bằng TypeScript/JavaScript phía `aha-tools` thực hiện trọn vẹn chu trình: **Gửi Job $\rightarrow$ Bắt SSE Progress Bar $\rightarrow$ Nhận bài học**:
+Đoạn mã mẫu sau triển khai toàn diện kết nối giữa `aha-tools` và `aha-mind-agents`, hỗ trợ tự động xử lý Idempotency, SSE streaming và gắn huy hiệu hiển thị từ vựng FSRS:
 
 ```typescript
-import { 
-  CreateSpeakingQuizJobRequest, 
-  CreateSpeakingQuizJobResponse, 
+import {
+  CreateSpeakingQuizJobRequest,
+  CreateSpeakingQuizJobResponse,
   SpeakingQuestionDetail,
-  SpeakingQuizProgressEvent 
-} from './speaking-quiz.types';
+  SpeakingQuizProgressEvent,
+  TargetKeywordItem,
+  SrsStatus,
+} from '@/lib/types/speaking-quiz';
 
-const AGENTS_BASE_URL = 'http://localhost:3001/api';
+const AGENTS_BASE_URL = process.env.NEXT_PUBLIC_AGENTS_API_URL || 'http://localhost:3001/api';
 
 /**
- * Kích hoạt sinh câu hỏi và lắng nghe đến khi hoàn tất
+ * Kích hoạt sinh câu hỏi Speaking Quiz và lắng nghe SSE đến khi hoàn tất
  */
 export async function generateSpeakingQuiz(
   request: CreateSpeakingQuizJobRequest,
@@ -388,20 +605,24 @@ export async function generateSpeakingQuiz(
   });
 
   if (!res.ok) {
-    throw new Error(`Tạo Job thất bại: ${res.statusText}`);
+    throw new Error(`Khởi tạo Job thất bại [${res.status}]: ${res.statusText}`);
   }
 
   const jobData: CreateSpeakingQuizJobResponse = await res.json();
 
-  // 2. Nếu đã có sẵn câu hỏi (Idempotency), lấy trực tiếp ngay lập tức
+  // 2. Nếu đã có sẵn câu hỏi (Idempotency Cache), tải ngay lập tức (< 50ms)
   if (jobData.status === 'completed' && jobData.existingQuestionId) {
     onProgress?.(100, 'Câu hỏi có sẵn đã sẵn sàng');
     return fetchQuestionById(jobData.existingQuestionId);
   }
 
-  // 3. Nếu là Job mới, mở kết nối SSE lắng nghe tiến trình
+  // 3. Mở luồng Server-Sent Events (SSE) theo dõi tiến độ
   return new Promise<SpeakingQuestionDetail>((resolve, reject) => {
-    const sse = new EventSource(`${AGENTS_BASE_URL}${jobData.sseUrl}`);
+    const sseUrl = jobData.sseUrl?.startsWith('http') 
+      ? jobData.sseUrl 
+      : `${AGENTS_BASE_URL.replace(/\/api$/, '')}${jobData.sseUrl}`;
+    
+    const sse = new EventSource(sseUrl);
 
     sse.onmessage = async (event) => {
       try {
@@ -418,7 +639,7 @@ export async function generateSpeakingQuiz(
           resolve(detail);
         } else if (data.status === 'failed') {
           sse.close();
-          reject(new Error(data.message || 'Lỗi xử lý trong Pipeline'));
+          reject(new Error(data.message || 'Lỗi xử lý trong pipeline Agent'));
         }
       } catch (err) {
         sse.close();
@@ -428,7 +649,7 @@ export async function generateSpeakingQuiz(
 
     sse.onerror = (err) => {
       sse.close();
-      reject(new Error('Mất kết nối Server-Sent Events với Agent Gateway'));
+      reject(new Error('Mất kết nối SSE với Agent Gateway'));
     };
   });
 }
@@ -443,18 +664,54 @@ export async function fetchQuestionById(id: string): Promise<SpeakingQuestionDet
   }
   return res.json();
 }
+
+/**
+ * Helper: Trích xuất nhãn và màu sắc hiển thị cho từ vựng FSRS
+ */
+export function getSrsBadgeConfig(keyword: TargetKeywordItem): {
+  label: string;
+  badgeClass: string;
+  tooltip: string;
+} {
+  if (keyword.isInjected || keyword.srsStatus === 'due') {
+    return {
+      label: 'Cần Ôn Tập',
+      badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+      tooltip: 'Từ vựng đến hạn ôn tập FSRS — Đã được lồng ghép vào câu hỏi này để bạn luyện phản xạ nói!',
+    };
+  }
+  if (keyword.srsStatus === 'learning') {
+    return {
+      label: 'Đang Học',
+      badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      tooltip: 'Từ vựng đang trong chu kỳ củng cố trí nhớ',
+    };
+  }
+  if (keyword.srsStatus === 'mastered') {
+    return {
+      label: 'Thành Thạo',
+      badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      tooltip: 'Từ vựng đã ghi nhớ vững chắc',
+    };
+  }
+  return {
+    label: 'Từ Khóa',
+    badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+    tooltip: 'Từ vựng trọng tâm trong bài học',
+  };
+}
 ```
 
 ---
 
 ## 5. Bảng Mã Lỗi Thường Gặp (Error Handling Matrix)
 
-| HTTP Code | Error Scenario | Nguyên nhân | Hướng xử lý cho client |
+| HTTP Code | Tình huống Lỗi | Nguyên nhân Kỹ thuật | Hướng Xử Lý Khuyến Nghị Cho Client |
 | :---: | :--- | :--- | :--- |
-| **`400`** | `Bad Request` | Thiếu cả `storybookId` lẫn `customTopic`, hoặc `level` không thuộc `['B1', 'B2', 'C1']`. | Kiểm tra lại dữ liệu đầu vào theo DTO trước khi submit. |
-| **`404`** | `Not Found` | Không tìm thấy câu hỏi với `id` được chỉ định hoặc format ObjectId sai. | Kiểm tra ID hoặc điều hướng người dùng tạo mới. |
-| **`429`** | `Too Many Requests` | Vượt ngưỡng Rate Limit quota của Gemini API. | Hàng đợi BullMQ sẽ tự động retry tối đa 3 lần với Exponential Backoff. Client giữ kết nối SSE sẽ tự nhận kết quả khi retry thành công. |
-| **`500`** | `Internal Server Error` | Lỗi phân tích cú pháp Zod hoặc CSDL MongoDB gián đoạn. | Hiển thị thông báo lỗi thân thiện cho người dùng, gửi lại yêu cầu. |
+| **`400`** | `Bad Request` | Thiếu cả `storybookId` lẫn `customTopic`, hoặc `level` không hợp lệ. | Kiểm tra lại DTO trước khi submit payload. |
+| **`404`** | `Not Found` | Không tìm thấy câu hỏi với `id` cung cấp hoặc ObjectId sai format. | Thông báo cho học viên hoặc kích hoạt sinh câu hỏi mới. |
+| **`429`** | `Too Many Requests` | Vượt ngưỡng Rate Limit quota của Gemini API. | BullMQ tự động retry 3 lần với Exponential Backoff; Client giữ kết nối SSE sẽ tự nhận kết quả khi retry hoàn tất. |
+| **`500`** | `Internal Server Error` | Lỗi phân tích cú pháp Zod hoặc gián đoạn kết nối MongoDB Atlas. | Hiển thị thông báo thân thiện và cung cấp nút "Thử lại". |
 
 ---
 

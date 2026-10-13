@@ -57,7 +57,9 @@ export function SpeakingPrepCard({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-2xs transition-all">
+    <div
+      className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-2xs transition-all"
+      onClick={() => setIsRevealed(!isRevealed)}>
       {/* 1. Header: Stage Tag, Hint & Model Toggle */}
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
@@ -74,19 +76,6 @@ export function SpeakingPrepCard({
             {stageData.hint}
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setIsRevealed(!isRevealed)}
-          className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
-        >
-          <span>{showModel ? "Hide" : "Model"}</span>
-          {showModel ? (
-            <ChevronUp className="w-3 h-3" />
-          ) : (
-            <ChevronDown className="w-3 h-3" />
-          )}
-        </button>
       </div>
 
       {/* 2. Signposts (Concise Chips) */}
@@ -117,7 +106,7 @@ export function SpeakingPrepCard({
               <Volume2 className="w-3.5 h-3.5" />
             </button>
           </div>
-          <p className="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed italic">
+          <p className="text-sm text-slate-800 dark:text-slate-200 font-medium leading-relaxed italic">
             "{stageData.modelAnswer}"
           </p>
         </div>

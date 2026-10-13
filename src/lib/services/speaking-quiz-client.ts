@@ -14,6 +14,7 @@ import {
   SpeakingQuestionDetail,
   SpeakingQuestionsListResponse,
   SpeakingQuizProgressEvent,
+  SpeakingQuizJobStatusResponse,
 } from "@/lib/types/speaking-quiz";
 
 /**
@@ -139,6 +140,29 @@ export async function fetchSpeakingQuestionsList(filters?: {
 }
 
 /**
+ * 4. Tra cứu trạng thái của Job trực tiếp qua REST API
+ * Chốt chặn an toàn (Failover Path) khi kết nối mạng SSE bị gián đoạn
+ */
+export async function fetchSpeakingQuizJobStatus(
+  jobId: string
+): Promise<SpeakingQuizJobStatusResponse> {
+  const baseUrl = getAgentsApiBaseUrl();
+  const res = await fetch(`${baseUrl}/agents/speaking-quiz/jobs/${jobId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to query job status: [${jobId}] (${res.status})`);
+  }
+
+  return res.json();
+}
+
+/**
  * Callbacks khi subscribe luồng SSE
  */
 export interface SubscribeProgressCallbacks {
@@ -148,16 +172,76 @@ export interface SubscribeProgressCallbacks {
 }
 
 /**
- * 4. Đăng ký lắng nghe tiến trình thời gian thực qua Server-Sent Events (SSE)
+ * 5. Đăng ký lắng nghe tiến trình thời gian thực qua Server-Sent Events (SSE)
+ * Tự động chuyển đổi sang Job Status Polling nếu mạng SSE bị ngắt kết nối giữa chừng.
  * Trả về hàm hủy kết nối (cleanup function)
  */
 export function subscribeToSpeakingQuizProgress(
   sseRelativeUrl: string,
+  jobId: string,
   callbacks: SubscribeProgressCallbacks
 ): () => void {
   const fullUrl = resolveAgentUrl(sseRelativeUrl);
   const eventSource = new EventSource(fullUrl);
   let isDone = false;
+  let isPollingFallback = false;
+
+  // Cơ chế Fallback an toàn tuyệt đối: Tra cứu trạng thái đúng theo jobId thay vì đoán mò
+  const pollJobStatusRecovery = async () => {
+    if (isDone || isPollingFallback) return;
+    isPollingFallback = true;
+
+    callbacks.onProgress?.({
+      progress: 90,
+      stepName: "prep_synthesized",
+      message: "Syncing challenge status with Agent gateway...",
+    });
+
+    const maxAttempts = 15;
+    for (let i = 0; i < maxAttempts; i++) {
+      if (isDone) return;
+      try {
+        const job = await fetchSpeakingQuizJobStatus(jobId);
+        if (job.status === "completed" && job.result?.questionId) {
+          isDone = true;
+          try {
+            eventSource.close();
+          } catch {}
+
+          const detail = await fetchSpeakingQuestionById(job.result.questionId);
+          callbacks.onProgress?.({
+            progress: 100,
+            stepName: "completed",
+            message: "Speaking challenge generated successfully!",
+          });
+          callbacks.onDone(detail);
+          return;
+        } else if (job.status === "failed") {
+          isDone = true;
+          try {
+            eventSource.close();
+          } catch {}
+          callbacks.onError(
+            new Error(job.error || "Speaking quiz generation pipeline failed")
+          );
+          return;
+        }
+      } catch {
+        // Tiếp tục thử lại nếu job đang được xử lý hoặc mạng có độ trễ
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+
+    if (!isDone) {
+      isDone = true;
+      try {
+        eventSource.close();
+      } catch {}
+      callbacks.onError(
+        new Error("Timeout waiting for speaking challenge generation")
+      );
+    }
+  };
 
   eventSource.onmessage = async (event) => {
     try {
@@ -165,47 +249,27 @@ export function subscribeToSpeakingQuizProgress(
       callbacks.onProgress?.(data);
 
       const isCompleted =
-        data.type === "JOB_COMPLETED" ||
         data.status === "done" ||
-        data.status === "completed" ||
+        data.type === "JOB_COMPLETED" ||
         data.stepName === "completed" ||
         data.progress === 100;
 
-      // Khi Job hoàn tất thành công từ Agent Gateway
-      if (isCompleted && !isDone) {
+      const questionId =
+        data.payload?.questionId || (data as any).result?.questionId;
+
+      if (isCompleted && questionId && !isDone) {
         isDone = true;
         eventSource.close();
 
         try {
-          const questionId =
-            data.payload?.questionId ||
-            (data as any).data?.id ||
-            (data as any).data?.questionId ||
-            (data as any).questionId;
-
-          let detail: SpeakingQuestionDetail | null = null;
-          if (questionId) {
-            detail = await fetchSpeakingQuestionById(questionId);
-          } else {
-            // Trường hợp backend emit JOB_COMPLETED với data: null (đã lưu trực tiếp MongoDB)
-            // Lấy câu hỏi mới nhất từ danh sách
-            const list = await fetchSpeakingQuestionsList();
-            if (list.questions && list.questions.length > 0) {
-              detail = list.questions[0];
-            }
-          }
-
-          if (detail) {
-            callbacks.onProgress?.({
-              ...data,
-              progress: 100,
-              stepName: "completed",
-              message: "Speaking challenge generated successfully!",
-            });
-            callbacks.onDone(detail);
-          } else {
-            throw new Error("Unable to retrieve newly generated speaking question");
-          }
+          const detail = await fetchSpeakingQuestionById(questionId);
+          callbacks.onProgress?.({
+            ...data,
+            progress: 100,
+            stepName: "completed",
+            message: "Speaking challenge generated successfully!",
+          });
+          callbacks.onDone(detail);
         } catch (fetchErr) {
           callbacks.onError(
             fetchErr instanceof Error
@@ -213,6 +277,9 @@ export function subscribeToSpeakingQuizProgress(
               : new Error("Failed to fetch generated question detail")
           );
         }
+      } else if (isCompleted && !questionId && !isDone) {
+        // Nếu nhận completed nhưng chưa kịp có questionId trong event, poll đúng jobId
+        pollJobStatusRecovery();
       } else if (data.status === "failed" || data.type === "JOB_FAILED") {
         isDone = true;
         eventSource.close();
@@ -225,34 +292,19 @@ export function subscribeToSpeakingQuizProgress(
     }
   };
 
-  eventSource.onerror = async (err) => {
-    if (isDone) return;
-    eventSource.close();
-
-    // Kiểm tra xem thực tế Job đã lưu xong vào DB hay chưa trước khi báo lỗi rớt mạng
-    try {
-      const list = await fetchSpeakingQuestionsList();
-      if (list.questions && list.questions.length > 0) {
-        isDone = true;
-        callbacks.onProgress?.({
-          progress: 100,
-          stepName: "completed",
-          message: "Speaking challenge generated successfully!",
-        });
-        callbacks.onDone(list.questions[0]);
-        return;
-      }
-    } catch {
-      // Bỏ qua lỗi fallback
-    }
-
-    if (eventSource.readyState === EventSource.CLOSED) {
-      console.error("[SSE Connection Error]:", err);
-      callbacks.onError(new Error("Lost SSE connection to Agent Gateway"));
-    }
+  eventSource.onerror = (err) => {
+    if (isDone || isPollingFallback) return;
+    console.warn(
+      "[SSE Connection Notice]: Connection interrupted, switching to Job Status Polling...",
+      err
+    );
+    pollJobStatusRecovery();
   };
 
   return () => {
-    eventSource.close();
+    isDone = true;
+    try {
+      eventSource.close();
+    } catch {}
   };
 }

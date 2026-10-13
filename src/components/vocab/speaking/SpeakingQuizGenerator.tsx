@@ -43,7 +43,7 @@ export function SpeakingQuizGenerator({
   );
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [customTopic, setCustomTopic] = useState("");
-  const [level, setLevel] = useState<CefrLevel>("B2");
+  const [level, setLevel] = useState<CefrLevel>("B1");
   const [keywordsText, setKeywordsText] = useState("");
   const [forceRegenerate, setForceRegenerate] = useState(false);
 

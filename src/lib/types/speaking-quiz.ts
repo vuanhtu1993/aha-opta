@@ -65,6 +65,24 @@ export interface CreateSpeakingQuizJobResponse {
 }
 
 /**
+ * Trạng thái tra cứu chi tiết của Job trong BullMQ (REST Fallback)
+ */
+export interface SpeakingQuizJobStatusResponse {
+  jobId: string;
+  status: "waiting" | "active" | "completed" | "failed" | "delayed" | "queued";
+  progress: number;
+  result?: {
+    questionId: string;
+    topic?: string;
+    question?: string;
+    level?: CefrLevel;
+    tokenUsage?: any;
+  } | null;
+  error?: string | null;
+  createdAt: string;
+}
+
+/**
  * Chi tiết bản ghi đề bài Speaking Quiz hoàn chỉnh
  */
 export interface SpeakingQuestionDetail {

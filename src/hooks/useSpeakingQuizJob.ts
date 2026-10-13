@@ -117,6 +117,7 @@ export function useSpeakingQuizJob() {
           return new Promise<SpeakingQuestionDetail | null>((resolve) => {
             cleanupRef.current = subscribeToSpeakingQuizProgress(
               response.sseUrl!,
+              response.jobId,
               {
                 onProgress: (event: SpeakingQuizProgressEvent) => {
                   setState((prev) => ({

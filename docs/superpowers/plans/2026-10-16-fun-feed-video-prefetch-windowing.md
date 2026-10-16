@@ -469,7 +469,7 @@ npm run build
 ```
 Expected output: Static build passes with code 0.
 
-- [ ] **Step 3: Commit changes**
+- [x] **Step 3: Commit changes**
 
 Run:
 ```bash

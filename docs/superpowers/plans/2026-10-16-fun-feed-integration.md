@@ -18,7 +18,7 @@
 **Files:**
 - Command: `npx openlore decisions record`
 
-- [ ] **Step 1: Record decision via OpenLore CLI**
+- [x] **Step 1: Record decision via OpenLore CLI**
 
 Run:
 ```bash
@@ -30,7 +30,7 @@ npx openlore decisions record \
 ```
 Expected output: Architectural decision recorded with a draft ID.
 
-- [ ] **Step 2: Verify OpenLore decisions list**
+- [x] **Step 2: Verify OpenLore decisions list**
 
 Run:
 ```bash
@@ -45,7 +45,7 @@ Expected output: The newly created decision draft appears in the OpenLore decisi
 **Files:**
 - Create: `src/lib/types/fun-feed.ts`
 
-- [ ] **Step 1: Create `src/lib/types/fun-feed.ts`**
+- [x] **Step 1: Create `src/lib/types/fun-feed.ts`**
 
 ```typescript
 /**
@@ -135,7 +135,7 @@ export interface FunFeedInteractionResponse {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript Compilation for Types**
+- [x] **Step 2: Verify TypeScript Compilation for Types**
 
 Run:
 ```bash
@@ -150,7 +150,7 @@ Expected output: No errors in `src/lib/types/fun-feed.ts`.
 **Files:**
 - Create: `src/lib/services/fun-feed-client.ts`
 
-- [ ] **Step 1: Write `src/lib/services/fun-feed-client.ts`**
+- [x] **Step 1: Write `src/lib/services/fun-feed-client.ts`**
 
 ```typescript
 /**
@@ -273,7 +273,7 @@ export class FunFeedClient {
 export const funFeedClient = new FunFeedClient();
 ```
 
-- [ ] **Step 2: Verify TypeScript Compilation for SDK**
+- [x] **Step 2: Verify TypeScript Compilation for SDK**
 
 Run:
 ```bash
@@ -288,7 +288,7 @@ Expected output: No compilation errors in `src/lib/services/fun-feed-client.ts`.
 **Files:**
 - Create: `src/hooks/useFunFeed.ts`
 
-- [ ] **Step 1: Write `src/hooks/useFunFeed.ts`**
+- [x] **Step 1: Write `src/hooks/useFunFeed.ts`**
 
 ```typescript
 /**
@@ -611,7 +611,7 @@ export function useFunFeed(options: UseFunFeedOptions = {}) {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript Compilation for Hook**
+- [x] **Step 2: Verify TypeScript Compilation for Hook**
 
 Run:
 ```bash
@@ -628,7 +628,7 @@ Expected output: No compilation errors in `src/hooks/useFunFeed.ts`.
 - Create: `src/components/fun-feed/FunFeedFilterBar.tsx`
 - Create: `src/components/fun-feed/ReportModal.tsx`
 
-- [ ] **Step 1: Write `src/components/fun-feed/ReportModal.tsx`**
+- [x] **Step 1: Write `src/components/fun-feed/ReportModal.tsx`**
 
 ```typescript
 /**
@@ -783,7 +783,7 @@ export function ReportModal({
 }
 ```
 
-- [ ] **Step 2: Write `src/components/fun-feed/FunFeedFilterBar.tsx`**
+- [x] **Step 2: Write `src/components/fun-feed/FunFeedFilterBar.tsx`**
 
 ```typescript
 /**
@@ -892,7 +892,7 @@ export function FunFeedFilterBar({
 }
 ```
 
-- [ ] **Step 3: Write `src/components/fun-feed/FunFeedCard.tsx`**
+- [x] **Step 3: Write `src/components/fun-feed/FunFeedCard.tsx`**
 
 ```typescript
 /**
@@ -1128,7 +1128,7 @@ export function FunFeedCard({
 }
 ```
 
-- [ ] **Step 4: Verify TypeScript Compilation for Components**
+- [x] **Step 4: Verify TypeScript Compilation for Components**
 
 Run:
 ```bash
@@ -1143,7 +1143,7 @@ Expected output: No compilation errors in `src/components/fun-feed/`.
 **Files:**
 - Create: `src/app/apps/fun-feed/page.tsx`
 
-- [ ] **Step 1: Write `src/app/apps/fun-feed/page.tsx`**
+- [x] **Step 1: Write `src/app/apps/fun-feed/page.tsx`**
 
 ```typescript
 /**
@@ -1317,7 +1317,7 @@ export default function FunFeedPage() {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript Compilation for Page**
+- [x] **Step 2: Verify TypeScript Compilation for Page**
 
 Run:
 ```bash
@@ -1334,7 +1334,7 @@ Expected output: No compilation errors in `src/app/apps/fun-feed/page.tsx`.
 - Modify: `src/components/mobile-shell/mobile-tab-bar.tsx`
 - Modify: `src/components/mobile-shell/mobile-header.tsx`
 
-- [ ] **Step 1: Add Fun Feed to `src/components/dashboard/app-shortcuts.tsx`**
+- [x] **Step 1: Add Fun Feed to `src/components/dashboard/app-shortcuts.tsx`**
 
 Thay thế mục "Tin tức AI (Sắp có)" bằng app tiện ích "Fun English Feed":
 ```typescript
@@ -1348,7 +1348,7 @@ Thay thế mục "Tin tức AI (Sắp có)" bằng app tiện ích "Fun English 
   },
 ```
 
-- [ ] **Step 2: Hide Mobile Tab Bar in Full-screen Feed**
+- [x] **Step 2: Hide Mobile Tab Bar in Full-screen Feed**
 
 Modify `src/components/mobile-shell/mobile-tab-bar.tsx`:
 Thêm `pathname.startsWith("/apps/fun-feed")` vào điều kiện `isHidden`:
@@ -1361,7 +1361,7 @@ Thêm `pathname.startsWith("/apps/fun-feed")` vào điều kiện `isHidden`:
     pathname.startsWith("/apps/fun-feed");
 ```
 
-- [ ] **Step 3: Hide Root Mobile Header for Fun Feed Full-screen Immersion**
+- [x] **Step 3: Hide Root Mobile Header for Fun Feed Full-screen Immersion**
 
 Modify `src/components/mobile-shell/mobile-header.tsx`:
 Ẩn toàn bộ header mặc định khi vào route `/apps/fun-feed` để Fun Feed tự hiển thị floating navigation bar riêng:
@@ -1371,7 +1371,7 @@ Modify `src/components/mobile-shell/mobile-header.tsx`:
   }
 ```
 
-- [ ] **Step 4: Verify TypeScript Compilation**
+- [x] **Step 4: Verify TypeScript Compilation**
 
 Run:
 ```bash
@@ -1386,7 +1386,7 @@ Expected output: No errors across modified files.
 **Files:**
 - Command: `npm run lint` & `npm run build`
 
-- [ ] **Step 1: Run ESLint check**
+- [x] **Step 1: Run ESLint check**
 
 Run:
 ```bash
@@ -1394,7 +1394,7 @@ npm run lint
 ```
 Expected output: No ESLint warnings or errors.
 
-- [ ] **Step 2: Run Production Build**
+- [x] **Step 2: Run Production Build**
 
 Run:
 ```bash
@@ -1402,7 +1402,7 @@ npm run build
 ```
 Expected output: Next.js compiles routes successfully including `/apps/fun-feed`.
 
-- [ ] **Step 3: Commit integration changes**
+- [x] **Step 3: Commit integration changes**
 
 Run:
 ```bash

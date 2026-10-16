@@ -1,7 +1,7 @@
 /**
  * @file page.tsx
  * @description Trang lướt meme học tiếng Anh (Fun Feed) dạng TikTok Scroll Snap 100vh
- * Hỗ trợ Infinite Scrolling qua Cursor Pagination và giao diện tối giản, tập trung vào nội dung media
+ * Tích hợp Active Viewport Tracking, Mute Toggle, và Virtual Sliding Window
  * 
  * Route: /apps/fun-feed
  * Made by Anh Tu - Share to be share
@@ -9,10 +9,11 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Volume2, VolumeX } from "lucide-react";
 import { useFunFeed } from "@/hooks/useFunFeed";
+import { useActiveFeedIndex } from "@/hooks/useActiveFeedIndex";
 import { FunFeedCard } from "@/components/fun-feed/FunFeedCard";
 
 export default function FunFeedPage() {
@@ -29,12 +30,39 @@ export default function FunFeedPage() {
     handleLike,
     handleSave,
     handleReport,
+    handleSkip,
   } = useFunFeed({ pageSize: 10 });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
 
-  // Kích hoạt Infinite Scroll khi cuộn đến thẻ áp chót qua IntersectionObserver
+  // Theo dõi chính xác Card đang Active trên màn hình
+  const { activeIndex } = useActiveFeedIndex({
+    containerRef,
+    itemSelector: "[data-feed-index]",
+    threshold: 0.6,
+  });
+
+  // Ghi nhận skip analytics khi activeIndex thay đổi nhanh
+  const previousIndexRef = useRef<number>(0);
+  const enterTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (enterTimeRef.current === null) {
+      enterTimeRef.current = Date.now();
+      return;
+    }
+    const elapsed = Date.now() - enterTimeRef.current;
+    const prevItem = items[previousIndexRef.current];
+    if (prevItem && elapsed < 2000 && previousIndexRef.current !== activeIndex) {
+      handleSkip(prevItem._id);
+    }
+    previousIndexRef.current = activeIndex;
+    enterTimeRef.current = Date.now();
+  }, [activeIndex, items, handleSkip]);
+
+  // Kích hoạt Infinite Scroll khi cuộn đến thẻ áp chót
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -47,7 +75,7 @@ export default function FunFeedPage() {
       },
       {
         root: containerRef.current,
-        rootMargin: "200px",
+        rootMargin: "300px",
         threshold: 0.1,
       }
     );
@@ -58,7 +86,7 @@ export default function FunFeedPage() {
 
   return (
     <div className="relative w-full h-[100dvh] max-h-[100dvh] -mb-24 bg-black overflow-hidden flex flex-col">
-      {/* 1. Floating Top Bar: Nút thoát & Tiêu đề tinh giản */}
+      {/* 1. Floating Top Bar: Nút thoát, Tiêu đề, Mute Toggle & Refresh */}
       <header className="absolute top-0 inset-x-0 z-40 flex items-center justify-between px-3 h-14 pt-safe bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
         <Link
           href="/"
@@ -72,13 +100,25 @@ export default function FunFeedPage() {
           Fun English Feed
         </span>
 
-        <button
-          onClick={refresh}
-          className="p-2 rounded-full bg-black/40 text-white/90 hover:bg-black/60 backdrop-blur-md border border-white/10 transition-transform active:scale-90 pointer-events-auto"
-          title="Làm mới bảng tin"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5 pointer-events-auto">
+          {/* Nút bật/tắt âm thanh chức năng */}
+          <button
+            onClick={() => setIsMuted((prev) => !prev)}
+            className="p-2 rounded-full bg-black/40 text-white/90 hover:bg-black/60 backdrop-blur-md border border-white/10 transition-transform active:scale-90"
+            title={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
+          </button>
+
+          {/* Nút làm mới bảng tin */}
+          <button
+            onClick={refresh}
+            className="p-2 rounded-full bg-black/40 text-white/90 hover:bg-black/60 backdrop-blur-md border border-white/10 transition-transform active:scale-90"
+            title="Làm mới bảng tin"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </header>
 
       {/* 2. Main Scroll-Snap Reel Container */}
@@ -118,10 +158,14 @@ export default function FunFeedPage() {
           ref={containerRef}
           className="flex-1 w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar"
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <FunFeedCard
               key={item._id}
+              index={index}
               item={item}
+              isActive={index === activeIndex}
+              isPrefetchTarget={index === activeIndex + 1}
+              isMuted={isMuted}
               isLiked={likedIds.has(item._id)}
               isSaved={savedIds.has(item._id)}
               onLike={handleLike}

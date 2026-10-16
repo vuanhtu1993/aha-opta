@@ -1,22 +1,25 @@
 /**
  * @file FunFeedCard.tsx
- * @description Card hiển thị Meme/Reel tràn màn hình 100vh theo cơ chế scroll-snap của TikTok
- * Bao gồm Media Player (GIF CDN hoặc YouTube Shorts iframe), Glassmorphism Learning Overlay,
- * và Cột nút tương tác (Like, Save, Report, Share)
+ * @description Card hiển thị Meme/Reel tràn màn hình 100vh với Virtual Windowing
+ * Chỉ mount Iframe khi isActive = true, nạp trước cache khi isPrefetchTarget = true
  * 
  * Made by Anh Tu - Share to be share
  */
 
 "use client";
 
-import { useState } from "react";
-import { Heart, Bookmark, Flag, Share2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, Bookmark, Flag, Share2, Play } from "lucide-react";
 import { FunFeedItem } from "@/lib/types/fun-feed";
 import { cn } from "@/lib/utils";
 import { ReportModal } from "./ReportModal";
 
 interface FunFeedCardProps {
+  index: number;
   item: FunFeedItem;
+  isActive: boolean;
+  isPrefetchTarget: boolean;
+  isMuted?: boolean;
   isLiked: boolean;
   isSaved: boolean;
   onLike: (id: string) => void;
@@ -25,7 +28,11 @@ interface FunFeedCardProps {
 }
 
 export function FunFeedCard({
+  index,
   item,
+  isActive,
+  isPrefetchTarget,
+  isMuted = true,
   isLiked,
   isSaved,
   onLike,
@@ -34,6 +41,14 @@ export function FunFeedCard({
 }: FunFeedCardProps) {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
+
+  // 1. Predictive Prefetching: Nạp trước tài nguyên GIF khi là mục tiêu kế tiếp (i + 1)
+  useEffect(() => {
+    if (isPrefetchTarget && item.type === "gif" && item.mediaUrl) {
+      const img = new window.Image();
+      img.src = item.mediaUrl;
+    }
+  }, [isPrefetchTarget, item.type, item.mediaUrl]);
 
   // Xử lý chia sẻ (Web Share API hoặc Copy link)
   const handleShare = async () => {
@@ -55,39 +70,67 @@ export function FunFeedCard({
     }
   };
 
+  const isYouTube = item.type === "short_video" || item.source === "youtube";
+  const posterUrl =
+    item.thumbnailUrl ||
+    (isYouTube && item.sourceId
+      ? `https://i.ytimg.com/vi/${item.sourceId}/hqdefault.jpg`
+      : undefined);
+
   return (
-    <div className="relative w-full h-[100dvh] max-h-[100dvh] snap-start flex flex-col justify-between overflow-hidden bg-slate-950 select-none">
-      {/* 1. Media Canvas Layer (100% Zero-bandwidth CDN Offload) */}
+    <div
+      data-feed-index={index}
+      className="relative w-full h-[100dvh] max-h-[100dvh] snap-start flex flex-col justify-between overflow-hidden bg-slate-950 select-none"
+    >
+      {/* 1. Media Canvas Layer với Virtual Windowing */}
       <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
-        {item.type === "short_video" || item.source === "youtube" ? (
-          <iframe
-            src={`${item.mediaUrl}?autoplay=1&mute=1&loop=1&controls=0&modestbranding=1&rel=0`}
-            title={item.title}
-            className="w-full h-full border-0 pointer-events-auto"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        {isActive ? (
+          /* ĐANG XEM: Mount Player thực thụ */
+          isYouTube ? (
+            <iframe
+              src={`${item.mediaUrl}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&controls=0&modestbranding=1&rel=0&playsinline=1`}
+              title={item.title}
+              className="w-full h-full border-0 pointer-events-auto"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.mediaUrl}
+              alt={item.title}
+              className="w-full h-full object-contain pointer-events-none"
+            />
+          )
         ) : (
-          /* GIF stream direct from GIPHY CDN */
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.mediaUrl}
-            alt={item.title}
-            loading="lazy"
-            className="w-full h-full object-contain pointer-events-none"
-          />
+          /* KHÔNG ACTIVE: Chỉ render Poster Thumbnail tĩnh (0% CPU, 0 Iframe) */
+          <div className="relative w-full h-full flex items-center justify-center">
+            {posterUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={posterUrl}
+                alt={item.title}
+                loading={isPrefetchTarget ? "eager" : "lazy"}
+                className="w-full h-full object-contain opacity-75"
+              />
+            ) : (
+              <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-700">
+                <Play className="w-12 h-12 opacity-30" />
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Gradient bóng đổ nhẹ để làm nổi bật overlay văn bản */}
-        <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
+        {/* Gradient bóng mờ chân trang */}
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
       </div>
 
-      {/* 2. Top spacer for Floating Navigation */}
+      {/* 2. Top spacer cho Floating Navigation */}
       <div className="h-14 w-full z-10 pointer-events-none" />
 
-      {/* 3. Bottom Presentation Layer: Learning Overlay & Right Actions */}
+      {/* 3. Bottom Layer: Tiêu đề & Cột nút tương tác */}
       <div className="relative z-10 w-full px-4 pb-6 pt-2 flex items-end justify-between gap-3">
-        {/* Left: Glassmorphism Learning Information */}
+        {/* Left: Thông tin học tập tinh gọn */}
         <div className="flex-1 space-y-2 max-w-[82%]">
           {/* Badges: Topic & Level */}
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -113,29 +156,31 @@ export function FunFeedCard({
             {item.title}
           </h2>
 
-          {/* Glassmorphism Pedagogical Insight Box */}
-          <div className="p-3 rounded-2xl bg-white/10 dark:bg-slate-900/40 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1.5">
-            {item.whyFunny && (
-              <div className="text-xs text-amber-200/95 leading-relaxed">
-                <p>
-                  <strong className="font-semibold text-amber-300">Tại sao hài: </strong>
-                  {item.whyFunny}
-                </p>
-              </div>
-            )}
+          {/* Hộp ghi chú sư phạm (Thuần typography không icon thừa) */}
+          {(item.whyFunny || item.youLearned) && (
+            <div className="p-3 rounded-2xl bg-white/10 dark:bg-slate-900/40 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1.5">
+              {item.whyFunny && (
+                <div className="text-xs text-amber-200/95 leading-relaxed">
+                  <p>
+                    <strong className="font-semibold text-amber-300">Tại sao hài: </strong>
+                    {item.whyFunny}
+                  </p>
+                </div>
+              )}
 
-            {item.youLearned && (
-              <div className="text-xs text-emerald-200/95 leading-relaxed border-t border-white/10 pt-1.5">
-                <p>
-                  <strong className="font-semibold text-emerald-300">Bạn học được: </strong>
-                  {item.youLearned}
-                </p>
-              </div>
-            )}
-          </div>
+              {item.youLearned && (
+                <div className="text-xs text-emerald-200/95 leading-relaxed border-t border-white/10 pt-1.5">
+                  <p>
+                    <strong className="font-semibold text-emerald-300">Bạn học được: </strong>
+                    {item.youLearned}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Right: Vertical Interaction Column */}
+        {/* Right: Cột nút hành động chức năng */}
         <div className="flex flex-col items-center gap-3.5 pb-1">
           {/* Like Button */}
           <button
@@ -216,7 +261,7 @@ export function FunFeedCard({
         </div>
       </div>
 
-      {/* Modal báo cáo vi phạm */}
+      {/* Modal Báo cáo */}
       <ReportModal
         isOpen={reportModalOpen}
         contentTitle={item.title}

@@ -62,7 +62,7 @@ export default function FunFeedPage() {
   }, [hasMore, loadingMore, loading, loadMore]);
 
   return (
-    <div className="relative w-full h-[100dvh] max-h-[100dvh] bg-black overflow-hidden flex flex-col">
+    <div className="relative w-full h-[100dvh] max-h-[100dvh] -mb-24 bg-black overflow-hidden flex flex-col">
       {/* 1. Floating Top Bar: Nút thoát & Bộ lọc */}
       <header className="absolute top-0 inset-x-0 z-40 flex flex-col pt-safe bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
         <div className="flex items-center justify-between px-3 h-12 pointer-events-auto">

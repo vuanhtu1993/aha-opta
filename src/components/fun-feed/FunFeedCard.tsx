@@ -53,7 +53,7 @@ export function FunFeedCard({
     }
   }, [isPrefetchTarget, item.type, item.mediaUrl]);
 
-  // 2. Đồng bộ phát/tắt và bật/tắt tiếng tức thì qua YouTube IFrame postMessage API (không reload src)
+  // 2. Đồng bộ phát/tắt và reset về 0s tức thì qua YouTube IFrame postMessage API
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe || !iframe.contentWindow) return;
@@ -70,6 +70,8 @@ export function FunFeedCard({
     };
 
     if (isActive) {
+      // Luôn bảo đảm video phát từ giây 0 khi người dùng lướt tới
+      sendCommand("seekTo", [0, true]);
       sendCommand("playVideo");
       if (isMuted) {
         sendCommand("mute");
@@ -77,8 +79,11 @@ export function FunFeedCard({
         sendCommand("unMute");
       }
     } else {
-      // Khi không active (ở card kế tiếp hoặc card trước), luôn mute để triệt tiêu tiếng ngầm
+      // Khi không active (ở card kế tiếp hoặc card trước):
+      // Tắt tiếng, tạm dừng và đưa về 0s để đệm sẵn, không chạy lén thời gian
       sendCommand("mute");
+      sendCommand("pauseVideo");
+      sendCommand("seekTo", [0, true]);
     }
   }, [isActive, isMuted]);
 

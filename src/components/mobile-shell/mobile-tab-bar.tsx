@@ -60,12 +60,13 @@ export function MobileTabBar() {
 
   const dueCount = dueData?.dueCount ?? 0;
 
-  // Ẩn tab bar ở các trang tạo/chi tiết/player/quiz review để nhường toàn bộ không gian
+  // Ẩn tab bar ở các trang tạo/chi tiết/player/quiz review và fun-feed để nhường toàn bộ không gian
   const isHidden =
     pathname.startsWith("/apps/story-shadowing/player") ||
     pathname.startsWith("/apps/story-shadowing/create") ||
     pathname.startsWith("/vocab/review") ||
-    pathname.startsWith("/vocab/speak-your-mind/create");
+    pathname.startsWith("/vocab/speak-your-mind/create") ||
+    pathname.startsWith("/apps/fun-feed");
   if (isHidden) return null;
 
   return (

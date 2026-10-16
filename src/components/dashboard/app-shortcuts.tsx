@@ -38,14 +38,12 @@ const APPS: AppItem[] = [
     gradient: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-900",
   },
   {
-    id: "news",
-    name: "Tin tức AI",
-    desc: "Tổng hợp buổi sáng",
-    icon: "📰",
-    href: "#",
-    status: "Sắp có",
-    disabled: true,
-    gradient: "from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/20 border-slate-200 dark:border-slate-800",
+    id: "fun-feed",
+    name: "Fun English Feed",
+    desc: "Memes & Reels học vui",
+    icon: "🎭",
+    href: "/apps/fun-feed",
+    gradient: "from-rose-50 to-amber-50 dark:from-rose-950/30 dark:to-amber-950/20 border-rose-200 dark:border-rose-900",
   },
 ];
 

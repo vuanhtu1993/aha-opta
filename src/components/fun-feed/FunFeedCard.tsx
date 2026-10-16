@@ -10,7 +10,7 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, Bookmark, Flag, Share2, Lightbulb, Target } from "lucide-react";
+import { Heart, Bookmark, Flag, Share2 } from "lucide-react";
 import { FunFeedItem } from "@/lib/types/fun-feed";
 import { cn } from "@/lib/utils";
 import { ReportModal } from "./ReportModal";
@@ -116,8 +116,7 @@ export function FunFeedCard({
           {/* Glassmorphism Pedagogical Insight Box */}
           <div className="p-3 rounded-2xl bg-white/10 dark:bg-slate-900/40 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1.5">
             {item.whyFunny && (
-              <div className="flex items-start gap-1.5 text-xs text-amber-200/95 leading-relaxed">
-                <Lightbulb className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400" />
+              <div className="text-xs text-amber-200/95 leading-relaxed">
                 <p>
                   <strong className="font-semibold text-amber-300">Tại sao hài: </strong>
                   {item.whyFunny}
@@ -126,8 +125,7 @@ export function FunFeedCard({
             )}
 
             {item.youLearned && (
-              <div className="flex items-start gap-1.5 text-xs text-emerald-200/95 leading-relaxed border-t border-white/10 pt-1.5">
-                <Target className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400" />
+              <div className="text-xs text-emerald-200/95 leading-relaxed border-t border-white/10 pt-1.5">
                 <p>
                   <strong className="font-semibold text-emerald-300">Bạn học được: </strong>
                   {item.youLearned}

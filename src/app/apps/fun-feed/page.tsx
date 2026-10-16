@@ -40,8 +40,10 @@ export default function FunFeedPage() {
   // Theo dõi chính xác Card đang Active trên màn hình
   const { activeIndex } = useActiveFeedIndex({
     containerRef,
+    itemCount: items.length,
+    enabled: !loading,
     itemSelector: "[data-feed-index]",
-    threshold: 0.6,
+    threshold: 0.5,
   });
 
   // Ghi nhận skip analytics khi activeIndex thay đổi nhanh
@@ -158,21 +160,28 @@ export default function FunFeedPage() {
           ref={containerRef}
           className="flex-1 w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar"
         >
-          {items.map((item, index) => (
-            <FunFeedCard
-              key={item._id}
-              index={index}
-              item={item}
-              isActive={index === activeIndex}
-              isPrefetchTarget={index === activeIndex + 1}
-              isMuted={isMuted}
-              isLiked={likedIds.has(item._id)}
-              isSaved={savedIds.has(item._id)}
-              onLike={handleLike}
-              onSave={handleSave}
-              onReport={handleReport}
-            />
-          ))}
+          {items.map((item, index) => {
+            const isActive = index === activeIndex;
+            // Pre-mount liền kề 1 card trước và 1 card sau [i-1, i, i+1] để xóa bỏ hoàn toàn độ trễ khi lướt
+            const shouldMount = Math.abs(index - activeIndex) <= 1;
+
+            return (
+              <FunFeedCard
+                key={item._id}
+                index={index}
+                item={item}
+                isActive={isActive}
+                shouldMount={shouldMount}
+                isPrefetchTarget={index === activeIndex + 1}
+                isMuted={isMuted}
+                isLiked={likedIds.has(item._id)}
+                isSaved={savedIds.has(item._id)}
+                onLike={handleLike}
+                onSave={handleSave}
+                onReport={handleReport}
+              />
+            );
+          })}
 
           {/* Sentinel kích hoạt infinite scroll */}
           <div ref={sentinelRef} className="h-4 w-full" />

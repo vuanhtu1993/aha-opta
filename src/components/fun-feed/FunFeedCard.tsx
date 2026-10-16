@@ -1,14 +1,14 @@
 /**
  * @file FunFeedCard.tsx
- * @description Card hiển thị Meme/Reel tràn màn hình 100vh với Virtual Windowing
- * Chỉ mount Iframe khi isActive = true, nạp trước cache khi isPrefetchTarget = true
+ * @description Card hiển thị Meme/Reel tràn màn hình 100vh với Virtual Windowing [i-1, i, i+1]
+ * Pre-mount iframe liền kề và điều khiển âm thanh qua postMessage không gây reload
  * 
  * Made by Anh Tu - Share to be share
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Heart, Bookmark, Flag, Share2, Play } from "lucide-react";
 import { FunFeedItem } from "@/lib/types/fun-feed";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ interface FunFeedCardProps {
   index: number;
   item: FunFeedItem;
   isActive: boolean;
+  shouldMount: boolean;
   isPrefetchTarget: boolean;
   isMuted?: boolean;
   isLiked: boolean;
@@ -31,6 +32,7 @@ export function FunFeedCard({
   index,
   item,
   isActive,
+  shouldMount,
   isPrefetchTarget,
   isMuted = true,
   isLiked,
@@ -41,6 +43,7 @@ export function FunFeedCard({
 }: FunFeedCardProps) {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // 1. Predictive Prefetching: Nạp trước tài nguyên GIF khi là mục tiêu kế tiếp (i + 1)
   useEffect(() => {
@@ -49,6 +52,35 @@ export function FunFeedCard({
       img.src = item.mediaUrl;
     }
   }, [isPrefetchTarget, item.type, item.mediaUrl]);
+
+  // 2. Đồng bộ phát/tắt và bật/tắt tiếng tức thì qua YouTube IFrame postMessage API (không reload src)
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentWindow) return;
+
+    const sendCommand = (func: string, args: unknown[] = []) => {
+      try {
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({ event: "command", func, args }),
+          "*"
+        );
+      } catch {
+        // Cross-origin safe
+      }
+    };
+
+    if (isActive) {
+      sendCommand("playVideo");
+      if (isMuted) {
+        sendCommand("mute");
+      } else {
+        sendCommand("unMute");
+      }
+    } else {
+      // Khi không active (ở card kế tiếp hoặc card trước), luôn mute để triệt tiêu tiếng ngầm
+      sendCommand("mute");
+    }
+  }, [isActive, isMuted]);
 
   // Xử lý chia sẻ (Web Share API hoặc Copy link)
   const handleShare = async () => {
@@ -82,15 +114,29 @@ export function FunFeedCard({
       data-feed-index={index}
       className="relative w-full h-[100dvh] max-h-[100dvh] snap-start flex flex-col justify-between overflow-hidden bg-slate-950 select-none"
     >
-      {/* 1. Media Canvas Layer với Virtual Windowing */}
+      {/* 1. Media Canvas Layer với 3-Card Virtual Windowing */}
       <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
-        {isActive ? (
-          /* ĐANG XEM: Mount Player thực thụ */
+        {/* Background Poster Thumbnail luôn sẵn sàng, chống giật chớp màn hình */}
+        {posterUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={posterUrl}
+            alt={item.title}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+          />
+        )}
+
+        {/* Media Player: Pre-mount trong cửa sổ trượt [i-1, i, i+1] */}
+        {shouldMount && (
           isYouTube ? (
             <iframe
-              src={`${item.mediaUrl}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&controls=0&modestbranding=1&rel=0&playsinline=1`}
+              ref={iframeRef}
+              src={`${item.mediaUrl}?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=${item.sourceId}&controls=0&modestbranding=1&rel=0&playsinline=1`}
               title={item.title}
-              className="w-full h-full border-0 pointer-events-auto"
+              className={cn(
+                "absolute inset-0 w-full h-full border-0 transition-opacity duration-300",
+                isActive ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-90"
+              )}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
@@ -99,25 +145,15 @@ export function FunFeedCard({
             <img
               src={item.mediaUrl}
               alt={item.title}
-              className="w-full h-full object-contain pointer-events-none"
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
             />
           )
-        ) : (
-          /* KHÔNG ACTIVE: Chỉ render Poster Thumbnail tĩnh (0% CPU, 0 Iframe) */
-          <div className="relative w-full h-full flex items-center justify-center">
-            {posterUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={posterUrl}
-                alt={item.title}
-                loading={isPrefetchTarget ? "eager" : "lazy"}
-                className="w-full h-full object-contain opacity-75"
-              />
-            ) : (
-              <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-700">
-                <Play className="w-12 h-12 opacity-30" />
-              </div>
-            )}
+        )}
+
+        {/* Fallback khi không có media lẫn poster */}
+        {!shouldMount && !posterUrl && (
+          <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-700">
+            <Play className="w-12 h-12 opacity-30" />
           </div>
         )}
 
@@ -155,29 +191,6 @@ export function FunFeedCard({
           <h2 className="text-sm sm:text-base font-bold text-white leading-snug drop-shadow-md line-clamp-2">
             {item.title}
           </h2>
-
-          {/* Hộp ghi chú sư phạm (Thuần typography không icon thừa) */}
-          {(item.whyFunny || item.youLearned) && (
-            <div className="p-3 rounded-2xl bg-white/10 dark:bg-slate-900/40 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1.5">
-              {item.whyFunny && (
-                <div className="text-xs text-amber-200/95 leading-relaxed">
-                  <p>
-                    <strong className="font-semibold text-amber-300">Tại sao hài: </strong>
-                    {item.whyFunny}
-                  </p>
-                </div>
-              )}
-
-              {item.youLearned && (
-                <div className="text-xs text-emerald-200/95 leading-relaxed border-t border-white/10 pt-1.5">
-                  <p>
-                    <strong className="font-semibold text-emerald-300">Bạn học được: </strong>
-                    {item.youLearned}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Right: Cột nút hành động chức năng */}

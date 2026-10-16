@@ -1,6 +1,6 @@
 /**
  * @file useActiveFeedIndex.ts
- * @description Hook theo dõi Card nào đang chiếm lĩnh khung nhìn (>60% diện tích)
+ * @description Hook theo dõi Card nào đang chiếm lĩnh khung nhìn (>50% diện tích)
  * phục vụ cơ chế Virtual Sliding Window cho TikTok-style Feed
  * 
  * Made by Anh Tu - Share to be share
@@ -12,18 +12,24 @@ import { useState, useEffect, RefObject } from "react";
 
 interface UseActiveFeedIndexOptions {
   containerRef: RefObject<HTMLDivElement | null>;
+  itemCount?: number;
+  enabled?: boolean;
   itemSelector?: string;
   threshold?: number;
 }
 
 export function useActiveFeedIndex({
   containerRef,
+  itemCount = 0,
+  enabled = true,
   itemSelector = "[data-feed-index]",
-  threshold = 0.6,
+  threshold = 0.5,
 }: UseActiveFeedIndexOptions) {
   const [activeIndex, setActiveIndex] = useState<number>(0);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -65,7 +71,7 @@ export function useActiveFeedIndex({
       observer.disconnect();
       mutationObserver.disconnect();
     };
-  }, [containerRef, itemSelector, threshold]);
+  }, [containerRef, itemSelector, threshold, itemCount, enabled]);
 
   return { activeIndex };
 }
